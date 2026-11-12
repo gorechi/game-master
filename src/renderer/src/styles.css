@@ -1355,6 +1355,12 @@ input[type='number'] {
   font-size: 21px;
   font-weight: 400;
   line-height: 1.12;
+  /* Всегда две строки: имя любой длины не сдвигает портрет. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  min-height: calc(2 * 1.12em);
+  overflow: hidden;
   overflow-wrap: anywhere;
 }
 

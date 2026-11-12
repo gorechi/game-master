@@ -25,7 +25,9 @@ export function CharacterCard({
     <li className="hero-card">
       <div className="hero-card__inner">
         <header className="hero-card__head">
-          <h3 className="hero-card__name">{profile.name}</h3>
+          <h3 className="hero-card__name" title={profile.name}>
+            {profile.name}
+          </h3>
           <span className="hero-card__class" title={profile.className || 'Класс не указан'}>
             {profile.className || 'Без класса'}
           </span>
