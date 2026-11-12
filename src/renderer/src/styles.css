@@ -14,8 +14,8 @@
   --danger: #d1584f;
   --danger-soft: rgba(209, 88, 79, 0.14);
   --ok: #74c493;
-  --font-ui: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', sans-serif;
-  --font-display: 'Iowan Old Style', 'Palatino Linotype', Georgia, 'Times New Roman', serif;
+  --font-ui: 'Manrope', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', sans-serif;
+  --font-display: 'Underdog', 'Trebuchet MS', 'Segoe UI', sans-serif;
   --radius: 14px;
   --radius-sm: 9px;
   --shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
@@ -52,7 +52,7 @@ h1,
 h2,
 h3 {
   font-family: var(--font-display);
-  font-weight: 500;
+  font-weight: 400;
   letter-spacing: 0.01em;
   margin: 0;
 }
@@ -376,7 +376,7 @@ input[type='number'] {
   padding-bottom: 14px;
   font-family: var(--font-display);
   font-size: 32px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.1;
   letter-spacing: 0.01em;
   background: linear-gradient(180deg, #f6e3b4, #d8b25c 70%, #b98f3f);
@@ -1078,7 +1078,7 @@ input[type='number'] {
 
 .sidebar__title {
   font-family: var(--font-display);
-  font-size: 17px;
+  font-size: 18px;
   white-space: nowrap;
 }
 
@@ -1486,7 +1486,7 @@ input[type='number'] {
 .modal__title {
   font-family: var(--font-display);
   font-size: 22px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.25;
 }
 
