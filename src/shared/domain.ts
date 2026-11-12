@@ -170,9 +170,19 @@ export function playerInitials(player: Pick<Player, 'firstName' | 'lastName'>): 
 /* Персонажи-карточки (герои игроков)                                 */
 /* ------------------------------------------------------------------ */
 
+export type NormalizedCharacterProfileInput = Omit<CharacterProfileInput, 'level'> & {
+  level: number
+}
+
+/** Уровень героя 1–20; пустое или некорректное значение становится 1. */
+export function clampCharacterLevel(value: number | undefined): number {
+  if (value === undefined || !Number.isFinite(value)) return 1
+  return Math.min(20, Math.max(1, Math.round(value)))
+}
+
 export function normalizeCharacterProfileInput(
   input: CharacterProfileInput
-): CharacterProfileInput {
+): NormalizedCharacterProfileInput {
   return {
     playerId: input.playerId || null,
     name: input.name.trim().slice(0, 80),
@@ -182,7 +192,8 @@ export function normalizeCharacterProfileInput(
       0,
       16
     ),
-    image: input.image ?? null
+    image: input.image ?? null,
+    level: clampCharacterLevel(input.level)
   }
 }
 

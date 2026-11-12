@@ -2,7 +2,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { DragEvent, FormEvent, JSX, KeyboardEvent } from 'react'
 import type { Player } from '@shared/player'
 import type { CharacterProfile, CharacterProfileInput } from '@shared/characterProfile'
-import { playerFullName } from '@shared/domain'
+import { playerFullName, clampCharacterLevel } from '@shared/domain'
 import { api, errorMessage } from '@renderer/lib/api'
 import { prepareCharacterImage } from '@renderer/lib/image'
 import { pluralize } from '@renderer/lib/format'
@@ -190,6 +190,9 @@ function CharacterCard({ profile, player, onEdit, onDelete }: CharacterCardProps
         </header>
 
         <div className="hero-card__art">
+          <span className="hero-card__level" aria-label={`Уровень ${profile.level}`}>
+            Ур. {profile.level}
+          </span>
           {profile.image ? (
             <img src={profile.image} alt={`Портрет: ${profile.name}`} loading="lazy" />
           ) : (
@@ -286,6 +289,7 @@ function CharacterFormModal({
 }: CharacterFormModalProps): JSX.Element {
   const [name, setName] = useState('')
   const [className, setClassName] = useState('')
+  const [level, setLevel] = useState('1')
   const [race, setRace] = useState('')
   const [playerId, setPlayerId] = useState('')
   const [statuses, setStatuses] = useState<string[]>([])
@@ -306,6 +310,7 @@ function CharacterFormModal({
 
     setName(profile?.name ?? '')
     setClassName(profile?.className ?? '')
+    setLevel(String(profile?.level ?? 1))
     setRace(profile?.race ?? '')
     setPlayerId(profile?.playerId ?? '')
     setStatuses(profile?.statuses ?? [])
@@ -377,6 +382,7 @@ function CharacterFormModal({
       playerId,
       name: trimmedName,
       className: className.trim(),
+      level: clampCharacterLevel(Number.parseInt(level, 10)),
       race: race.trim(),
       statuses,
       image
@@ -514,16 +520,30 @@ function CharacterFormModal({
             />
           </label>
 
-          <div className="form-grid form-grid--two">
+          <div className="character-form__row">
             <label className="field">
               <span className="field__label">Класс</span>
               <input
                 className="input"
                 value={className}
                 maxLength={60}
-                placeholder="Плут 5"
+                placeholder="Плут"
                 autoComplete="off"
                 onChange={(event) => setClassName(event.target.value)}
+              />
+            </label>
+
+            <label className="field character-form__level">
+              <span className="field__label">Уровень</span>
+              <input
+                className="input"
+                type="number"
+                min={1}
+                max={20}
+                inputMode="numeric"
+                value={level}
+                onChange={(event) => setLevel(event.target.value)}
+                onBlur={() => setLevel(String(clampCharacterLevel(Number.parseInt(level, 10))))}
               />
             </label>
 

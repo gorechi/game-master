@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { app } from 'electron'
 import { createCharacterProfile, normalizeCharacterProfileInput } from '@shared/domain'
+import type { NormalizedCharacterProfileInput } from '@shared/domain'
 import {
   CHARACTERS_FILE_SCHEMA_VERSION,
   charactersFileSchema,
@@ -40,7 +41,7 @@ async function readCharactersFile(): Promise<CharactersFile> {
   return parsed.data
 }
 
-function assertName(input: CharacterProfileInput): CharacterProfileInput {
+function assertName(input: CharacterProfileInput): NormalizedCharacterProfileInput {
   const normalized = normalizeCharacterProfileInput(input)
   if (!normalized.name) {
     throw new Error('Имя персонажа не может быть пустым')

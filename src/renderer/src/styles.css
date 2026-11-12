@@ -1337,6 +1337,22 @@ input[type='number'] {
   object-fit: cover;
 }
 
+.hero-card__level {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 1;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(216, 178, 92, 0.45);
+  background: rgba(10, 8, 14, 0.62);
+  color: var(--gold-strong);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  backdrop-filter: blur(4px);
+}
+
 .portrait-placeholder {
   display: flex;
   flex-direction: column;
@@ -1454,6 +1470,19 @@ input[type='number'] {
   flex-direction: column;
   gap: 14px;
   min-width: 0;
+}
+
+.character-form__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 92px minmax(0, 1fr);
+  gap: 12px;
+}
+
+.character-form__level .input {
+  width: 100%;
+  text-align: center;
+  padding-left: 6px;
+  padding-right: 6px;
 }
 
 .portrait-field {
@@ -2092,6 +2121,10 @@ input[type='number'] {
   }
 
   .form-grid--two {
+    grid-template-columns: 1fr;
+  }
+
+  .character-form__row {
     grid-template-columns: 1fr;
   }
 }

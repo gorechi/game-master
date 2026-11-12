@@ -80,7 +80,12 @@ function readCharacters(): CharacterProfile[] {
     if (!raw) return []
 
     const parsed: unknown = JSON.parse(raw)
-    return Array.isArray(parsed) ? (parsed as CharacterProfile[]) : []
+    if (!Array.isArray(parsed)) return []
+
+    return (parsed as CharacterProfile[]).map((item) => ({
+      ...item,
+      level: typeof item.level === 'number' ? item.level : 1
+    }))
   } catch {
     return []
   }

@@ -30,17 +30,25 @@ const profileFields = {
   image: imageDataUrl
 }
 
-export const characterProfileInputSchema = z.object(profileFields)
+const levelField = z.number().int().min(1).max(20).default(1)
+
+export const characterProfileInputSchema = z.object({
+  ...profileFields,
+  level: levelField
+})
 
 export const characterProfileSchema = z.object({
   id: z.string().min(1),
   ...profileFields,
+  level: levelField,
   createdAt: z.string().min(1),
   updatedAt: z.string().min(1)
 })
 
+/** Полный профиль: уровень всегда число (старые файлы получают 1). */
 export type CharacterProfile = z.infer<typeof characterProfileSchema>
-export type CharacterProfileInput = z.infer<typeof characterProfileInputSchema>
+/** Вход формы: уровень можно не передавать — подставится 1. */
+export type CharacterProfileInput = z.input<typeof characterProfileInputSchema>
 
 export const charactersFileSchema = z.object({
   schemaVersion: z.number().int().min(1),
