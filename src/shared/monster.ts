@@ -11,7 +11,7 @@ export const monsterAbilitySchema = z.object({
 
 export type MonsterAbility = z.infer<typeof monsterAbilitySchema>
 
-const abilityScore = z.number().int().min(1).max(30)
+const abilityScore = z.number().int().min(-99).max(99)
 
 const monsterFields = {
   name: z.string().min(1).max(100),

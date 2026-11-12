@@ -197,6 +197,7 @@ export function CharacterFormModal({
       <form
         id={formId}
         className="character-form"
+        noValidate
         onSubmit={(event) => void submit(event)}
       >
         <div className="character-form__portrait">
@@ -300,7 +301,9 @@ export function CharacterFormModal({
                 inputMode="numeric"
                 value={level}
                 onChange={(event) => setLevel(event.target.value)}
-                onBlur={() => setLevel(String(clampCharacterLevel(Number.parseInt(level, 10))))}
+                onBlur={(event) =>
+                  setLevel(String(clampCharacterLevel(Number.parseInt(event.target.value, 10))))
+                }
               />
             </label>
 

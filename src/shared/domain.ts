@@ -94,8 +94,8 @@ export function createCharacterProfile(
 /* Монстры (бестиарий)                                                */
 /* ------------------------------------------------------------------ */
 
-const ABILITY_MIN = 1
-const ABILITY_MAX = 30
+const ABILITY_MIN = -99
+const ABILITY_MAX = 99
 
 function clampInt(value: number | undefined, min: number, max: number, fallback: number): number {
   if (value === undefined || !Number.isFinite(value)) return fallback
