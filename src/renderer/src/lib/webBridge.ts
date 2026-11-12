@@ -3,6 +3,7 @@ import type { Player, PlayerInput } from '@shared/player'
 import type { CharacterProfile, CharacterProfileInput } from '@shared/characterProfile'
 import type { Monster, MonsterInput } from '@shared/monster'
 import {
+  clampMonsterScore,
   createCharacterProfile,
   createMonster,
   createPlayer,
@@ -82,7 +83,17 @@ function readMonsters(): Monster[] {
     if (!raw) return []
 
     const parsed: unknown = JSON.parse(raw)
-    return Array.isArray(parsed) ? (parsed as Monster[]) : []
+    if (!Array.isArray(parsed)) return []
+
+    return (parsed as Monster[]).map((monster) => ({
+      ...monster,
+      strength: clampMonsterScore(monster.strength),
+      dexterity: clampMonsterScore(monster.dexterity),
+      intelligence: clampMonsterScore(monster.intelligence),
+      wisdom: clampMonsterScore(monster.wisdom),
+      constitution: clampMonsterScore(monster.constitution),
+      charisma: clampMonsterScore(monster.charisma)
+    }))
   } catch {
     return []
   }

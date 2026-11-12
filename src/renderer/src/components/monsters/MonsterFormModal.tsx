@@ -25,12 +25,12 @@ interface AbilityDraft {
 }
 
 const EMPTY_SCORES: ScoreDraft = {
-  strength: '10',
-  dexterity: '10',
-  intelligence: '10',
-  wisdom: '10',
-  constitution: '10',
-  charisma: '10'
+  strength: '0',
+  dexterity: '0',
+  intelligence: '0',
+  wisdom: '0',
+  constitution: '0',
+  charisma: '0'
 }
 
 function clampNumber(value: number, min: number, max: number, fallback: number): number {
@@ -146,12 +146,12 @@ export function MonsterFormModal({
 
     const input: MonsterInput = {
       name: trimmedName,
-      strength: clampNumber(parseIntOr(scores.strength, 10), -99, 99, 10),
-      dexterity: clampNumber(parseIntOr(scores.dexterity, 10), -99, 99, 10),
-      intelligence: clampNumber(parseIntOr(scores.intelligence, 10), -99, 99, 10),
-      wisdom: clampNumber(parseIntOr(scores.wisdom, 10), -99, 99, 10),
-      constitution: clampNumber(parseIntOr(scores.constitution, 10), -99, 99, 10),
-      charisma: clampNumber(parseIntOr(scores.charisma, 10), -99, 99, 10),
+      strength: clampNumber(parseIntOr(scores.strength, 0), -10, 10, 0),
+      dexterity: clampNumber(parseIntOr(scores.dexterity, 0), -10, 10, 0),
+      intelligence: clampNumber(parseIntOr(scores.intelligence, 0), -10, 10, 0),
+      wisdom: clampNumber(parseIntOr(scores.wisdom, 0), -10, 10, 0),
+      constitution: clampNumber(parseIntOr(scores.constitution, 0), -10, 10, 0),
+      charisma: clampNumber(parseIntOr(scores.charisma, 0), -10, 10, 0),
       challengeRating: clampNumber(parseFloatOr(challengeRating, 1), 0, 30, 1),
       armorClass: clampNumber(parseIntOr(armorClass, 10), 0, 99, 10),
       hitPoints: clampNumber(parseIntOr(hitPoints, 10), 1, 100_000, 10),
@@ -223,14 +223,14 @@ export function MonsterFormModal({
                 className="input"
                 type="number"
                 inputMode="numeric"
-                min={-99}
-                max={99}
+                min={-10}
+                max={10}
                 value={scores[field.key]}
                 onChange={(event) => setScore(field.key, event.target.value)}
                 onBlur={(event) =>
                   setScore(
                     field.key,
-                    String(clampNumber(parseIntOr(event.target.value, 10), -99, 99, 10))
+                    String(clampNumber(parseIntOr(event.target.value, 0), -10, 10, 0))
                   )
                 }
               />

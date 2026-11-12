@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { app } from 'electron'
-import { createMonster, normalizeMonsterInput } from '@shared/domain'
+import { clampMonsterScore, createMonster, normalizeMonsterInput, MONSTER_SCORE_KEYS } from '@shared/domain'
 import {
   MONSTERS_FILE_SCHEMA_VERSION,
   monstersFileSchema,
@@ -20,6 +20,26 @@ function emptyFile(): MonstersFile {
   return { schemaVersion: MONSTERS_FILE_SCHEMA_VERSION, monsters: [] }
 }
 
+/**
+ * Старые файлы могли содержать характеристики вне диапазона -10…10.
+ * При чтении зажимаем их, чтобы запись не считалась повреждённой.
+ */
+function clampStoredScores(raw: unknown): unknown {
+  if (!raw || typeof raw !== 'object') return raw
+
+  const monster = raw as Record<string, unknown>
+  const next: Record<string, unknown> = { ...monster }
+
+  for (const key of MONSTER_SCORE_KEYS) {
+    const value = monster[key]
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      next[key] = clampMonsterScore(value)
+    }
+  }
+
+  return next
+}
+
 async function readMonstersFile(): Promise<MonstersFile> {
   let raw: unknown
 
@@ -32,7 +52,16 @@ async function readMonstersFile(): Promise<MonstersFile> {
     throw new Error(`Не удалось прочитать бестиарий: ${(error as Error).message}`)
   }
 
-  const parsed = monstersFileSchema.safeParse(raw)
+  if (!raw || typeof raw !== 'object') {
+    throw new Error('Файл бестиария повреждён и не может быть прочитан')
+  }
+
+  const file = raw as Record<string, unknown>
+  const monsters = Array.isArray(file.monsters)
+    ? file.monsters.map(clampStoredScores)
+    : file.monsters
+
+  const parsed = monstersFileSchema.safeParse({ ...file, monsters })
   if (!parsed.success) {
     throw new Error('Файл бестиария повреждён и не может быть прочитан')
   }

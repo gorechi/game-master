@@ -94,8 +94,22 @@ export function createCharacterProfile(
 /* Монстры (бестиарий)                                                */
 /* ------------------------------------------------------------------ */
 
-const ABILITY_MIN = -99
-const ABILITY_MAX = 99
+const ABILITY_MIN = -10
+const ABILITY_MAX = 10
+
+export const MONSTER_SCORE_KEYS = [
+  'strength',
+  'dexterity',
+  'intelligence',
+  'wisdom',
+  'constitution',
+  'charisma'
+] as const
+
+/** Характеристики монстра — от -10 до 10. */
+export function clampMonsterScore(value: number | undefined): number {
+  return clampInt(value, ABILITY_MIN, ABILITY_MAX, 0)
+}
 
 function clampInt(value: number | undefined, min: number, max: number, fallback: number): number {
   if (value === undefined || !Number.isFinite(value)) return fallback
@@ -133,12 +147,12 @@ export function normalizeMonsterInput(input: MonsterInput): NormalizedMonsterInp
 
   return {
     name: input.name.trim().slice(0, 100),
-    strength: clampInt(input.strength, ABILITY_MIN, ABILITY_MAX, 10),
-    dexterity: clampInt(input.dexterity, ABILITY_MIN, ABILITY_MAX, 10),
-    intelligence: clampInt(input.intelligence, ABILITY_MIN, ABILITY_MAX, 10),
-    wisdom: clampInt(input.wisdom, ABILITY_MIN, ABILITY_MAX, 10),
-    constitution: clampInt(input.constitution, ABILITY_MIN, ABILITY_MAX, 10),
-    charisma: clampInt(input.charisma, ABILITY_MIN, ABILITY_MAX, 10),
+    strength: clampMonsterScore(input.strength),
+    dexterity: clampMonsterScore(input.dexterity),
+    intelligence: clampMonsterScore(input.intelligence),
+    wisdom: clampMonsterScore(input.wisdom),
+    constitution: clampMonsterScore(input.constitution),
+    charisma: clampMonsterScore(input.charisma),
     challengeRating: Math.min(30, Math.max(0, input.challengeRating ?? 1)),
     armorClass: clampInt(input.armorClass, 0, 99, 10),
     hitPoints: clampInt(input.hitPoints, 1, 100_000, 10),
