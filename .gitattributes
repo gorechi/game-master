@@ -1,0 +1,6 @@
+# Единые переводы строк во всех клонах (независимо от core.autocrlf).
+* text=auto eol=lf
+
+*.png binary
+*.ico binary
+*.icns binary

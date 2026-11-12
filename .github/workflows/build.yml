@@ -1,0 +1,46 @@
+name: Build desktop installers
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            label: Windows
+            command: dist:win
+          - os: macos-latest
+            label: macOS
+            command: dist:mac
+    env:
+      # Сборка без подписи: для notarization нужен Apple Developer ID в секретах.
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run ${{ matrix.command }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.os }}
+          path: |
+            release/**/*.exe
+            release/**/*.dmg
+            release/**/*.zip
+          if-no-files-found: error

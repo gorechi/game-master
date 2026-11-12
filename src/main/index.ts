@@ -1,0 +1,89 @@
+import { app, BrowserWindow, session, shell } from 'electron'
+import path from 'node:path'
+import { registerIpcHandlers } from './ipc'
+import { beginCloseHandshake, createMainWindow, getMainWindow, isCloseAllowed } from './window'
+
+const isDev = !app.isPackaged
+
+// Данные dev-сборки отделены от «боевых» кампаний пользователя.
+if (isDev) {
+  app.setPath('userData', path.join(app.getPath('appData'), 'Game Master (dev)'))
+}
+
+app.setName('Game Master')
+
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.gamemaster.desktop')
+}
+
+/** Один экземпляр приложения: второй запуск фокусирует уже открытое окно. */
+if (!app.requestSingleInstanceLock()) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    const win = getMainWindow()
+    if (!win) return
+    if (win.isMinimized()) win.restore()
+    win.focus()
+  })
+
+  app.on('web-contents-created', (_event, contents) => {
+    contents.setWindowOpenHandler(({ url }) => {
+      if (url.startsWith('https://') || url.startsWith('http://')) {
+        void shell.openExternal(url)
+      }
+      return { action: 'deny' }
+    })
+
+    contents.on('will-navigate', (event, url) => {
+      const current = contents.getURL()
+      if (!current) return
+
+      try {
+        if (new URL(url).origin === new URL(current).origin) return
+      } catch {
+        // Некорректный URL — просто блокируем навигацию.
+      }
+
+      event.preventDefault()
+      if (url.startsWith('https://') || url.startsWith('http://')) {
+        void shell.openExternal(url)
+      }
+    })
+  })
+
+  app.whenReady().then(() => {
+    // CSP только для собранного приложения — dev-серверу нужен HMR/wss.
+    if (!isDev) {
+      session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+        callback({
+          responseHeaders: {
+            ...details.responseHeaders,
+            'Content-Security-Policy': [
+              "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'"
+            ]
+          }
+        })
+      })
+    }
+
+    registerIpcHandlers()
+    createMainWindow()
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) createMainWindow()
+    })
+  })
+
+  // При выходе из приложения (в т.ч. Cmd+Q на macOS) даём renderer дописать данные.
+  app.on('before-quit', (event) => {
+    if (isCloseAllowed() || !getMainWindow()) return
+
+    event.preventDefault()
+    beginCloseHandshake(() => app.quit())
+  })
+
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') app.quit()
+  })
+}

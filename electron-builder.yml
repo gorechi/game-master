@@ -1,0 +1,54 @@
+appId: com.gamemaster.desktop
+productName: Game Master
+copyright: Copyright © 2026 Game Master
+
+directories:
+  buildResources: build
+  output: release/${version}
+
+# В сборку попадает только результат electron-vite + манифест.
+# Прод-зависимости (zod) electron-builder подтягивает сам.
+files:
+  - out/**
+  - package.json
+  - '!**/*.map'
+
+asar: true
+compression: normal
+
+win:
+  icon: build/icon.png
+  target:
+    - target: nsis
+      arch: [x64, arm64]
+  artifactName: game-master-${version}-${arch}.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: Game Master
+  deleteAppDataOnUninstall: false
+  artifactName: game-master-setup-${version}-${arch}.${ext}
+
+mac:
+  icon: build/icon.png
+  category: public.app-category.board-games
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+    - target: zip
+      arch: [x64, arm64]
+  artifactName: game-master-${version}-${arch}.${ext}
+
+dmg:
+  title: ${productName} ${version}
+
+# Автообновление пока не подключено: сборки не публикуются автоматически.
+publish: null
