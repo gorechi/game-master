@@ -55,7 +55,7 @@ export function PlayersPage({ onOpenPlayer }: PlayersPageProps): JSX.Element {
           <div>
             <h1>Игроки</h1>
             <p className="muted">
-              Люди, которые садятся за стол. Персонажи живут отдельно — внутри кампаний.
+              Люди, которые садятся за стол. Их герои — в разделе «Персонажи».
             </p>
           </div>
           <button className="button button--primary" onClick={() => setEditing('new')}>

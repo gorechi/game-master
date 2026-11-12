@@ -72,19 +72,8 @@
   background-clip: text;
 }
 
-:root[data-theme='light'] .campaigns__head {
-  border-bottom-color: var(--border-strong);
-}
-
-:root[data-theme='light'] .campaigns__head h2 {
-  letter-spacing: 0.015em;
-}
-
 :root[data-theme='light'] .settings-block,
 :root[data-theme='light'] .player-card,
-:root[data-theme='light'] .campaign-card,
-:root[data-theme='light'] .init-row,
-:root[data-theme='light'] .roster-row,
 :root[data-theme='light'] .modal,
 :root[data-theme='light'] .theme-card {
   box-shadow:
@@ -164,7 +153,6 @@
 /* ------------------------------------------------------------------ */
 
 :root[data-theme='light'] .input,
-:root[data-theme='light'] .notes__area,
 :root[data-theme='light'] .picker--field .picker__trigger {
   background: #fbf3e2;
   border-color: var(--border);
@@ -172,7 +160,6 @@
 }
 
 :root[data-theme='light'] .input:focus,
-:root[data-theme='light'] .notes__area:focus,
 :root[data-theme='light'] .picker--open .picker__trigger {
   background: #fffaf0;
   border-color: var(--gold);
@@ -205,58 +192,9 @@
 /* Теги, плашки, состояния                                            */
 /* ------------------------------------------------------------------ */
 
-:root[data-theme='light'] .tag {
-  background: rgba(122, 86, 44, 0.06);
-  border-color: var(--border);
-  color: var(--ink-muted);
-}
-
-:root[data-theme='light'] .tag--player,
-:root[data-theme='light'] .tag--pc {
-  color: #2f5a86;
-  border-color: rgba(47, 90, 134, 0.32);
-  background: rgba(47, 90, 134, 0.08);
-}
-
-:root[data-theme='light'] .tag--npc {
-  color: #5b4478;
-  border-color: rgba(91, 68, 120, 0.3);
-  background: rgba(91, 68, 120, 0.08);
-}
-
-:root[data-theme='light'] .tag--monster {
-  color: #8c3423;
-  border-color: rgba(140, 52, 35, 0.3);
-  background: rgba(140, 52, 35, 0.08);
-}
-
-:root[data-theme='light'] .tag--active {
-  color: #fdf3e0;
-  background: var(--rubric);
-  border-color: #7d2e1e;
-}
-
-:root[data-theme='light'] .badge--error {
-  color: #8c3423;
-  background: var(--danger-soft);
-  border-color: rgba(140, 52, 35, 0.35);
-}
-
 :root[data-theme='light'] .notice--error {
   color: #8c3423;
   border-color: rgba(140, 52, 35, 0.35);
-  background: var(--danger-soft);
-}
-
-:root[data-theme='light'] .save--ok {
-  color: #3f6b41;
-  border-color: rgba(63, 107, 65, 0.35);
-  background: rgba(79, 125, 81, 0.1);
-}
-
-:root[data-theme='light'] .save--error {
-  color: #8c3423;
-  border-color: rgba(140, 52, 35, 0.4);
   background: var(--danger-soft);
 }
 
@@ -269,33 +207,8 @@
   border-color: var(--border-strong);
 }
 
-:root[data-theme='light'] .create__form {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.2));
-}
-
 :root[data-theme='light'] .settings-block {
   background: linear-gradient(180deg, #f9f1de, #f4e9d3);
-}
-
-/* ------------------------------------------------------------------ */
-/* Библиотека кампаний                                                */
-/* ------------------------------------------------------------------ */
-
-:root[data-theme='light'] .campaign-card {
-  background: linear-gradient(180deg, #fbf3e2, #f3e8d2);
-}
-
-:root[data-theme='light'] .campaign-card:hover {
-  border-color: rgba(143, 58, 44, 0.45);
-  box-shadow: 0 18px 34px rgba(74, 52, 26, 0.18);
-}
-
-:root[data-theme='light'] .campaign-card__date {
-  color: var(--ink-faint);
-}
-
-:root[data-theme='light'] .campaign-card__actions {
-  background: rgba(122, 86, 44, 0.06);
 }
 
 :root[data-theme='light'] .icon-button {
@@ -304,138 +217,6 @@
 
 :root[data-theme='light'] .icon-button--danger {
   color: #8c3423;
-}
-
-/* ------------------------------------------------------------------ */
-/* Экран кампании                                                     */
-/* ------------------------------------------------------------------ */
-
-:root[data-theme='light'] .campaign__bar {
-  background: rgba(240, 229, 208, 0.88);
-  border-bottom-color: var(--border);
-}
-
-:root[data-theme='light'] .campaign__title:hover {
-  background: rgba(122, 86, 44, 0.07);
-}
-
-:root[data-theme='light'] .campaign__title:focus {
-  background: #fffaf0;
-  border-color: var(--border-strong);
-}
-
-:root[data-theme='light'] .tabs {
-  background: rgba(240, 229, 208, 0.62);
-}
-
-:root[data-theme='light'] .tab {
-  color: var(--ink-muted);
-}
-
-:root[data-theme='light'] .tab--active {
-  color: var(--rubric);
-  border-bottom-color: var(--rubric);
-}
-
-:root[data-theme='light'] .tab__hint {
-  background: rgba(122, 86, 44, 0.09);
-  color: var(--ink-muted);
-}
-
-/* ------------------------------------------------------------------ */
-/* Трекер инициативы                                                  */
-/* ------------------------------------------------------------------ */
-
-:root[data-theme='light'] .board__toolbar {
-  background: linear-gradient(180deg, #f9f0dd, #f2e6cf);
-}
-
-:root[data-theme='light'] .round__value {
-  color: var(--rubric);
-}
-
-:root[data-theme='light'] .add-row {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: var(--border-strong);
-}
-
-:root[data-theme='light'] .init-row {
-  background: linear-gradient(180deg, #fbf3e2, #f6ecd8);
-}
-
-:root[data-theme='light'] .init-row:hover {
-  border-color: var(--border-strong);
-}
-
-:root[data-theme='light'] .init-row--active {
-  border-color: rgba(143, 58, 44, 0.55);
-  background: linear-gradient(90deg, rgba(143, 58, 44, 0.09), #f8efdb 48%);
-  box-shadow:
-    0 0 0 1px rgba(143, 58, 44, 0.12),
-    0 10px 22px rgba(74, 52, 26, 0.1);
-}
-
-:root[data-theme='light'] .input--init {
-  color: var(--rubric);
-  background: rgba(143, 58, 44, 0.06);
-  border-color: rgba(143, 58, 44, 0.28);
-}
-
-:root[data-theme='light'] .inline-input:hover {
-  background: rgba(122, 86, 44, 0.07);
-}
-
-:root[data-theme='light'] .inline-input:focus {
-  background: #fffaf0;
-  border-color: var(--border-strong);
-}
-
-:root[data-theme='light'] .hp {
-  background: rgba(255, 255, 255, 0.45);
-  border-color: var(--border);
-}
-
-:root[data-theme='light'] .hp__btn:hover {
-  background: rgba(122, 86, 44, 0.12);
-  color: var(--ink);
-}
-
-:root[data-theme='light'] .hp__value:focus {
-  background: #fffaf0;
-}
-
-:root[data-theme='light'] .chip--condition {
-  color: #8c3423;
-  background: rgba(143, 58, 44, 0.1);
-  border-color: rgba(143, 58, 44, 0.3);
-}
-
-:root[data-theme='light'] .chip--condition:hover {
-  background: rgba(143, 58, 44, 0.2);
-}
-
-/* ------------------------------------------------------------------ */
-/* Группа и игроки                                                    */
-/* ------------------------------------------------------------------ */
-
-:root[data-theme='light'] .roster-form {
-  background: linear-gradient(180deg, #f9f0dd, #f2e6cf);
-}
-
-:root[data-theme='light'] .roster-row {
-  background: #f9f0dd;
-}
-
-:root[data-theme='light'] .roster-row--pc {
-  border-left-color: rgba(47, 90, 134, 0.65);
-}
-
-:root[data-theme='light'] .roster-row--npc {
-  border-left-color: rgba(91, 68, 120, 0.6);
-}
-
-:root[data-theme='light'] .roster-row--monster {
-  border-left-color: rgba(140, 52, 35, 0.6);
 }
 
 :root[data-theme='light'] .player-card {

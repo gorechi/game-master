@@ -1,7 +1,7 @@
 import type { JSX } from 'react'
 import { isWebPreview } from '@renderer/lib/api'
 import type { Route } from '@renderer/lib/routes'
-import { IconBook, IconD20, IconGear, IconShield, IconUsers } from './ui/icons'
+import { IconD20, IconGear, IconShield, IconUsers } from './ui/icons'
 
 interface SidebarProps {
   route: Route
@@ -9,12 +9,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ route, onNavigate }: SidebarProps): JSX.Element {
-  const active =
-    route.name === 'campaign'
-      ? 'campaigns'
-      : route.name === 'player'
-        ? 'players'
-        : route.name
+  const active = route.name === 'player' ? 'players' : route.name
 
   return (
     <aside className="sidebar">
@@ -44,16 +39,6 @@ export function Sidebar({ route, onNavigate }: SidebarProps): JSX.Element {
         >
           <IconShield />
           <span>Персонажи</span>
-        </button>
-
-        <button
-          type="button"
-          className={`nav-item${active === 'campaigns' ? ' nav-item--active' : ''}`}
-          aria-current={active === 'campaigns' ? 'page' : undefined}
-          onClick={() => onNavigate({ name: 'campaigns' })}
-        >
-          <IconBook />
-          <span>Кампании</span>
         </button>
 
         <button

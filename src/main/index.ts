@@ -1,11 +1,11 @@
 import { app, BrowserWindow, session, shell } from 'electron'
 import path from 'node:path'
 import { registerIpcHandlers } from './ipc'
-import { beginCloseHandshake, createMainWindow, getMainWindow, isCloseAllowed } from './window'
+import { createMainWindow, getMainWindow } from './window'
 
 const isDev = !app.isPackaged
 
-// Данные dev-сборки отделены от «боевых» кампаний пользователя.
+// Данные dev-сборки отделены от рабочих данных пользователя.
 if (isDev) {
   app.setPath('userData', path.join(app.getPath('appData'), 'Game Master (dev)'))
 }
@@ -73,14 +73,6 @@ if (!app.requestSingleInstanceLock()) {
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createMainWindow()
     })
-  })
-
-  // При выходе из приложения (в т.ч. Cmd+Q на macOS) даём renderer дописать данные.
-  app.on('before-quit', (event) => {
-    if (isCloseAllowed() || !getMainWindow()) return
-
-    event.preventDefault()
-    beginCloseHandshake(() => app.quit())
   })
 
   app.on('window-all-closed', () => {

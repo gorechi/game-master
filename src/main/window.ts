@@ -1,14 +1,7 @@
 import { BrowserWindow } from 'electron'
 import path from 'node:path'
-import { IPC } from '@shared/api'
 
 let mainWindow: BrowserWindow | null = null
-
-/** Флаги протокола закрытия окна: renderer успевает дописать кампанию на диск. */
-let allowClose = false
-let flushed = false
-let closeTimer: NodeJS.Timeout | null = null
-let afterFlush: (() => void) | null = null
 
 export function getMainWindow(): BrowserWindow | null {
   return mainWindow
@@ -41,13 +34,6 @@ export function createMainWindow(): BrowserWindow {
     mainWindow = null
   })
 
-  win.on('close', (event) => {
-    if (allowClose) return
-
-    event.preventDefault()
-    beginCloseHandshake(() => win.close())
-  })
-
   // В dev-режиме electron-vite поднимает dev-сервер; в сборке грузим файл.
   const devServerUrl = process.env['ELECTRON_RENDERER_URL']
   if (devServerUrl) {
@@ -57,48 +43,4 @@ export function createMainWindow(): BrowserWindow {
   }
 
   return win
-}
-
-/**
- * Просит renderer сохранить несохранённое и закрыться.
- * Если renderer не ответил (завис/упал) — закрываем принудительно по таймауту.
- */
-export function beginCloseHandshake(callback: () => void): void {
-  const win = mainWindow
-  if (!win) {
-    callback()
-    return
-  }
-
-  if (flushed) {
-    allowClose = true
-    callback()
-    return
-  }
-
-  afterFlush = callback
-  if (closeTimer) return
-
-  win.webContents.send(IPC.appBeforeClose)
-  closeTimer = setTimeout(() => finishClose(), 2500)
-}
-
-/** Вызывается из renderer после записи данных (или по таймауту). */
-export function finishClose(): void {
-  if (closeTimer) {
-    clearTimeout(closeTimer)
-    closeTimer = null
-  }
-
-  flushed = true
-  allowClose = true
-  mainWindow?.setProgressBar(-1)
-
-  const callback = afterFlush
-  afterFlush = null
-  callback?.()
-}
-
-export function isCloseAllowed(): boolean {
-  return allowClose
 }

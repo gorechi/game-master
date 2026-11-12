@@ -70,7 +70,7 @@ export function SettingsPage({ settings, onThemeChange }: SettingsPageProps): JS
           <div className="settings-block__head">
             <h2 id="settings-about">Приложение</h2>
             <p className="muted">
-              Кампании и игроки хранятся обычными JSON-файлами — их можно скопировать или
+              Игроки и персонажи хранятся обычными JSON-файлами — их можно скопировать или
               положить в систему контроля версий.
             </p>
           </div>

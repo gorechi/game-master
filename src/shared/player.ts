@@ -5,7 +5,7 @@ export const PLAYERS_FILE_SCHEMA_VERSION = 1
 
 /**
  * Игрок — это человек за столом, а не персонаж.
- * Живёт в общей базе приложения, а не внутри кампании.
+ * Живёт в общей базе приложения.
  */
 export const playerSchema = z.object({
   id: z.string().min(1),

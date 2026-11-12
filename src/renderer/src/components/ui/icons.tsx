@@ -33,16 +33,6 @@ export function IconUsers(props: IconProps): JSX.Element {
   )
 }
 
-export function IconBook(props: IconProps): JSX.Element {
-  return (
-    <Svg {...props}>
-      <path d="M5 4.5h10.5A2.5 2.5 0 0 1 18 7v13H7.5A2.5 2.5 0 0 1 5 17.5v-13Z" />
-      <path d="M18 20a2.5 2.5 0 0 0 2.5-2.5V7" />
-      <path d="M8.5 8.5h5.5M8.5 12h5.5" />
-    </Svg>
-  )
-}
-
 export function IconPlus(props: IconProps): JSX.Element {
   return (
     <Svg {...props}>

@@ -5,8 +5,6 @@ import { Sidebar } from './components/Sidebar'
 import { PlayersPage } from './components/PlayersPage'
 import { PlayerCharactersPage } from './components/PlayerCharactersPage'
 import { CharactersPage } from './components/CharactersPage'
-import { Library } from './components/Library'
-import { CampaignView } from './components/CampaignView'
 import { SettingsPage } from './components/SettingsPage'
 import { api } from './lib/api'
 import { applyTheme } from './lib/theme'
@@ -69,17 +67,6 @@ export default function App(): JSX.Element {
           <CharactersPage
             onOpenPlayers={() => setRoute({ name: 'players' })}
             onOpenPlayer={(id) => setRoute({ name: 'player', id, from: 'characters' })}
-          />
-        ) : null}
-
-        {route.name === 'campaigns' ? (
-          <Library onOpen={(id) => setRoute({ name: 'campaign', id })} />
-        ) : null}
-
-        {route.name === 'campaign' ? (
-          <CampaignView
-            campaignId={route.id}
-            onBack={() => setRoute({ name: 'campaigns' })}
           />
         ) : null}
 
