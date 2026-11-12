@@ -8,6 +8,7 @@ import {
   summarizeCampaign
 } from '@shared/domain'
 import { parseCampaign, type Campaign, type CampaignSummary } from '@shared/campaign'
+import { JsonFileError, readJsonFile, withFileLock, writeJsonAtomic } from './jsonFile'
 
 const ID_PATTERN = /^[a-zA-Z0-9-]{8,64}$/
 const FILE_EXTENSION = '.json'
@@ -29,45 +30,6 @@ function campaignFile(id: string): string {
 }
 
 /* ------------------------------------------------------------------ */
-/* Очередь записи: две параллельные записи одного файла недопустимы    */
-/* ------------------------------------------------------------------ */
-
-const queues = new Map<string, Promise<unknown>>()
-
-function withFileLock<T>(id: string, task: () => Promise<T>): Promise<T> {
-  const previous = queues.get(id) ?? Promise.resolve()
-  const run = previous.then(task, task)
-  const settled = run.then(
-    () => undefined,
-    () => undefined
-  )
-
-  queues.set(id, settled)
-  void settled.then(() => {
-    if (queues.get(id) === settled) queues.delete(id)
-  })
-
-  return run
-}
-
-/**
- * Атомарная запись: сначала во временный файл, затем rename поверх целевого.
- * Так обрыв питания/падение приложения не оставит полуразрушенный JSON.
- */
-async function writeJsonAtomic(target: string, data: unknown): Promise<void> {
-  const payload = `${JSON.stringify(data, null, 2)}\n`
-  const tmp = `${target}.${process.pid}.${Date.now()}.tmp`
-
-  try {
-    await fs.writeFile(tmp, payload, 'utf8')
-    await fs.rename(tmp, target)
-  } catch (error) {
-    await fs.rm(tmp, { force: true }).catch(() => undefined)
-    throw error
-  }
-}
-
-/* ------------------------------------------------------------------ */
 /* Публичное API хранилища                                            */
 /* ------------------------------------------------------------------ */
 
@@ -86,7 +48,7 @@ export async function listCampaigns(): Promise<CampaignSummary[]> {
       }
 
       try {
-        const raw: unknown = JSON.parse(await fs.readFile(path.join(campaignsDir(), file.name), 'utf8'))
+        const raw = await readJsonFile(path.join(campaignsDir(), file.name))
         return summarizeCampaign(parseCampaign(raw))
       } catch (error) {
         return summarizeBrokenCampaign(id, error instanceof Error ? error.message : String(error))
@@ -102,9 +64,9 @@ export async function loadCampaign(id: string): Promise<Campaign> {
 
   let raw: unknown
   try {
-    raw = JSON.parse(await fs.readFile(file, 'utf8'))
+    raw = await readJsonFile(file)
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+    if (error instanceof JsonFileError && error.code === 'ENOENT') {
       throw new Error('Кампания не найдена — возможно, файл был перемещён или удалён')
     }
     throw new Error(`Не удалось прочитать файл кампании: ${(error as Error).message}`)

@@ -1,4 +1,5 @@
 import type { Campaign, CampaignSummary } from './campaign'
+import type { Player, PlayerInput } from './player'
 
 /**
  * Контракт между renderer и main. Единственный источник правды для
@@ -14,7 +15,11 @@ export const IPC = {
   campaignCreate: 'campaign:create',
   campaignSave: 'campaign:save',
   campaignRemove: 'campaign:remove',
-  campaignReveal: 'campaign:reveal'
+  campaignReveal: 'campaign:reveal',
+  playersList: 'players:list',
+  playerCreate: 'player:create',
+  playerUpdate: 'player:update',
+  playerRemove: 'player:remove'
 } as const
 
 export interface AppInfo {
@@ -51,5 +56,12 @@ export interface GameMasterApi {
     save(campaign: Campaign): Promise<SaveCampaignResult>
     remove(id: string): Promise<void>
     reveal(id: string): Promise<void>
+  }
+  /** Общая база игроков-людей, не привязанная к кампании. */
+  players: {
+    list(): Promise<Player[]>
+    create(input: PlayerInput): Promise<Player>
+    update(player: Player): Promise<Player>
+    remove(id: string): Promise<void>
   }
 }

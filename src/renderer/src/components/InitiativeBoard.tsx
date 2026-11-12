@@ -13,6 +13,8 @@ import {
   updateCombatant
 } from '@shared/initiative'
 import { signed, toIntOrNull } from '@renderer/lib/format'
+import { ConfirmDialog } from './ui/ConfirmDialog'
+import { Select } from './ui/Select'
 
 interface InitiativeBoardProps {
   campaign: Campaign
@@ -27,6 +29,7 @@ export function InitiativeBoard({ campaign, update }: InitiativeBoardProps): JSX
   const [name, setName] = useState('')
   const [bonus, setBonus] = useState('0')
   const [initiative, setInitiative] = useState('')
+  const [confirmClear, setConfirmClear] = useState(false)
 
   const patchEncounter = (mutator: (current: Encounter) => Encounter): void => {
     update((draft) => ({ ...draft, encounter: mutator(draft.encounter) }))
@@ -65,9 +68,8 @@ export function InitiativeBoard({ campaign, update }: InitiativeBoardProps): JSX
   }
 
   function clearEncounter(): void {
-    const confirmed = window.confirm('Очистить список боя? Персонажи в группе останутся.')
-    if (!confirmed) return
     patchEncounter((current) => ({ ...stopEncounter(current), combatants: [] }))
+    setConfirmClear(false)
   }
 
   return (
@@ -102,7 +104,11 @@ export function InitiativeBoard({ campaign, update }: InitiativeBoardProps): JSX
               Завершить
             </button>
           ) : null}
-          <button className="button button--danger" onClick={clearEncounter} disabled={order.length === 0}>
+          <button
+            className="button button--danger"
+            onClick={() => setConfirmClear(true)}
+            disabled={order.length === 0}
+          >
             Очистить
           </button>
         </div>
@@ -169,6 +175,15 @@ export function InitiativeBoard({ campaign, update }: InitiativeBoardProps): JSX
           ))}
         </ol>
       )}
+
+      <ConfirmDialog
+        open={confirmClear}
+        title="Очистить список боя?"
+        description="Участники будут убраны из боя, персонажи в группе останутся."
+        confirmLabel="Очистить"
+        onCancel={() => setConfirmClear(false)}
+        onConfirm={clearEncounter}
+      />
     </div>
   )
 }
@@ -285,19 +300,16 @@ function InitiativeRow({
             {condition} ×
           </button>
         ))}
-        <select
-          className="select select--compact"
+        <Select
+          ariaLabel="Добавить состояние"
           value=""
-          aria-label="Добавить состояние"
-          onChange={(event) => addCondition(event.target.value)}
-        >
-          <option value="">+ состояние</option>
-          {CONDITIONS.map((condition) => (
-            <option key={condition} value={condition}>
-              {condition}
-            </option>
-          ))}
-        </select>
+          placeholder="+ состояние"
+          variant="chip"
+          options={CONDITIONS.filter((condition) => !combatant.conditions.includes(condition)).map(
+            (condition) => ({ value: condition, label: condition })
+          )}
+          onChange={addCondition}
+        />
       </div>
 
       <button className="icon-button icon-button--danger" onClick={onRemove} title="Убрать из боя">

@@ -1,6 +1,12 @@
 import type { AppInfo, GameMasterApi, SaveCampaignResult } from '@shared/api'
 import type { Campaign, CampaignSummary } from '@shared/campaign'
-import { createEmptyCampaign, summarizeCampaign } from '@shared/domain'
+import type { Player, PlayerInput } from '@shared/player'
+import {
+  createEmptyCampaign,
+  createPlayer,
+  normalizePlayerInput,
+  summarizeCampaign
+} from '@shared/domain'
 
 /**
  * Веб-адаптер того же контракта, что и мост preload.
@@ -11,6 +17,7 @@ import { createEmptyCampaign, summarizeCampaign } from '@shared/domain'
  */
 
 const STORAGE_KEY = 'game-master.preview.campaigns'
+const PLAYERS_KEY = 'game-master.preview.players'
 
 function readAll(): Record<string, Campaign> {
   try {
@@ -33,7 +40,24 @@ function writeAll(campaigns: Record<string, Campaign>): void {
 /** Полный сброс предпросмотра (кнопка на главном экране). */
 export function resetWebPreview(): void {
   window.localStorage.removeItem(STORAGE_KEY)
+  window.localStorage.removeItem(PLAYERS_KEY)
   window.location.reload()
+}
+
+function readPlayers(): Player[] {
+  try {
+    const raw = window.localStorage.getItem(PLAYERS_KEY)
+    if (!raw) return []
+
+    const parsed: unknown = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as Player[]) : []
+  } catch {
+    return []
+  }
+}
+
+function writePlayers(players: Player[]): void {
+  window.localStorage.setItem(PLAYERS_KEY, JSON.stringify(players))
 }
 
 const beforeCloseListeners = new Set<() => void>()
@@ -110,6 +134,31 @@ export function createWebBridge(): GameMasterApi {
       },
 
       reveal: async (): Promise<void> => undefined
+    },
+
+    players: {
+      list: async (): Promise<Player[]> => readPlayers(),
+
+      create: async (input: PlayerInput): Promise<Player> => {
+        const player = createPlayer(input)
+        writePlayers([...readPlayers(), player])
+        return player
+      },
+
+      update: async (player: Player): Promise<Player> => {
+        const updated: Player = {
+          ...player,
+          ...normalizePlayerInput(player),
+          updatedAt: new Date().toISOString()
+        }
+
+        writePlayers(readPlayers().map((item) => (item.id === player.id ? updated : item)))
+        return updated
+      },
+
+      remove: async (id: string): Promise<void> => {
+        writePlayers(readPlayers().filter((item) => item.id !== id))
+      }
     }
   }
 }

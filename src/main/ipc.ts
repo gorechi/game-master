@@ -4,6 +4,7 @@ import {
   type Campaign,
   type CampaignSummary
 } from '@shared/campaign'
+import { playerSchema, type PlayerInput } from '@shared/player'
 import {
   IPC,
   type AppInfo,
@@ -20,13 +21,27 @@ import {
   revealCampaign,
   saveCampaign
 } from './storage/campaignStore'
+import { addPlayer, listPlayers, removePlayer, updatePlayer } from './storage/playerStore'
 import { finishClose } from './window'
 
 function assertId(value: unknown): string {
   if (typeof value !== 'string' || value.length === 0 || value.length > 64) {
-    throw new Error('Некорректный идентификатор кампании')
+    throw new Error('Некорректный идентификатор')
   }
   return value
+}
+
+function parsePlayerInput(value: unknown): PlayerInput {
+  if (!value || typeof value !== 'object') {
+    throw new Error('Некорректные данные игрока')
+  }
+
+  const { firstName, lastName } = value as Record<string, unknown>
+  if (typeof firstName !== 'string' || typeof lastName !== 'string') {
+    throw new Error('Некорректные данные игрока')
+  }
+
+  return { firstName, lastName }
 }
 
 export function registerIpcHandlers(): void {
@@ -83,4 +98,17 @@ export function registerIpcHandlers(): void {
     revealCampaign(assertId(id))
     return Promise.resolve()
   })
+
+  ipcMain.handle(IPC.playersList, () => listPlayers())
+
+  ipcMain.handle(IPC.playerCreate, (_event, input: unknown) => addPlayer(parsePlayerInput(input)))
+
+  ipcMain.handle(IPC.playerUpdate, (_event, input: unknown) => {
+    const player = playerSchema.parse(input)
+    return updatePlayer(player)
+  })
+
+  ipcMain.handle(IPC.playerRemove, (_event, id: unknown): Promise<void> =>
+    removePlayer(assertId(id))
+  )
 }

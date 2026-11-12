@@ -1,21 +1,32 @@
 import { useState } from 'react'
 import type { JSX } from 'react'
+import { Sidebar } from './components/Sidebar'
+import { PlayersPage } from './components/PlayersPage'
 import { Library } from './components/Library'
 import { CampaignView } from './components/CampaignView'
-
-type Screen = { name: 'library' } | { name: 'campaign'; id: string }
+import type { Route } from './lib/routes'
 
 export default function App(): JSX.Element {
-  const [screen, setScreen] = useState<Screen>({ name: 'library' })
+  const [route, setRoute] = useState<Route>({ name: 'players' })
 
-  if (screen.name === 'campaign') {
-    return (
-      <CampaignView
-        campaignId={screen.id}
-        onBack={() => setScreen({ name: 'library' })}
-      />
-    )
-  }
+  return (
+    <div className="app">
+      <Sidebar route={route} onNavigate={setRoute} />
 
-  return <Library onOpen={(id) => setScreen({ name: 'campaign', id })} />
+      <div className="app__content">
+        {route.name === 'players' ? <PlayersPage /> : null}
+
+        {route.name === 'campaigns' ? (
+          <Library onOpen={(id) => setRoute({ name: 'campaign', id })} />
+        ) : null}
+
+        {route.name === 'campaign' ? (
+          <CampaignView
+            campaignId={route.id}
+            onBack={() => setRoute({ name: 'campaigns' })}
+          />
+        ) : null}
+      </div>
+    </div>
+  )
 }

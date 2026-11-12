@@ -6,6 +6,7 @@ import type {
   Combatant,
   Encounter
 } from './campaign'
+import type { Player, PlayerInput } from './player'
 
 /**
  * Доменный слой без зависимостей: фабрики, подписи и сводки.
@@ -125,4 +126,41 @@ export function summarizeBrokenCampaign(id: string, problem: string): CampaignSu
     combatantCount: 0,
     problem
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* Игроки (люди за столом)                                            */
+/* ------------------------------------------------------------------ */
+
+export function normalizePlayerInput(input: PlayerInput): PlayerInput {
+  return {
+    firstName: input.firstName.trim().slice(0, 100),
+    lastName: input.lastName.trim().slice(0, 100)
+  }
+}
+
+export function createPlayer(input: PlayerInput, id: string = crypto.randomUUID()): Player {
+  const normalized = normalizePlayerInput(input)
+  const now = new Date().toISOString()
+
+  return {
+    id,
+    firstName: normalized.firstName,
+    lastName: normalized.lastName,
+    createdAt: now,
+    updatedAt: now
+  }
+}
+
+export function playerFullName(player: Pick<Player, 'firstName' | 'lastName'>): string {
+  return [player.firstName, player.lastName]
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(' ')
+}
+
+export function playerInitials(player: Pick<Player, 'firstName' | 'lastName'>): string {
+  const first = player.firstName.trim().charAt(0)
+  const last = player.lastName.trim().charAt(0)
+  return `${first}${last}`.toUpperCase() || '?'
 }

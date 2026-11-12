@@ -3,6 +3,8 @@ import type { FormEvent, JSX } from 'react'
 import type { Campaign, Character, CharacterKind } from '@shared/campaign'
 import { characterKindLabels, combatantFromCharacter, createCharacter } from '@shared/domain'
 import { toIntOrNull } from '@renderer/lib/format'
+import { ConfirmDialog } from './ui/ConfirmDialog'
+import { Select } from './ui/Select'
 
 interface PartyRosterProps {
   campaign: Campaign
@@ -20,6 +22,8 @@ export function PartyRoster({ campaign, update }: PartyRosterProps): JSX.Element
     armorClass: '',
     maxHp: ''
   })
+
+  const [pendingRemoval, setPendingRemoval] = useState<Character | null>(null)
 
   function patchCharacter(characterId: string, patch: Partial<Omit<Character, 'id'>>): void {
     update((draft) => ({
@@ -54,13 +58,11 @@ export function PartyRoster({ campaign, update }: PartyRosterProps): JSX.Element
   }
 
   function removeCharacter(character: Character): void {
-    const confirmed = window.confirm(`Удалить «${character.name}» из группы?`)
-    if (!confirmed) return
-
     update((draft) => ({
       ...draft,
       characters: draft.characters.filter((c) => c.id !== character.id)
     }))
+    setPendingRemoval(null)
   }
 
   function addToEncounter(character: Character): void {
@@ -109,21 +111,18 @@ export function PartyRoster({ campaign, update }: PartyRosterProps): JSX.Element
             onChange={(event) => setForm({ ...form, subtitle: event.target.value })}
           />
         </label>
-        <label className="field">
+        <div className="field">
           <span className="field__label">Тип</span>
-          <select
-            className="select"
-            aria-label="Тип персонажа"
+          <Select
+            ariaLabel="Тип персонажа"
             value={form.kind}
-            onChange={(event) => setForm({ ...form, kind: event.target.value as CharacterKind })}
-          >
-            {KIND_OPTIONS.map((kind) => (
-              <option key={kind} value={kind}>
-                {characterKindLabels[kind]}
-              </option>
-            ))}
-          </select>
-        </label>
+            options={KIND_OPTIONS.map((kind) => ({
+              value: kind,
+              label: characterKindLabels[kind]
+            }))}
+            onChange={(kind) => setForm({ ...form, kind })}
+          />
+        </div>
         <label className="field field--narrow">
           <span className="field__label">Иниц.</span>
           <input
@@ -239,7 +238,7 @@ export function PartyRoster({ campaign, update }: PartyRosterProps): JSX.Element
                 </button>
                 <button
                   className="button button--tiny button--danger"
-                  onClick={() => removeCharacter(character)}
+                  onClick={() => setPendingRemoval(character)}
                 >
                   Удалить
                 </button>
@@ -248,6 +247,20 @@ export function PartyRoster({ campaign, update }: PartyRosterProps): JSX.Element
           ))}
         </ul>
       )}
+
+      <ConfirmDialog
+        open={pendingRemoval !== null}
+        title="Удалить персонажа?"
+        description={
+          pendingRemoval
+            ? `«${pendingRemoval.name}» будет удалён из группы кампании.`
+            : undefined
+        }
+        onCancel={() => setPendingRemoval(null)}
+        onConfirm={() => {
+          if (pendingRemoval) removeCharacter(pendingRemoval)
+        }}
+      />
     </div>
   )
 }

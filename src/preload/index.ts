@@ -20,6 +20,12 @@ const api: GameMasterApi = {
     save: (campaign) => ipcRenderer.invoke(IPC.campaignSave, campaign),
     remove: (id) => ipcRenderer.invoke(IPC.campaignRemove, id),
     reveal: (id) => ipcRenderer.invoke(IPC.campaignReveal, id)
+  },
+  players: {
+    list: () => ipcRenderer.invoke(IPC.playersList),
+    create: (input) => ipcRenderer.invoke(IPC.playerCreate, input),
+    update: (player) => ipcRenderer.invoke(IPC.playerUpdate, player),
+    remove: (id) => ipcRenderer.invoke(IPC.playerRemove, id)
   }
 }
 
