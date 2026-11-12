@@ -143,7 +143,7 @@ export function PlayersPage(): JSX.Element {
         description={
           deleteError ??
           (deleting
-            ? `Игрок «${playerFullName(deleting)}» будет удалён из базы. Это действие нельзя отменить.`
+            ? `Игрок «${playerFullName(deleting)}» будет удалён из базы. Персонажи останутся, но потеряют привязку к игроку.`
             : undefined)
         }
         confirmLabel="Удалить"

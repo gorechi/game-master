@@ -457,6 +457,74 @@
 }
 
 /* ------------------------------------------------------------------ */
+/* Персонажи                                                          */
+/* ------------------------------------------------------------------ */
+
+:root[data-theme='light'] .hero-card__inner {
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.7), transparent 42%),
+    linear-gradient(165deg, #fdf7e8, #f6ecd8 55%, #f1e5cd);
+  border-color: var(--border-strong);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.65),
+    0 14px 28px rgba(74, 52, 26, 0.14);
+}
+
+:root[data-theme='light'] .hero-card__inner::before {
+  border-color: rgba(143, 58, 44, 0.18);
+}
+
+:root[data-theme='light'] .hero-card__inner:hover {
+  border-color: rgba(143, 58, 44, 0.5);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.65),
+    0 20px 38px rgba(74, 52, 26, 0.2);
+}
+
+:root[data-theme='light'] .hero-card__class {
+  border-color: rgba(143, 58, 44, 0.3);
+  background: rgba(143, 58, 44, 0.09);
+  color: var(--rubric);
+}
+
+:root[data-theme='light'] .hero-card__art {
+  background:
+    radial-gradient(circle at 50% 18%, rgba(154, 106, 36, 0.16), transparent 62%),
+    linear-gradient(180deg, #f8efdb, #efe2c8);
+  border-color: var(--border);
+}
+
+:root[data-theme='light'] .status-tag {
+  border-color: rgba(154, 106, 36, 0.4);
+  background: rgba(154, 106, 36, 0.1);
+  color: #7a4f12;
+}
+
+:root[data-theme='light'] .status-tag:nth-child(3n + 2) {
+  border-color: rgba(47, 90, 134, 0.35);
+  background: rgba(47, 90, 134, 0.08);
+  color: #2f5a86;
+}
+
+:root[data-theme='light'] .status-tag:nth-child(3n) {
+  border-color: rgba(140, 52, 35, 0.32);
+  background: rgba(140, 52, 35, 0.08);
+  color: #8c3423;
+}
+
+:root[data-theme='light'] .portrait-field {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+:root[data-theme='light'] .portrait-field__processing {
+  background: rgba(58, 42, 24, 0.55);
+}
+
+:root[data-theme='light'] .portrait-field__remove {
+  background: rgba(58, 42, 24, 0.65);
+}
+
+/* ------------------------------------------------------------------ */
 /* Модальные окна                                                     */
 /* ------------------------------------------------------------------ */
 

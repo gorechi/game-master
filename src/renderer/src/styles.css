@@ -1238,6 +1238,365 @@ input[type='number'] {
 }
 
 /* ------------------------------------------------------------------ */
+/* Персонажи                                                          */
+/* ------------------------------------------------------------------ */
+
+.hero-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 250px));
+  gap: 18px;
+  justify-content: start;
+}
+
+.hero-card__inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  height: 100%;
+  padding: 12px;
+  border-radius: 18px;
+  border: 1px solid var(--border-strong);
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.05), transparent 42%),
+    linear-gradient(180deg, var(--panel-raised), var(--panel) 55%, var(--panel-soft));
+  box-shadow:
+    0 16px 34px rgba(0, 0, 0, 0.28),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+/* Внутренняя рамка — как у коллекционной карточки. */
+.hero-card__inner::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 14px;
+  border: 1px solid rgba(216, 178, 92, 0.18);
+  pointer-events: none;
+}
+
+.hero-card__inner:hover {
+  transform: translateY(-3px);
+  border-color: rgba(216, 178, 92, 0.5);
+  box-shadow:
+    0 22px 44px rgba(0, 0, 0, 0.38),
+    inset 0 0 0 1px rgba(216, 178, 92, 0.2);
+}
+
+.hero-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 2px 0;
+}
+
+.hero-card__name {
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 400;
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+
+.hero-card__class {
+  flex: none;
+  max-width: 46%;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(216, 178, 92, 0.45);
+  background: rgba(216, 178, 92, 0.12);
+  color: var(--gold-strong);
+  font-size: 10.5px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hero-card__art {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(circle at 50% 18%, rgba(216, 178, 92, 0.16), transparent 62%),
+    linear-gradient(180deg, var(--bg-soft), var(--bg));
+}
+
+.hero-card__art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.portrait-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  color: var(--ink-faint);
+}
+
+.portrait-placeholder__label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.hero-card__facts {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+  padding: 0 2px;
+}
+
+.hero-card__facts > div {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+}
+
+.hero-card__facts dt {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.hero-card__facts dd {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.hero-card__statuses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 2px;
+  margin-top: auto;
+  min-height: 24px;
+}
+
+.status-tag {
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(216, 178, 92, 0.38);
+  background: rgba(216, 178, 92, 0.1);
+  color: var(--gold-strong);
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+
+.status-tag:nth-child(3n + 2) {
+  border-color: rgba(143, 109, 214, 0.42);
+  background: rgba(143, 109, 214, 0.14);
+  color: #cfc0f2;
+}
+
+.status-tag:nth-child(3n) {
+  border-color: rgba(209, 88, 79, 0.36);
+  background: rgba(209, 88, 79, 0.13);
+  color: #f0b0a9;
+}
+
+.hero-card__no-status {
+  font-size: 11.5px;
+  font-style: italic;
+  color: var(--ink-faint);
+}
+
+.hero-card__tools {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 9px;
+  border-top: 1px solid var(--border);
+}
+
+.hero-card__tools .icon-button {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+}
+
+/* Форма персонажа */
+
+.character-form {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.character-form__portrait {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.character-form__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.portrait-field {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  border-radius: 14px;
+  border: 1px dashed var(--border-strong);
+  background: rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.portrait-field:hover,
+.portrait-field--drag {
+  border-color: var(--gold);
+  background: rgba(216, 178, 92, 0.07);
+}
+
+.portrait-field:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.portrait-field > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.portrait-field__hint {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  text-align: center;
+  font-size: 10.5px;
+  color: var(--ink-muted);
+}
+
+.portrait-field__processing {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(10, 8, 14, 0.6);
+  color: #f5efe4;
+  font-size: 12px;
+}
+
+.portrait-field__remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(10, 8, 14, 0.62);
+  color: #f5efe4;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.portrait-field__remove:hover {
+  background: rgba(10, 8, 14, 0.8);
+}
+
+.tags-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tags-field__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tags-field__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--panel-soft);
+  font-size: 12.5px;
+}
+
+.tags-field__chip button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--ink-faint);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tags-field__chip button:hover {
+  color: var(--danger);
+}
+
+.tags-field__suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tags-field__suggestion {
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px dashed var(--border-strong);
+  background: transparent;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.tags-field__suggestion:hover {
+  color: var(--gold-strong);
+  border-color: var(--gold);
+}
+
+.notice--action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ------------------------------------------------------------------ */
 /* Настройки                                                          */
 /* ------------------------------------------------------------------ */
 
@@ -1473,6 +1832,10 @@ input[type='number'] {
 
 .modal--danger {
   border-color: rgba(209, 88, 79, 0.45);
+}
+
+.modal--wide {
+  max-width: 760px;
 }
 
 .modal__head {
@@ -1730,6 +2093,20 @@ input[type='number'] {
 
   .form-grid--two {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 820px) {
+  .character-form {
+    grid-template-columns: 1fr;
+  }
+
+  .character-form__portrait {
+    max-width: 220px;
+  }
+
+  .hero-grid {
+    grid-template-columns: repeat(auto-fill, minmax(210px, 250px));
   }
 }
 

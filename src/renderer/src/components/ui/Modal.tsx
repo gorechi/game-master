@@ -10,6 +10,7 @@ interface ModalProps {
   children?: ReactNode
   footer: ReactNode
   tone?: 'default' | 'danger'
+  size?: 'md' | 'lg'
   onClose: () => void
   /** Куда поставить фокус при открытии. По умолчанию — первый интерактивный элемент. */
   initialFocusRef?: RefObject<HTMLElement | null>
@@ -35,6 +36,7 @@ export function Modal({
   children,
   footer,
   tone = 'default',
+  size = 'md',
   onClose,
   initialFocusRef
 }: ModalProps): JSX.Element | null {
@@ -107,7 +109,7 @@ export function Modal({
     >
       <div
         ref={panelRef}
-        className={`modal${tone === 'danger' ? ' modal--danger' : ''}`}
+        className={`modal${tone === 'danger' ? ' modal--danger' : ''}${size === 'lg' ? ' modal--wide' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-label={title}

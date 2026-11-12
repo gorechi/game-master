@@ -104,6 +104,15 @@ export function IconGear(props: IconProps): JSX.Element {
   )
 }
 
+export function IconShield(props: IconProps): JSX.Element {
+  return (
+    <Svg {...props}>
+      <path d="M12 3.2 19 6v5.7c0 4.4-2.9 7.6-7 9.1-4.1-1.5-7-4.7-7-9.1V6l7-2.8Z" />
+      <path d="M12 8.6l2.6 4.4h-5.2L12 8.6Z" />
+    </Svg>
+  )
+}
+
 /** d20 — силуэт гексагона с вписанной гранью. */
 export function IconD20(props: IconProps): JSX.Element {
   return (

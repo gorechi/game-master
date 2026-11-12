@@ -3,6 +3,7 @@ import type { JSX } from 'react'
 import { DEFAULT_SETTINGS, type AppSettings, type ThemeName } from '@shared/settings'
 import { Sidebar } from './components/Sidebar'
 import { PlayersPage } from './components/PlayersPage'
+import { CharactersPage } from './components/CharactersPage'
 import { Library } from './components/Library'
 import { CampaignView } from './components/CampaignView'
 import { SettingsPage } from './components/SettingsPage'
@@ -46,6 +47,10 @@ export default function App(): JSX.Element {
 
       <div className="app__content">
         {route.name === 'players' ? <PlayersPage /> : null}
+
+        {route.name === 'characters' ? (
+          <CharactersPage onOpenPlayers={() => setRoute({ name: 'players' })} />
+        ) : null}
 
         {route.name === 'campaigns' ? (
           <Library onOpen={(id) => setRoute({ name: 'campaign', id })} />

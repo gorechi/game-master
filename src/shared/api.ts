@@ -1,5 +1,6 @@
 import type { Campaign, CampaignSummary } from './campaign'
 import type { Player, PlayerInput } from './player'
+import type { CharacterProfile, CharacterProfileInput } from './characterProfile'
 import type { AppSettings, SettingsPatch } from './settings'
 
 /**
@@ -21,6 +22,10 @@ export const IPC = {
   playerCreate: 'player:create',
   playerUpdate: 'player:update',
   playerRemove: 'player:remove',
+  charactersList: 'characters:list',
+  characterCreate: 'character:create',
+  characterUpdate: 'character:update',
+  characterRemove: 'character:remove',
   settingsGet: 'settings:get',
   settingsUpdate: 'settings:update'
 } as const
@@ -65,6 +70,13 @@ export interface GameMasterApi {
     list(): Promise<Player[]>
     create(input: PlayerInput): Promise<Player>
     update(player: Player): Promise<Player>
+    remove(id: string): Promise<void>
+  }
+  /** Персонажи: у игрока их может быть несколько. */
+  characters: {
+    list(): Promise<CharacterProfile[]>
+    create(input: CharacterProfileInput): Promise<CharacterProfile>
+    update(profile: CharacterProfile): Promise<CharacterProfile>
     remove(id: string): Promise<void>
   }
   /** Настройки приложения (тема и прочее). */

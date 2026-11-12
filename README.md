@@ -7,9 +7,12 @@
 
 ## Что уже работает
 
-- **Боковое меню** — «Игроки», «Кампании» и «Настройки»; навигация без перезагрузки экрана.
+- **Боковое меню** — «Игроки», «Персонажи», «Кампании» и «Настройки»; навигация без перезагрузки.
 - **База игроков** — люди за столом (не персонажи): добавление, редактирование, удаление
   с подтверждением. Хранится отдельно от кампаний.
+- **Персонажи** — карточки героев в стиле коллекционных: портрет (загружается, сжимается
+  и хранится вместе с записью), имя, класс, раса, игрок и облако статусов. У одного игрока
+  может быть сколько угодно персонажей; при удалении игрока карточки остаются без привязки.
 - **Настройки** — переключение тёмной и светлой темы; выбор сохраняется в `settings.json`.
   Светлая тема «Рукопись»: пергамент, сепия, киноварь, кожаный переплёт меню.
 - **Библиотека кампаний** — создание, открытие, удаление в корзину, показ файла в проводнике.
@@ -39,14 +42,16 @@
 ┌──────────────────────── main (Node) ─────────────────────────┐
 │  окно, жизненный цикл         storage/campaignStore (JSON)    │
 │  ipc.ts — валидация входа     storage/playerStore  (JSON)     │
+│                               storage/characterStore (JSON)   │
 └───────────────▲───────────────────────────────┬──────────────┘
                 │ IPC (invoke/handle)           │ fs
 ┌───────────────┴───────────┐        ┌──────────▼───────────┐
 │ preload: мост contextBridge│        │ <userData>/          │
 │ window.gameMaster         │        │  campaigns/*.json    │
 └───────────────▲───────────┘        │  players.json        │
-                │                    └──────────────────────┘
-┌───────────────┴───────────────────────────────────────────┐
+                │                    │  characters.json     │
+                │                    │  settings.json       │
+┌───────────────┴────────────────────┴──────────────────────┐
 │ renderer: React, без доступа к Node и файловой системе    │
 └───────────────────────────────────────────────────────────┘
 ```
@@ -66,6 +71,11 @@
   где будут накапливаться шаги миграции.
 - **Игроки — отдельная сущность.** Люди за столом хранятся в `players.json` на уровне приложения
   и не дублируются в каждой кампании. Персонажи (кем играют) по-прежнему живут внутри кампании.
+- **Персонажи — карточки игроков.** `characters.json` хранит героев и ссылку `playerId`
+  (один игрок → много персонажей). Портрет при загрузке уменьшается до 720 px на клиенте
+  и сжимается в webp; data URL лежит в той же записи, поэтому бэкап — это один файл.
+  Удаление игрока не удаляет героев: карточка показывает «Без игрока», а форма просит
+  выбрать нового.
 - **Свой UI-кит.** `components/ui/` — модалка с фокус-ловушкой и Escape, подтверждение,
   выпадающий список с клавиатурной навигацией. Системные диалоги и нативные `<select>` не используются.
 - **Темы через CSS-переменные и атрибут.** Тема — это `data-theme` на `<html>`: тёмная описана
@@ -90,14 +100,15 @@ src/
     ipc.ts                 обработчики IPC (валидируют вход)
     storage/campaignStore.ts  чтение/запись кампаний на диск
     storage/playerStore.ts    база игроков (players.json)
+    storage/characterStore.ts база персонажей (characters.json)
     storage/settingsStore.ts  настройки приложения (settings.json)
     storage/jsonFile.ts       атомарная запись, очередь, чтение JSON
   preload/index.ts         contextBridge → window.gameMaster
   renderer/                React-приложение
-    src/components/        Sidebar, PlayersPage, SettingsPage, Library, CampaignView, InitiativeBoard
+    src/components/        Sidebar, PlayersPage, CharactersPage, SettingsPage, Library, CampaignView
     src/components/ui/     Modal, ConfirmDialog, Select, иконки
     src/hooks/             useCampaignSession (загрузка + автосохранение)
-    src/lib/               доступ к API, веб-адаптер, маршруты, тема, форматирование
+    src/lib/               доступ к API, веб-адаптер, маршруты, тема, сжатие портретов, форматирование
     src/assets/fonts/      Underdog + Manrope (woff2, cyrillic + latin)
     src/fonts.css          @font-face для локальных шрифтов
     src/styles.css         тёмная тема и базовые стили
@@ -106,6 +117,7 @@ src/
     api.ts                 контракт IPC
     campaign.ts            zod-схемы кампании, миграции
     player.ts              zod-схема игрока
+    characterProfile.ts    zod-схема персонажа-карточки
     settings.ts            типы настроек и темы
     domain.ts              типы, фабрики, подписи
     initiative.ts          порядок хода, броски, состояния
@@ -175,10 +187,10 @@ npm run pack       # распакованное приложение без ин
 
 ## Где лежат данные
 
-| ОС | Кампании | База игроков | Настройки |
+| ОС | Кампании | Игроки и персонажи | Настройки |
 | --- | --- | --- | --- |
-| Windows | `%APPDATA%\Game Master\campaigns\` | `%APPDATA%\Game Master\players.json` | `%APPDATA%\Game Master\settings.json` |
-| macOS | `~/Library/Application Support/Game Master/campaigns/` | `~/Library/Application Support/Game Master/players.json` | `~/Library/Application Support/Game Master/settings.json` |
+| Windows | `%APPDATA%\Game Master\campaigns\` | `%APPDATA%\Game Master\players.json`, `characters.json` | `%APPDATA%\Game Master\settings.json` |
+| macOS | `~/Library/Application Support/Game Master/campaigns/` | `players.json`, `characters.json` | `~/Library/Application Support/Game Master/settings.json` |
 
 Открыть папку с кампаниями можно кнопкой «Папка с кампаниями» на экране «Кампании»
 или на странице «Настройки».
@@ -191,6 +203,27 @@ npm run pack       # распакованное приложение без ин
       "id": "9f1c…",
       "firstName": "Анна",
       "lastName": "Смирнова",
+      "createdAt": "2026-11-12T10:00:00.000Z",
+      "updatedAt": "2026-11-12T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+`characters.json` (портрет — сжатый webp в data URL, поэтому файл самодостаточен):
+
+```json
+{
+  "schemaVersion": 1,
+  "characters": [
+    {
+      "id": "3a7f…",
+      "playerId": "9f1c…",
+      "name": "Ария Среброкрылая",
+      "className": "Плут 5",
+      "race": "Полуэльф",
+      "statuses": ["Ранен", "В розыске"],
+      "image": "data:image/webp;base64,…",
       "createdAt": "2026-11-12T10:00:00.000Z",
       "updatedAt": "2026-11-12T10:00:00.000Z"
     }
@@ -270,7 +303,7 @@ npm run pack       # распакованное приложение без ин
 
 ## Дальше по плану
 
-- привязка игроков из базы к кампаниям (кто из людей ведёт какого персонажа);
+- привязать карточки персонажей к группе кампании (один герой — один участник партии);
 - бросок кубиков с журналом и модификаторами;
 - несколько энкаунтеров на кампанию и сохранение шаблонов боя;
 - импорт/экспорт кампании одним файлом, обмен с игроками;

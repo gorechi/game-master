@@ -7,6 +7,7 @@ import type {
   Encounter
 } from './campaign'
 import type { Player, PlayerInput } from './player'
+import type { CharacterProfile, CharacterProfileInput } from './characterProfile'
 
 /**
  * Доменный слой без зависимостей: фабрики, подписи и сводки.
@@ -163,4 +164,38 @@ export function playerInitials(player: Pick<Player, 'firstName' | 'lastName'>): 
   const first = player.firstName.trim().charAt(0)
   const last = player.lastName.trim().charAt(0)
   return `${first}${last}`.toUpperCase() || '?'
+}
+
+/* ------------------------------------------------------------------ */
+/* Персонажи-карточки (герои игроков)                                 */
+/* ------------------------------------------------------------------ */
+
+export function normalizeCharacterProfileInput(
+  input: CharacterProfileInput
+): CharacterProfileInput {
+  return {
+    playerId: input.playerId || null,
+    name: input.name.trim().slice(0, 80),
+    className: input.className.trim().slice(0, 60),
+    race: input.race.trim().slice(0, 60),
+    statuses: [...new Set(input.statuses.map((status) => status.trim()).filter(Boolean))].slice(
+      0,
+      16
+    ),
+    image: input.image ?? null
+  }
+}
+
+export function createCharacterProfile(
+  input: CharacterProfileInput,
+  id: string = crypto.randomUUID()
+): CharacterProfile {
+  const now = new Date().toISOString()
+
+  return {
+    id,
+    ...normalizeCharacterProfileInput(input),
+    createdAt: now,
+    updatedAt: now
+  }
 }

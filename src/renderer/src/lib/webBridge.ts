@@ -1,6 +1,11 @@
 import type { AppInfo, GameMasterApi, SaveCampaignResult } from '@shared/api'
 import type { Campaign, CampaignSummary } from '@shared/campaign'
 import type { Player, PlayerInput } from '@shared/player'
+import type { CharacterProfile, CharacterProfileInput } from '@shared/characterProfile'
+import {
+  createCharacterProfile,
+  normalizeCharacterProfileInput
+} from '@shared/domain'
 import {
   DEFAULT_SETTINGS,
   SETTINGS_SCHEMA_VERSION,
@@ -25,6 +30,7 @@ import {
 
 const STORAGE_KEY = 'game-master.preview.campaigns'
 const PLAYERS_KEY = 'game-master.preview.players'
+const CHARACTERS_KEY = 'game-master.preview.characters'
 const SETTINGS_KEY = 'game-master.preview.settings'
 
 function readAll(): Record<string, Campaign> {
@@ -66,6 +72,22 @@ function readPlayers(): Player[] {
 
 function writePlayers(players: Player[]): void {
   window.localStorage.setItem(PLAYERS_KEY, JSON.stringify(players))
+}
+
+function readCharacters(): CharacterProfile[] {
+  try {
+    const raw = window.localStorage.getItem(CHARACTERS_KEY)
+    if (!raw) return []
+
+    const parsed: unknown = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as CharacterProfile[]) : []
+  } catch {
+    return []
+  }
+}
+
+function writeCharacters(characters: CharacterProfile[]): void {
+  window.localStorage.setItem(CHARACTERS_KEY, JSON.stringify(characters))
 }
 
 function readSettings(): AppSettings {
@@ -186,6 +208,31 @@ export function createWebBridge(): GameMasterApi {
 
       remove: async (id: string): Promise<void> => {
         writePlayers(readPlayers().filter((item) => item.id !== id))
+      }
+    },
+
+    characters: {
+      list: async (): Promise<CharacterProfile[]> => readCharacters(),
+
+      create: async (input: CharacterProfileInput): Promise<CharacterProfile> => {
+        const character = createCharacterProfile(input)
+        writeCharacters([...readCharacters(), character])
+        return character
+      },
+
+      update: async (profile: CharacterProfile): Promise<CharacterProfile> => {
+        const updated: CharacterProfile = {
+          ...profile,
+          ...normalizeCharacterProfileInput(profile),
+          updatedAt: new Date().toISOString()
+        }
+
+        writeCharacters(readCharacters().map((item) => (item.id === profile.id ? updated : item)))
+        return updated
+      },
+
+      remove: async (id: string): Promise<void> => {
+        writeCharacters(readCharacters().filter((item) => item.id !== id))
       }
     },
 

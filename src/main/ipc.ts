@@ -5,6 +5,10 @@ import {
   type CampaignSummary
 } from '@shared/campaign'
 import { playerSchema, type PlayerInput } from '@shared/player'
+import {
+  characterProfileInputSchema,
+  characterProfileSchema
+} from '@shared/characterProfile'
 import { isThemeName, type SettingsPatch } from '@shared/settings'
 import {
   IPC,
@@ -23,6 +27,12 @@ import {
   saveCampaign
 } from './storage/campaignStore'
 import { addPlayer, listPlayers, removePlayer, updatePlayer } from './storage/playerStore'
+import {
+  addCharacter,
+  listCharacters,
+  removeCharacter,
+  updateCharacter
+} from './storage/characterStore'
 import { getSettings, updateSettings } from './storage/settingsStore'
 import { finishClose } from './window'
 
@@ -125,6 +135,20 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(IPC.playerRemove, (_event, id: unknown): Promise<void> =>
     removePlayer(assertId(id))
+  )
+
+  ipcMain.handle(IPC.charactersList, () => listCharacters())
+
+  ipcMain.handle(IPC.characterCreate, (_event, input: unknown) =>
+    addCharacter(characterProfileInputSchema.parse(input))
+  )
+
+  ipcMain.handle(IPC.characterUpdate, (_event, input: unknown) =>
+    updateCharacter(characterProfileSchema.parse(input))
+  )
+
+  ipcMain.handle(IPC.characterRemove, (_event, id: unknown): Promise<void> =>
+    removeCharacter(assertId(id))
   )
 
   ipcMain.handle(IPC.settingsGet, () => getSettings())

@@ -1,7 +1,7 @@
 import type { JSX } from 'react'
 import { isWebPreview } from '@renderer/lib/api'
 import type { Route } from '@renderer/lib/routes'
-import { IconBook, IconD20, IconGear, IconUsers } from './ui/icons'
+import { IconBook, IconD20, IconGear, IconShield, IconUsers } from './ui/icons'
 
 interface SidebarProps {
   route: Route
@@ -29,6 +29,16 @@ export function Sidebar({ route, onNavigate }: SidebarProps): JSX.Element {
         >
           <IconUsers />
           <span>Игроки</span>
+        </button>
+
+        <button
+          type="button"
+          className={`nav-item${active === 'characters' ? ' nav-item--active' : ''}`}
+          aria-current={active === 'characters' ? 'page' : undefined}
+          onClick={() => onNavigate({ name: 'characters' })}
+        >
+          <IconShield />
+          <span>Персонажи</span>
         </button>
 
         <button
