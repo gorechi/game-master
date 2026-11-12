@@ -10,8 +10,12 @@ import { IconPencil, IconPlus, IconTrash } from './ui/icons'
 
 type EditingState = Player | 'new' | null
 
+interface PlayersPageProps {
+  onOpenPlayer: (playerId: string) => void
+}
+
 /** База игроков-людей: не персонажи, а люди, которых можно позвать за стол. */
-export function PlayersPage(): JSX.Element {
+export function PlayersPage({ onOpenPlayer }: PlayersPageProps): JSX.Element {
   const [players, setPlayers] = useState<Player[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState<EditingState>(null)
@@ -87,12 +91,19 @@ export function PlayersPage(): JSX.Element {
                     </span>
 
                     <div className="player-card__identity">
-                      <span className="player-card__name">
-                        {player.firstName}
-                        {player.lastName ? (
-                          <span className="player-card__surname"> {player.lastName}</span>
-                        ) : null}
-                      </span>
+                      <button
+                        type="button"
+                        className="player-card__name-button"
+                        title={`Персонажи игрока ${fullName}`}
+                        onClick={() => onOpenPlayer(player.id)}
+                      >
+                        <span className="player-card__name">
+                          {player.firstName}
+                          {player.lastName ? (
+                            <span className="player-card__surname"> {player.lastName}</span>
+                          ) : null}
+                        </span>
+                      </button>
                       <span className="player-card__meta">В базе с {formatDate(player.createdAt)}</span>
                     </div>
 

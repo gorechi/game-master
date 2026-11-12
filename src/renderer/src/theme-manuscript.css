@@ -522,6 +522,10 @@
   background: rgba(255, 255, 255, 0.35);
 }
 
+:root[data-theme='light'] .locked-value {
+  background: rgba(255, 255, 255, 0.45);
+}
+
 :root[data-theme='light'] .portrait-field__processing {
   background: rgba(58, 42, 24, 0.55);
 }

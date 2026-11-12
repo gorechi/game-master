@@ -3,6 +3,7 @@ import type { JSX } from 'react'
 import { DEFAULT_SETTINGS, type AppSettings, type ThemeName } from '@shared/settings'
 import { Sidebar } from './components/Sidebar'
 import { PlayersPage } from './components/PlayersPage'
+import { PlayerCharactersPage } from './components/PlayerCharactersPage'
 import { CharactersPage } from './components/CharactersPage'
 import { Library } from './components/Library'
 import { CampaignView } from './components/CampaignView'
@@ -46,10 +47,29 @@ export default function App(): JSX.Element {
       <Sidebar route={route} onNavigate={setRoute} />
 
       <div className="app__content">
-        {route.name === 'players' ? <PlayersPage /> : null}
+        {route.name === 'players' ? (
+          <PlayersPage
+            onOpenPlayer={(id) => setRoute({ name: 'player', id, from: 'players' })}
+          />
+        ) : null}
+
+        {route.name === 'player' ? (
+          <PlayerCharactersPage
+            playerId={route.id}
+            backLabel={route.from === 'characters' ? 'Персонажи' : 'Игроки'}
+            onBack={() =>
+              setRoute(
+                route.from === 'characters' ? { name: 'characters' } : { name: 'players' }
+              )
+            }
+          />
+        ) : null}
 
         {route.name === 'characters' ? (
-          <CharactersPage onOpenPlayers={() => setRoute({ name: 'players' })} />
+          <CharactersPage
+            onOpenPlayers={() => setRoute({ name: 'players' })}
+            onOpenPlayer={(id) => setRoute({ name: 'player', id, from: 'characters' })}
+          />
         ) : null}
 
         {route.name === 'campaigns' ? (

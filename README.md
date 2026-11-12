@@ -13,6 +13,9 @@
 - **Персонажи** — карточки героев в стиле коллекционных: портрет (загружается, сжимается
   и хранится вместе с записью), имя, класс, уровень, раса, игрок и облако статусов. У одного
   игрока может быть сколько угодно персонажей; при удалении игрока карточки остаются без привязки.
+- **Экран игрока** — все персонажи выбранного человека. Открывается кликом по имени
+  в базе игроков или по имени игрока на карточке героя; кнопка «назад» возвращает туда,
+  откуда пришли. Нового персонажа здесь можно создать сразу за этим игроком.
 - **Настройки** — переключение тёмной и светлой темы; выбор сохраняется в `settings.json`.
   Светлая тема «Рукопись»: пергамент, сепия, киноварь, кожаный переплёт меню.
 - **Библиотека кампаний** — создание, открытие, удаление в корзину, показ файла в проводнике.
@@ -105,7 +108,8 @@ src/
     storage/jsonFile.ts       атомарная запись, очередь, чтение JSON
   preload/index.ts         contextBridge → window.gameMaster
   renderer/                React-приложение
-    src/components/        Sidebar, PlayersPage, CharactersPage, SettingsPage, Library, CampaignView
+    src/components/        Sidebar, PlayersPage, PlayerCharactersPage, CharactersPage, SettingsPage, Library
+    src/components/character/  CharacterCard, CharacterFormModal
     src/components/ui/     Modal, ConfirmDialog, Select, иконки
     src/hooks/             useCampaignSession (загрузка + автосохранение)
     src/lib/               доступ к API, веб-адаптер, маршруты, тема, сжатие портретов, форматирование

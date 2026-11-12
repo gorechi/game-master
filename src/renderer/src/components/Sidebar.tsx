@@ -9,7 +9,12 @@ interface SidebarProps {
 }
 
 export function Sidebar({ route, onNavigate }: SidebarProps): JSX.Element {
-  const active = route.name === 'campaign' ? 'campaigns' : route.name
+  const active =
+    route.name === 'campaign'
+      ? 'campaigns'
+      : route.name === 'player'
+        ? 'players'
+        : route.name
 
   return (
     <aside className="sidebar">

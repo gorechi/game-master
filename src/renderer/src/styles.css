@@ -1237,6 +1237,61 @@ input[type='number'] {
   flex: none;
 }
 
+.player-card__name-button {
+  display: block;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.player-card__name-button:hover .player-card__name {
+  color: var(--gold-strong);
+}
+
+.player-card__name-button:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* Экран игрока */
+
+.page-block {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.page-back {
+  align-self: flex-start;
+}
+
+.page-kicker {
+  margin-bottom: 4px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--rubric);
+}
+
+.player-page__identity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.player-page__avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  font-size: 20px;
+}
+
 /* ------------------------------------------------------------------ */
 /* Персонажи                                                          */
 /* ------------------------------------------------------------------ */
@@ -1398,6 +1453,32 @@ input[type='number'] {
   overflow-wrap: anywhere;
 }
 
+.hero-card__player {
+  padding: 0;
+  border: 0;
+  border-bottom: 1px dotted var(--border-strong);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hero-card__player:hover {
+  color: var(--gold-strong);
+  border-bottom-color: currentColor;
+}
+
+.hero-card__player:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.hero-card__no-player {
+  color: var(--ink-faint);
+}
+
 .hero-card__statuses {
   display: flex;
   flex-wrap: wrap;
@@ -1483,6 +1564,15 @@ input[type='number'] {
   text-align: center;
   padding-left: 6px;
   padding-right: 6px;
+}
+
+.locked-value {
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--ink-muted);
+  font-size: 14px;
 }
 
 .portrait-field {
