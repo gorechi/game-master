@@ -1,0 +1,865 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Game Master · шрифтовые пары</title>
+    <link rel="stylesheet" href="/fonts/preview-fonts.css" />
+    <style>
+      :root {
+        --parch: #ece0c7;
+        --paper: #f8efdb;
+        --paper-2: #f3e8d2;
+        --field: #fbf3e2;
+        --line: #d8c5a2;
+        --line-2: #b99c70;
+        --text: #33261a;
+        --muted: #6d5941;
+        --faint: #96805f;
+        --rubric: #8f3a2c;
+        --rubric-ink: #fdf3e0;
+        --leather: linear-gradient(180deg, #4b3624, #39291a 72%);
+        --side-ink: #f4e9d3;
+        --side-muted: rgba(244, 233, 211, 0.68);
+        --shadow: 0 16px 34px rgba(74, 52, 26, 0.18);
+        --tag: rgba(47, 90, 134, 0.08);
+        --tag-ink: #2f5a86;
+        --tag-line: rgba(47, 90, 134, 0.32);
+        --cond: rgba(143, 58, 44, 0.1);
+      }
+
+      body.dark {
+        --parch: #121016;
+        --paper: #1d1927;
+        --paper-2: #17121f;
+        --field: rgba(10, 8, 14, 0.55);
+        --line: #322b40;
+        --line-2: #4b3f60;
+        --text: #ece7df;
+        --muted: #a297b3;
+        --faint: #6f6581;
+        --rubric: #d1584f;
+        --rubric-ink: #241d0b;
+        --leather: linear-gradient(180deg, #171320, #121016 72%);
+        --side-ink: #ece7df;
+        --side-muted: #a297b3;
+        --shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+        --tag: rgba(106, 168, 232, 0.12);
+        --tag-ink: #a9d6ff;
+        --tag-line: rgba(106, 168, 232, 0.4);
+        --cond: rgba(209, 88, 79, 0.16);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background-color: var(--parch);
+        background-image:
+          radial-gradient(900px 600px at 10% -10%, rgba(255, 253, 245, 0.65), transparent 60%),
+          radial-gradient(700px 500px at 95% 0%, rgba(176, 129, 70, 0.14), transparent 60%),
+          radial-gradient(1200px 900px at 50% 50%, transparent 55%, rgba(116, 82, 42, 0.14) 100%);
+        background-attachment: fixed;
+        color: var(--text);
+        font-family: 'Manrope', system-ui, sans-serif;
+        font-size: 15px;
+        line-height: 1.5;
+        transition: background-color 0.2s ease, color 0.2s ease;
+      }
+
+      body.dark {
+        background-image:
+          radial-gradient(900px 600px at 12% -10%, rgba(143, 109, 214, 0.14), transparent 65%),
+          radial-gradient(800px 520px at 92% 0%, rgba(216, 178, 92, 0.08), transparent 60%);
+      }
+
+      .bar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 10px 28px;
+        border-bottom: 1px solid var(--line);
+        background: color-mix(in srgb, var(--parch) 88%, transparent);
+        backdrop-filter: blur(10px);
+      }
+
+      .bar__brand {
+        font-size: 12px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+
+      .switch {
+        display: inline-flex;
+        padding: 3px;
+        gap: 3px;
+        border: 1px solid var(--line-2);
+        border-radius: 999px;
+        background: var(--paper);
+      }
+
+      .switch button {
+        border: 0;
+        border-radius: 999px;
+        padding: 6px 14px;
+        background: transparent;
+        color: var(--muted);
+        font: inherit;
+        font-size: 13px;
+        cursor: pointer;
+        transition: background 0.15s ease, color 0.15s ease;
+      }
+
+      .switch button.on {
+        background: var(--rubric);
+        color: var(--rubric-ink);
+      }
+
+      .intro,
+      main,
+      footer {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 0 28px;
+      }
+
+      .intro {
+        padding-top: 46px;
+        padding-bottom: 32px;
+      }
+
+      .intro__kicker {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 11.5px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--rubric);
+      }
+
+      .intro__kicker::before {
+        content: '';
+        width: 34px;
+        height: 1px;
+        background: currentColor;
+      }
+
+      .intro h1 {
+        margin: 14px 0 10px;
+        font-family: 'Literata', Georgia, serif;
+        font-size: clamp(30px, 4vw, 46px);
+        font-weight: 600;
+        line-height: 1.12;
+        letter-spacing: -0.01em;
+      }
+
+      .intro p {
+        margin: 0;
+        max-width: 76ch;
+        color: var(--muted);
+        font-size: 15px;
+      }
+
+      .intro strong {
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      .pair {
+        margin: 0 0 44px;
+        padding: 26px 26px 22px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: linear-gradient(180deg, var(--paper), var(--paper-2));
+        box-shadow:
+          inset 0 0 0 1px rgba(255, 255, 255, 0.45),
+          var(--shadow);
+        font-family: var(--ui), system-ui, sans-serif;
+      }
+
+      body.dark .pair {
+        box-shadow:
+          inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+          var(--shadow);
+      }
+
+      .pair__head {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 6px;
+      }
+
+      .pair__num {
+        font-family: var(--display), Georgia, serif;
+        font-size: 15px;
+        letter-spacing: 0.08em;
+        color: var(--rubric);
+      }
+
+      .pair__name {
+        margin: 0;
+        font-family: var(--display), Georgia, serif;
+        font-size: 27px;
+        font-weight: var(--dw, 600);
+        line-height: 1.15;
+        letter-spacing: -0.005em;
+      }
+
+      .pair__badge {
+        padding: 3px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        color: var(--faint);
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      .pair__fonts {
+        margin: 0;
+        font-size: 12.5px;
+        color: var(--faint);
+      }
+
+      .pair__fonts b {
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      .pair__desc {
+        margin: 8px 0 18px;
+        max-width: 82ch;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .pair__desc b {
+        color: var(--text);
+      }
+
+      /* ------------------------------ макет приложения ------------------------------ */
+
+      .mock {
+        display: flex;
+        overflow: hidden;
+        border: 1px solid var(--line-2);
+        border-radius: 13px;
+        background: var(--paper);
+        min-height: 318px;
+      }
+
+      .mock__side {
+        flex: 0 0 186px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        padding: 16px 12px;
+        background: var(--leather);
+        color: var(--side-ink);
+      }
+
+      .mock__brand {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 0 6px 14px;
+        font-family: var(--display), Georgia, serif;
+        font-weight: 400;
+        font-size: 15px;
+      }
+
+      .mock__die {
+        display: grid;
+        place-items: center;
+        width: 26px;
+        height: 26px;
+        border: 1px solid rgba(232, 199, 126, 0.45);
+        border-radius: 8px;
+        color: #e8c77e;
+        font-size: 10px;
+        font-family: 'Manrope', system-ui, sans-serif;
+      }
+
+      .mock__nav {
+        padding: 7px 9px;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        color: var(--side-muted);
+        font-size: 13px;
+      }
+
+      .mock__nav.on {
+        color: #f5d79a;
+        background: rgba(232, 199, 126, 0.14);
+        border-color: rgba(232, 199, 126, 0.35);
+      }
+
+      .mock__main {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .mock__top {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 11px 18px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .mock__back {
+        color: var(--muted);
+        font-size: 15px;
+      }
+
+      .mock__title {
+        font-family: var(--display), Georgia, serif;
+        font-size: 21px;
+        font-weight: var(--dw, 600);
+        letter-spacing: -0.005em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .mock__save {
+        margin-left: auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 11.5px;
+        white-space: nowrap;
+      }
+
+      .mock__save::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #4f7d51;
+      }
+
+      .mock__tabs {
+        display: flex;
+        gap: 4px;
+        padding: 6px 18px 0;
+        border-bottom: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .mock__tab {
+        padding: 7px 10px 8px;
+        border-bottom: 2px solid transparent;
+      }
+
+      .mock__tab.on {
+        color: var(--rubric);
+        border-bottom-color: var(--rubric);
+      }
+
+      .mock__content {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 14px 18px 18px;
+      }
+
+      .mock__toolbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        padding: 8px 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--paper-2);
+      }
+
+      .mock__round {
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--faint);
+        display: inline-flex;
+        align-items: baseline;
+        gap: 7px;
+        margin-right: auto;
+      }
+
+      .mock__round b {
+        font-family: var(--display), Georgia, serif;
+        font-size: 22px;
+        font-weight: var(--dw, 600);
+        letter-spacing: 0;
+        color: var(--rubric);
+        text-transform: none;
+      }
+
+      .mock__btn {
+        padding: 6px 12px;
+        border: 1px solid var(--line-2);
+        border-radius: 7px;
+        background: var(--paper);
+        color: var(--text);
+        font-size: 12.5px;
+        white-space: nowrap;
+      }
+
+      .mock__btn.primary {
+        background: var(--rubric);
+        border-color: var(--rubric);
+        color: var(--rubric-ink);
+        font-weight: 600;
+      }
+
+      .mock__row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 9px 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--paper);
+      }
+
+      .mock__row.active {
+        border-color: rgba(143, 58, 44, 0.55);
+        background: linear-gradient(90deg, rgba(143, 58, 44, 0.09), var(--paper) 48%);
+      }
+
+      .mock__init {
+        display: grid;
+        place-items: center;
+        min-width: 40px;
+        height: 32px;
+        border: 1px solid rgba(143, 58, 44, 0.28);
+        border-radius: 8px;
+        background: rgba(143, 58, 44, 0.06);
+        color: var(--rubric);
+        font-family: var(--display), Georgia, serif;
+        font-size: 17px;
+        font-weight: 600;
+      }
+
+      .mock__who {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .mock__name {
+        font-size: 14px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .mock__tags {
+        display: flex;
+        gap: 5px;
+        flex-wrap: wrap;
+      }
+
+      .mock__tag {
+        padding: 1px 7px;
+        border-radius: 999px;
+        border: 1px solid var(--tag-line);
+        background: var(--tag);
+        color: var(--tag-ink);
+        font-size: 10.5px;
+      }
+
+      .mock__cond {
+        padding: 2px 8px;
+        border-radius: 999px;
+        border: 1px solid rgba(143, 58, 44, 0.3);
+        background: var(--cond);
+        color: var(--rubric);
+        font-size: 11px;
+      }
+
+      .mock__hp {
+        margin-left: auto;
+        padding: 4px 9px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--field);
+        font-size: 12.5px;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+
+      .mock__prose {
+        margin: 2px 0 0;
+        max-width: 78ch;
+        color: var(--muted);
+        font-size: 13.5px;
+        line-height: 1.62;
+      }
+
+      .mock__prose em {
+        color: var(--text);
+        font-style: normal;
+        font-weight: 600;
+      }
+
+      /* ------------------------------ образцы ------------------------------ */
+
+      .specimen {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid var(--line);
+      }
+
+      .specimen__display {
+        font-family: var(--display), Georgia, serif;
+        font-weight: var(--dw, 600);
+        font-size: 17px;
+        line-height: 1.5;
+        letter-spacing: 0.005em;
+      }
+
+      .specimen__ui {
+        color: var(--muted);
+        font-size: 13px;
+        letter-spacing: 0.01em;
+      }
+
+      .specimen__label {
+        margin-right: 8px;
+        font-family: 'Manrope', system-ui, sans-serif;
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--faint);
+      }
+
+      /* ------------------------------ сводка ------------------------------ */
+
+      .summary {
+        margin: 6px 0 46px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        overflow: hidden;
+        background: var(--paper);
+      }
+
+      .summary table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: 'Manrope', system-ui, sans-serif;
+        font-size: 13.5px;
+      }
+
+      .summary th,
+      .summary td {
+        text-align: left;
+        padding: 11px 14px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+      }
+
+      .summary th {
+        font-size: 10.5px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--faint);
+        font-weight: 600;
+      }
+
+      .summary tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .summary td b {
+        font-weight: 600;
+      }
+
+      .summary__name {
+        font-family: 'Literata', Georgia, serif;
+        font-size: 15px;
+        white-space: nowrap;
+      }
+
+      footer {
+        padding-bottom: 70px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      footer p {
+        margin: 0 0 8px;
+      }
+
+      footer b {
+        color: var(--text);
+      }
+
+      @media (max-width: 760px) {
+        .mock__side {
+          display: none;
+        }
+
+        .pair {
+          padding: 20px 16px;
+        }
+
+        .intro,
+        main,
+        footer {
+          padding-left: 16px;
+          padding-right: 16px;
+        }
+
+        .summary__name {
+          white-space: normal;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bar">
+      <span class="bar__brand">Game Master · шрифтовые пары</span>
+      <div class="switch" role="group" aria-label="Тема предпросмотра">
+        <button type="button" data-theme="light" class="on">Рукопись</button>
+        <button type="button" data-theme="dark">Подземелье</button>
+      </div>
+    </div>
+
+    <header class="intro">
+      <div class="intro__kicker">Каталог вариантов</div>
+      <h1>Шесть пар — без газетной вёрстки</h1>
+      <p>
+        Все варианты — <strong>неформальные</strong>: никаких редакционных плашек и «шапок»,
+        только книжные и современные характеры. В каждой паре заголовочный шрифт отвечает
+        за названия кампаний, экранов и модальных окон, интерфейсный — за карточки, таблицы,
+        кнопки и заметки. Кириллица есть везде, шрифты лежат в проекте локально.
+      </p>
+    </header>
+
+    <main id="pairs"></main>
+
+    <section class="summary" aria-labelledby="summary-title">
+      <table>
+        <thead>
+          <tr>
+            <th id="summary-title">№</th>
+            <th>Пара</th>
+            <th>Характер</th>
+            <th>Куда лучше ложится</th>
+          </tr>
+        </thead>
+        <tbody id="summary-rows"></tbody>
+      </table>
+    </section>
+
+    <footer>
+      <p>
+        <b>Скажите номер</b> — применю шрифты в приложении и подгоню размеры, интерлиньяж
+        и насыщенность под выбранный характер. Параметры шрифтов можно смешивать: заголовки
+        из одного варианта, интерфейс из другого.
+      </p>
+      <p>Если хочется совсем другой край — например, декоративный «лубковый» заголовок, скажите, добавлю.</p>
+    </footer>
+
+    <script>
+      const PAIRS = [
+        {
+          display: 'Alegreya',
+          displayWeight: 600,
+          ui: 'Alegreya Sans',
+          name: 'Приключенческий роман',
+          badge: 'тёплый характер',
+          desc:
+            'Alegreya — живая книжная антиква с мягкими формами и характерным курсивом, ' +
+            'Alegreya Sans — родственный гротеск. <b>Читается как роман в мягкой обложке</b>, ' +
+            'а не как передовица: тёпло, но без «старины».'
+        },
+        {
+          display: 'Vollkorn',
+          displayWeight: 600,
+          ui: 'Nunito',
+          name: 'Книга у камина',
+          badge: 'самый уютный',
+          desc:
+            'Vollkorn — округлая антиква с уютным ритмом, Nunito — мягкий гротеск со скруглениями. ' +
+            '<b>Самый дружелюбный вариант</b>: хорошо для долгих заметок и спокойных сессий.'
+        },
+        {
+          display: 'Cormorant Garamond',
+          displayWeight: 600,
+          ui: 'Onest',
+          name: 'Старая сказка',
+          badge: 'сказочный',
+          desc:
+            'Cormorant Garamond — изящная старокнижная антиква с высоким контрастом, но без ' +
+            'газетной жёсткости; Onest держит интерфейс современным. <b>Сказочно, но не музейно.</b>'
+        },
+        {
+          display: 'Philosopher',
+          displayWeight: 400,
+          ui: 'Golos Text',
+          name: 'Диковинный манускрипт',
+          badge: 'с характером',
+          desc:
+            'Philosopher — гуманистическая антиква с необычными, чуть фантазийными формами ' +
+            '(кириллица от российского дизайнера). Golos Text выравнивает интерфейс. ' +
+            '<b>Фэнтезийный оттенок без рукописности.</b>'
+        },
+        {
+          display: 'Literata',
+          displayWeight: 600,
+          ui: 'Manrope',
+          name: 'Современная книга',
+          badge: 'самый нейтральный',
+          desc:
+            'Literata — литературная антиква, спроектированная для экранов, Manrope — ' +
+            'геометричный гротеск. <b>Спокойный современный вариант</b> без выраженного жанра: ' +
+            'если хочется просто «нормально и аккуратно».'
+        },
+        {
+          display: 'Rubik',
+          displayWeight: 500,
+          ui: 'Rubik',
+          name: 'Без затей',
+          badge: 'совсем неформальный',
+          desc:
+            'Одна семья на всё: мягкий гротеск со скруглёнными углами. Никаких засечек и ' +
+            'книжности — <b>самый неформальный вариант</b>, ближе к современным приложениям, ' +
+            'чем к печатной странице.'
+        }
+      ]
+
+      const MOCK = `
+        <div class="mock">
+          <aside class="mock__side">
+            <div class="mock__brand"><span class="mock__die">d20</span> Game Master</div>
+            <div class="mock__nav">Игроки</div>
+            <div class="mock__nav on">Кампании</div>
+            <div class="mock__nav">Настройки</div>
+          </aside>
+          <div class="mock__main">
+            <div class="mock__top">
+              <span class="mock__back">←</span>
+              <span class="mock__title">Проклятие Страда</span>
+              <span class="mock__save">Сохранено</span>
+            </div>
+            <div class="mock__tabs">
+              <span class="mock__tab on">Инициатива 3</span>
+              <span class="mock__tab">Группа 3</span>
+              <span class="mock__tab">Заметки</span>
+            </div>
+            <div class="mock__content">
+              <div class="mock__toolbar">
+                <span class="mock__round">Раунд <b>2</b></span>
+                <span class="mock__btn primary">Следующий ход →</span>
+                <span class="mock__btn">Завершить</span>
+              </div>
+              <div class="mock__row active">
+                <span class="mock__init">21</span>
+                <span class="mock__who">
+                  <span class="mock__name">Ария Среброкрылая</span>
+                  <span class="mock__tags"><span class="mock__tag">игрок</span><span class="mock__tag">бонус +4</span></span>
+                </span>
+                <span class="mock__hp">31 / 38</span>
+              </div>
+              <div class="mock__row">
+                <span class="mock__init">14</span>
+                <span class="mock__who">
+                  <span class="mock__name">Скелет-стражник</span>
+                  <span class="mock__tags"><span class="mock__cond">Сбит с ног ×</span></span>
+                </span>
+                <span class="mock__hp">6 / 13</span>
+              </div>
+              <p class="mock__prose">
+                Старый мельник знает о пропавших детях больше, чем говорит. За мельницей — вход
+                в подвал, а в подвале пахнет сыростью и ржавым железом. <em>Записать в заметки.</em>
+              </p>
+            </div>
+          </div>
+        </div>`
+
+      const SPECIMEN = `
+        <div class="specimen">
+          <span class="specimen__display"><span class="specimen__label">Заголовки</span>Аа Бб Вв Гг Дд Её Жж Зз Ии Йй Кк Лл Мм Нн Оо Пп Рр Сс Тт Уу Фф Хх Цц Чч Шш Щщ Ъъ Ыы Ьь Ээ Юю Яя</span>
+          <span class="specimen__ui"><span class="specimen__label">Интерфейс</span>0123456789 — «кавычки», тире, 12 ноября 2026 · d20 · 2d6+3</span>
+        </div>`
+
+      function renderPair(pair, index) {
+        const number = String(index + 1).padStart(2, '0')
+        return `
+          <section class="pair" style="--display: '${pair.display}'; --ui: '${pair.ui}'; --dw: ${pair.displayWeight}">
+            <div class="pair__head">
+              <span class="pair__num">${number}</span>
+              <h2 class="pair__name">${pair.name}</h2>
+              <span class="pair__badge">${pair.badge}</span>
+            </div>
+            <p class="pair__fonts"><b>${pair.display}</b> — заголовки · <b>${pair.ui}</b> — интерфейс</p>
+            <p class="pair__desc">${pair.desc}</p>
+            ${MOCK}
+            ${SPECIMEN}
+          </section>`
+      }
+
+      document.getElementById('pairs').innerHTML = PAIRS.map(renderPair).join('')
+
+      document.getElementById('summary-rows').innerHTML = PAIRS.map((pair, index) => {
+        const number = String(index + 1).padStart(2, '0')
+        const where = {
+          'Приключенческий роман': 'Кампании с историей и большими текстами',
+          'Книга у камина': 'Уютные, неспешные игры, много заметок',
+          'Старая сказка': 'Классическое фэнтези, «старые книги»',
+          'Диковинный манускрипт': 'Хоррор и странные миры, свой почерк',
+          'Современная книга': 'Универсальный вариант без жанра',
+          'Без затей': 'Быстрый, дружелюбный интерфейс'
+        }[pair.name]
+        return `<tr><td>${number}</td><td class="summary__name">${pair.name}</td><td>${pair.display} + ${pair.ui}</td><td>${where}</td></tr>`
+      }).join('')
+
+      const buttons = document.querySelectorAll('.switch button')
+
+      function setTheme(theme) {
+        document.body.classList.toggle('dark', theme === 'dark')
+        for (const button of buttons) {
+          button.classList.toggle('on', button.dataset.theme === theme)
+        }
+        try {
+          localStorage.setItem('gm-font-lab-theme', theme)
+        } catch {}
+      }
+
+      for (const button of buttons) {
+        button.addEventListener('click', () => setTheme(button.dataset.theme))
+      }
+
+      try {
+        const saved = localStorage.getItem('gm-font-lab-theme')
+        if (saved === 'dark') setTheme('dark')
+      } catch {}
+    </script>
+  </body>
+</html>

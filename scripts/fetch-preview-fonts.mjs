@@ -14,15 +14,16 @@ const outDir = resolve(here, '../src/renderer/public/fonts')
 mkdirSync(outDir, { recursive: true })
 
 const FAMILIES = [
-  { family: 'Literata', weights: [500, 600] },
-  { family: 'Inter', weights: [400, 500, 600] },
-  { family: 'Lora', weights: [500, 600] },
+  { family: 'Alegreya', weights: [400, 600] },
+  { family: 'Alegreya Sans', weights: [400, 500, 700] },
+  { family: 'Vollkorn', weights: [400, 600] },
+  { family: 'Nunito', weights: [400, 600, 700] },
+  { family: 'Cormorant Garamond', weights: [400, 600] },
+  { family: 'Onest', weights: [400, 500, 600] },
+  { family: 'Philosopher', weights: [400, 700] },
   { family: 'Golos Text', weights: [400, 500, 600] },
-  { family: 'Alegreya', weights: [500, 700] },
-  { family: 'PT Sans', weights: [400, 700] },
-  { family: 'Playfair Display', weights: [500, 700] },
+  { family: 'Literata', weights: [400, 600] },
   { family: 'Manrope', weights: [400, 500, 600] },
-  { family: 'Bitter', weights: [500, 600] },
   { family: 'Rubik', weights: [400, 500, 600] }
 ]
 
