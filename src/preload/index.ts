@@ -19,6 +19,12 @@ const api: GameMasterApi = {
     update: (profile) => ipcRenderer.invoke(IPC.characterUpdate, profile),
     remove: (id) => ipcRenderer.invoke(IPC.characterRemove, id)
   },
+  monsters: {
+    list: () => ipcRenderer.invoke(IPC.monstersList),
+    create: (input) => ipcRenderer.invoke(IPC.monsterCreate, input),
+    update: (monster) => ipcRenderer.invoke(IPC.monsterUpdate, monster),
+    remove: (id) => ipcRenderer.invoke(IPC.monsterRemove, id)
+  },
   settings: {
     get: () => ipcRenderer.invoke(IPC.settingsGet),
     update: (patch) => ipcRenderer.invoke(IPC.settingsUpdate, patch)

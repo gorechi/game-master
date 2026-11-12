@@ -1,7 +1,15 @@
 import type { AppInfo, GameMasterApi } from '@shared/api'
 import type { Player, PlayerInput } from '@shared/player'
 import type { CharacterProfile, CharacterProfileInput } from '@shared/characterProfile'
-import { createCharacterProfile, createPlayer, normalizeCharacterProfileInput, normalizePlayerInput } from '@shared/domain'
+import type { Monster, MonsterInput } from '@shared/monster'
+import {
+  createCharacterProfile,
+  createMonster,
+  createPlayer,
+  normalizeCharacterProfileInput,
+  normalizeMonsterInput,
+  normalizePlayerInput
+} from '@shared/domain'
 import {
   DEFAULT_SETTINGS,
   SETTINGS_SCHEMA_VERSION,
@@ -20,12 +28,14 @@ import {
 
 const PLAYERS_KEY = 'game-master.preview.players'
 const CHARACTERS_KEY = 'game-master.preview.characters'
+const MONSTERS_KEY = 'game-master.preview.monsters'
 const SETTINGS_KEY = 'game-master.preview.settings'
 
 /** Полный сброс предпросмотра (кнопка на главном экране). */
 export function resetWebPreview(): void {
   window.localStorage.removeItem(PLAYERS_KEY)
   window.localStorage.removeItem(CHARACTERS_KEY)
+  window.localStorage.removeItem(MONSTERS_KEY)
   window.location.reload()
 }
 
@@ -64,6 +74,22 @@ function readCharacters(): CharacterProfile[] {
 
 function writeCharacters(characters: CharacterProfile[]): void {
   window.localStorage.setItem(CHARACTERS_KEY, JSON.stringify(characters))
+}
+
+function readMonsters(): Monster[] {
+  try {
+    const raw = window.localStorage.getItem(MONSTERS_KEY)
+    if (!raw) return []
+
+    const parsed: unknown = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as Monster[]) : []
+  } catch {
+    return []
+  }
+}
+
+function writeMonsters(monsters: Monster[]): void {
+  window.localStorage.setItem(MONSTERS_KEY, JSON.stringify(monsters))
 }
 
 function readSettings(): AppSettings {
@@ -147,6 +173,31 @@ export function createWebBridge(): GameMasterApi {
 
       remove: async (id: string): Promise<void> => {
         writeCharacters(readCharacters().filter((item) => item.id !== id))
+      }
+    },
+
+    monsters: {
+      list: async (): Promise<Monster[]> => readMonsters(),
+
+      create: async (input: MonsterInput): Promise<Monster> => {
+        const monster = createMonster(input)
+        writeMonsters([...readMonsters(), monster])
+        return monster
+      },
+
+      update: async (monster: Monster): Promise<Monster> => {
+        const updated: Monster = {
+          ...monster,
+          ...normalizeMonsterInput(monster),
+          updatedAt: new Date().toISOString()
+        }
+
+        writeMonsters(readMonsters().map((item) => (item.id === monster.id ? updated : item)))
+        return updated
+      },
+
+      remove: async (id: string): Promise<void> => {
+        writeMonsters(readMonsters().filter((item) => item.id !== id))
       }
     },
 

@@ -1,5 +1,6 @@
 import type { Player, PlayerInput } from './player'
 import type { CharacterProfile, CharacterProfileInput } from './characterProfile'
+import type { Monster, MonsterAbility, MonsterInput } from './monster'
 
 /**
  * Доменный слой без зависимостей: фабрики, подписи и сводки.
@@ -87,4 +88,81 @@ export function createCharacterProfile(
     createdAt: now,
     updatedAt: now
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* Монстры (бестиарий)                                                */
+/* ------------------------------------------------------------------ */
+
+const ABILITY_MIN = 1
+const ABILITY_MAX = 30
+
+function clampInt(value: number | undefined, min: number, max: number, fallback: number): number {
+  if (value === undefined || !Number.isFinite(value)) return fallback
+  return Math.min(max, Math.max(min, Math.round(value)))
+}
+
+export function createMonsterAbility(name = '', description = ''): MonsterAbility {
+  return {
+    id: crypto.randomUUID().slice(0, 8),
+    name,
+    description
+  }
+}
+
+export function normalizeMonsterAbilities(abilities: MonsterInput['abilities']): MonsterAbility[] {
+  return abilities
+    .map((ability) => ({
+      id: ability.id || crypto.randomUUID().slice(0, 8),
+      name: ability.name.trim().slice(0, 80),
+      description: ability.description.trim().slice(0, 2000)
+    }))
+    .filter((ability) => ability.name || ability.description)
+}
+
+export type NormalizedMonsterInput = Omit<MonsterInput, 'abilities'> & {
+  abilities: MonsterAbility[]
+}
+
+export function normalizeMonsterInput(input: MonsterInput): NormalizedMonsterInput {
+  const abilities = normalizeMonsterAbilities(input.abilities)
+
+  if (abilities.some((ability) => !ability.name)) {
+    throw new Error('Укажите название для каждой способности')
+  }
+
+  return {
+    name: input.name.trim().slice(0, 100),
+    strength: clampInt(input.strength, ABILITY_MIN, ABILITY_MAX, 10),
+    dexterity: clampInt(input.dexterity, ABILITY_MIN, ABILITY_MAX, 10),
+    intelligence: clampInt(input.intelligence, ABILITY_MIN, ABILITY_MAX, 10),
+    wisdom: clampInt(input.wisdom, ABILITY_MIN, ABILITY_MAX, 10),
+    constitution: clampInt(input.constitution, ABILITY_MIN, ABILITY_MAX, 10),
+    charisma: clampInt(input.charisma, ABILITY_MIN, ABILITY_MAX, 10),
+    challengeRating: Math.min(30, Math.max(0, input.challengeRating ?? 1)),
+    armorClass: clampInt(input.armorClass, 0, 99, 10),
+    hitPoints: clampInt(input.hitPoints, 1, 100_000, 10),
+    abilities
+  }
+}
+
+export function createMonster(
+  input: MonsterInput,
+  id: string = crypto.randomUUID()
+): Monster {
+  const now = new Date().toISOString()
+
+  return {
+    id,
+    ...normalizeMonsterInput(input),
+    createdAt: now,
+    updatedAt: now
+  }
+}
+
+const challengeRatingFormatter = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 3 })
+
+/** «КО 0,125» и «КО 3» без лишних нулей. */
+export function formatChallengeRating(value: number): string {
+  return challengeRatingFormatter.format(value)
 }

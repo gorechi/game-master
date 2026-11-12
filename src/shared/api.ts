@@ -1,5 +1,6 @@
 import type { Player, PlayerInput } from './player'
 import type { CharacterProfile, CharacterProfileInput } from './characterProfile'
+import type { Monster, MonsterInput } from './monster'
 import type { AppSettings, SettingsPatch } from './settings'
 
 /**
@@ -17,6 +18,10 @@ export const IPC = {
   characterCreate: 'character:create',
   characterUpdate: 'character:update',
   characterRemove: 'character:remove',
+  monstersList: 'monsters:list',
+  monsterCreate: 'monster:create',
+  monsterUpdate: 'monster:update',
+  monsterRemove: 'monster:remove',
   settingsGet: 'settings:get',
   settingsUpdate: 'settings:update'
 } as const
@@ -47,6 +52,13 @@ export interface GameMasterApi {
     list(): Promise<CharacterProfile[]>
     create(input: CharacterProfileInput): Promise<CharacterProfile>
     update(profile: CharacterProfile): Promise<CharacterProfile>
+    remove(id: string): Promise<void>
+  }
+  /** Бестиарий: монстры с характеристиками и способностями. */
+  monsters: {
+    list(): Promise<Monster[]>
+    create(input: MonsterInput): Promise<Monster>
+    update(monster: Monster): Promise<Monster>
     remove(id: string): Promise<void>
   }
   /** Настройки приложения (тема и прочее). */

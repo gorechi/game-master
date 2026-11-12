@@ -1,9 +1,7 @@
 import { app, ipcMain, shell } from 'electron'
 import { playerSchema, type PlayerInput } from '@shared/player'
-import {
-  characterProfileInputSchema,
-  characterProfileSchema
-} from '@shared/characterProfile'
+import { characterProfileInputSchema, characterProfileSchema } from '@shared/characterProfile'
+import { monsterInputSchema, monsterSchema } from '@shared/monster'
 import { isThemeName, type SettingsPatch } from '@shared/settings'
 import { IPC, type AppInfo } from '@shared/api'
 import { addPlayer, listPlayers, removePlayer, updatePlayer } from './storage/playerStore'
@@ -13,6 +11,7 @@ import {
   removeCharacter,
   updateCharacter
 } from './storage/characterStore'
+import { addMonster, listMonsters, removeMonster, updateMonster } from './storage/monsterStore'
 import { getSettings, updateSettings } from './storage/settingsStore'
 
 function assertId(value: unknown): string {
@@ -95,6 +94,20 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(IPC.characterRemove, (_event, id: unknown): Promise<void> =>
     removeCharacter(assertId(id))
+  )
+
+  ipcMain.handle(IPC.monstersList, () => listMonsters())
+
+  ipcMain.handle(IPC.monsterCreate, (_event, input: unknown) =>
+    addMonster(monsterInputSchema.parse(input))
+  )
+
+  ipcMain.handle(IPC.monsterUpdate, (_event, input: unknown) =>
+    updateMonster(monsterSchema.parse(input))
+  )
+
+  ipcMain.handle(IPC.monsterRemove, (_event, id: unknown): Promise<void> =>
+    removeMonster(assertId(id))
   )
 
   ipcMain.handle(IPC.settingsGet, () => getSettings())

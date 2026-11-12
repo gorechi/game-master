@@ -103,6 +103,17 @@ export function IconShield(props: IconProps): JSX.Element {
   )
 }
 
+export function IconSkull(props: IconProps): JSX.Element {
+  return (
+    <Svg {...props}>
+      <path d="M12 3.4c-4.4 0-7.4 3-7.4 7.1 0 2.4 1 4 2.4 5.2.6.5.9 1 .9 1.8v1.6c0 .7.6 1.3 1.3 1.3h5.6c.7 0 1.3-.6 1.3-1.3v-1.6c0-.8.3-1.3.9-1.8 1.4-1.2 2.4-2.8 2.4-5.2 0-4.1-3-7.1-7.4-7.1Z" />
+      <circle cx="9.3" cy="11" r="1.6" fill="currentColor" stroke="none" />
+      <circle cx="14.7" cy="11" r="1.6" fill="currentColor" stroke="none" />
+      <path d="M10.6 20.4v-1.9M13.4 20.4v-1.9" />
+    </Svg>
+  )
+}
+
 /** d20 — силуэт гексагона с вписанной гранью. */
 export function IconD20(props: IconProps): JSX.Element {
   return (

@@ -5,6 +5,7 @@ import { Sidebar } from './components/Sidebar'
 import { PlayersPage } from './components/PlayersPage'
 import { PlayerCharactersPage } from './components/PlayerCharactersPage'
 import { CharactersPage } from './components/CharactersPage'
+import { MonstersPage } from './components/MonstersPage'
 import { SettingsPage } from './components/SettingsPage'
 import { api } from './lib/api'
 import { applyTheme } from './lib/theme'
@@ -69,6 +70,8 @@ export default function App(): JSX.Element {
             onOpenPlayer={(id) => setRoute({ name: 'player', id, from: 'characters' })}
           />
         ) : null}
+
+        {route.name === 'monsters' ? <MonstersPage /> : null}
 
         {route.name === 'settings' ? (
           <SettingsPage settings={settings} onThemeChange={changeTheme} />

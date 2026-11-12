@@ -1023,6 +1023,242 @@ input[type='number'] {
 }
 
 /* ------------------------------------------------------------------ */
+/* Монстры                                                            */
+/* ------------------------------------------------------------------ */
+
+.monster-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.monster-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 14px 20px;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: linear-gradient(120deg, var(--panel), #1a1622);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.monster-card:hover {
+  border-color: var(--border-strong);
+}
+
+.monster-card__identity {
+  flex: 1 1 220px;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.monster-card__sigil {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 13px;
+  color: var(--gold-strong);
+  background: rgba(216, 178, 92, 0.1);
+  border: 1px solid rgba(216, 178, 92, 0.3);
+}
+
+.monster-card__titles {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.monster-card__name {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.monster-card__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.monster-chip {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--ink-muted);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+.monster-chip--cr {
+  border-color: rgba(216, 178, 92, 0.4);
+  background: rgba(216, 178, 92, 0.12);
+  color: var(--gold-strong);
+}
+
+.monster-card__stats {
+  flex: 0 1 auto;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(38px, auto));
+  gap: 6px;
+}
+
+.monster-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 40px;
+  padding: 4px 6px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.monster-stat__label {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+}
+
+.monster-stat__value {
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.monster-card__abilities {
+  flex: 2 1 300px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.monster-ability {
+  margin: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-muted);
+}
+
+.monster-ability__name {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.monster-ability__desc {
+  overflow-wrap: anywhere;
+}
+
+.monster-card__no-abilities {
+  font-size: 11.5px;
+  font-style: italic;
+  color: var(--ink-faint);
+}
+
+.monster-card__actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+  align-self: flex-start;
+}
+
+/* Форма монстра */
+
+.monster-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.monster-form__scores {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.monster-form__vitals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.monster-form__score .input {
+  text-align: center;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+.abilities-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.abilities-editor__empty {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-faint);
+}
+
+.ability-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.ability-row__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ability-row__top .input {
+  flex: 1;
+}
+
+.ability-row__description {
+  min-height: 58px;
+  resize: vertical;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.button--dashed {
+  align-self: flex-start;
+  border-style: dashed;
+  background: transparent;
+  color: var(--ink-muted);
+}
+
+.button--dashed:hover:not(:disabled) {
+  color: var(--gold-strong);
+  border-color: var(--gold);
+  background: transparent;
+}
+
+/* ------------------------------------------------------------------ */
 /* Настройки                                                          */
 /* ------------------------------------------------------------------ */
 
@@ -1247,6 +1483,7 @@ input[type='number'] {
 .modal {
   width: 100%;
   max-width: 480px;
+  max-height: calc(100vh - 48px);
   display: flex;
   flex-direction: column;
   border-radius: 18px;
@@ -1270,6 +1507,7 @@ input[type='number'] {
   justify-content: space-between;
   gap: 14px;
   padding: 20px 22px 0;
+  flex: none;
 }
 
 .modal__title {
@@ -1288,6 +1526,9 @@ input[type='number'] {
 
 .modal__body {
   padding: 18px 22px 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .modal__footer {
@@ -1299,6 +1540,7 @@ input[type='number'] {
   border-top: 1px solid var(--border);
   background: rgba(0, 0, 0, 0.16);
   border-radius: 0 0 18px 18px;
+  flex: none;
 }
 
 .form-grid {
@@ -1514,6 +1756,14 @@ input[type='number'] {
   }
 
   .character-form__row {
+    grid-template-columns: 1fr;
+  }
+
+  .monster-form__scores {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .monster-form__vitals {
     grid-template-columns: 1fr;
   }
 }
