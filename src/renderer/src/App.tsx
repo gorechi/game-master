@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import type { JSX } from 'react'
 import { DEFAULT_SETTINGS, type AppSettings, type ThemeName } from '@shared/settings'
 import { Sidebar } from './components/Sidebar'
+import { GamesPage } from './components/GamesPage'
+import { GameRunPage } from './components/GameRunPage'
 import { PlayersPage } from './components/PlayersPage'
 import { PlayerCharactersPage } from './components/PlayerCharactersPage'
 import { CharactersPage } from './components/CharactersPage'
@@ -12,7 +14,7 @@ import { applyTheme } from './lib/theme'
 import type { Route } from './lib/routes'
 
 export default function App(): JSX.Element {
-  const [route, setRoute] = useState<Route>({ name: 'players' })
+  const [route, setRoute] = useState<Route>({ name: 'games' })
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS)
 
   useEffect(() => {
@@ -46,6 +48,14 @@ export default function App(): JSX.Element {
       <Sidebar route={route} onNavigate={setRoute} />
 
       <div className="app__content">
+        {route.name === 'games' ? (
+          <GamesPage onOpenGame={(id) => setRoute({ name: 'game', id })} />
+        ) : null}
+
+        {route.name === 'game' ? (
+          <GameRunPage gameId={route.id} onBack={() => setRoute({ name: 'games' })} />
+        ) : null}
+
         {route.name === 'players' ? (
           <PlayersPage
             onOpenPlayer={(id) => setRoute({ name: 'player', id, from: 'players' })}

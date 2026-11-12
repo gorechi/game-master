@@ -1,13 +1,17 @@
 # Game Master
 
-Десктопное приложение для мастера D&D: база игроков, карточки их персонажей и бестиарий монстров.
+Десктопное приложение для мастера D&D: игры, база игроков, карточки персонажей и бестиарий.
 Работает полностью офлайн, данные лежат обычными JSON-файлами на диске пользователя.
 
 > Статус: рабочий каркас (MVP). Архитектура рассчитана на развитие, а не на одноразовый прототип.
 
 ## Что уже работает
 
-- **Боковое меню** — «Игроки», «Персонажи», «Монстры», «Настройки»; навигация без перезагрузки.
+- **Боковое меню** — «Игры», «Игроки», «Персонажи», «Монстры», «Настройки»;
+  навигация без перезагрузки, приложение открывается на играх.
+- **Игры** — основная сущность: список партий, которые мастер готовит или проводит.
+  Игру можно создать, переименовать и удалить, а кнопка «Провести» открывает
+  режим проведения (пока заготовка экрана — формы появятся позже).
 - **База игроков** — люди за столом (не персонажи): добавление, редактирование, удаление
   с подтверждением.
 - **Персонажи** — карточки героев в стиле коллекционных: портрет (загружается, сжимается
@@ -44,16 +48,18 @@
 
 ```
 ┌──────────────────────── main (Node) ─────────────────────────┐
-│  окно, жизненный цикл        storage/playerStore     (JSON)   │
-│  ipc.ts — валидация входа    storage/characterStore  (JSON)   │
+│  окно, жизненный цикл        storage/gameStore       (JSON)   │
+│  ipc.ts — валидация входа    storage/playerStore     (JSON)   │
+│                              storage/characterStore  (JSON)   │
 │                              storage/monsterStore    (JSON)   │
 │                              storage/settingsStore   (JSON)   │
 └───────────────▲───────────────────────────────┬──────────────┘
                 │ IPC (invoke/handle)           │ fs
 ┌───────────────┴───────────┐        ┌──────────▼───────────┐
 │ preload: мост contextBridge│        │ <userData>/          │
-│ window.gameMaster         │        │  players.json        │
-└───────────────▲───────────┘        │  characters.json     │
+│ window.gameMaster         │        │  games.json          │
+└───────────────▲───────────┘        │  players.json        │
+                │                    │  characters.json     │
                 │                    │  monsters.json       │
                 │                    │  settings.json       │
 ┌───────────────┴────────────────────┴──────────────────────┐
@@ -77,6 +83,9 @@
   (один игрок → много персонажей). Портрет лежит в той же записи, поэтому бэкап — это один файл.
   Удаление игрока не удаляет героев: карточка показывает «Без игрока», а форма просит
   выбрать нового.
+- **Игры — основная сущность.** `games.json` хранит партии. Пока у игры только название:
+  остальные поля появятся вместе с формами подготовки и проведения, схема расширяется
+  без ломки старых записей.
 - **Бестиарий отдельным файлом.** `monsters.json` хранит монстров и их способности
   (у каждой свой id, название и описание), поэтому способности можно свободно добавлять,
   удалять и переименовывать.
@@ -99,6 +108,7 @@ src/
     index.ts               жизненный цикл, CSP, внешние ссылки, single instance
     window.ts              создание окна
     ipc.ts                 обработчики IPC (валидируют вход)
+    storage/gameStore.ts       игры (games.json)
     storage/playerStore.ts     база игроков (players.json)
     storage/characterStore.ts  база персонажей (characters.json)
     storage/monsterStore.ts    бестиарий (monsters.json)
@@ -106,7 +116,9 @@ src/
     storage/jsonFile.ts        атомарная запись, очередь, чтение JSON
   preload/index.ts         contextBridge → window.gameMaster
   renderer/                React-приложение
-    src/components/        Sidebar, PlayersPage, PlayerCharactersPage, CharactersPage, MonstersPage, SettingsPage
+    src/components/        Sidebar, GamesPage, GameRunPage, PlayersPage, PlayerCharactersPage,
+                           CharactersPage, MonstersPage, SettingsPage
+    src/components/games/      GameFormModal
     src/components/character/  CharacterCard, CharacterFormModal
     src/components/monsters/   MonsterCard, MonsterFormModal
     src/components/ui/     Modal, ConfirmDialog, Select, иконки
@@ -117,6 +129,7 @@ src/
     src/theme-manuscript.css  светлая тема «Рукопись»
   shared/                  код, общий для main и renderer
     api.ts                 контракт IPC
+    game.ts                zod-схема игры
     player.ts              zod-схема игрока
     characterProfile.ts    zod-схема персонажа-карточки
     monster.ts             zod-схема монстра и способностей
@@ -227,8 +240,24 @@ npm run pack       # распакованное приложение без ин
 | Windows | `%APPDATA%\Game Master\` |
 | macOS | `~/Library/Application Support/Game Master/` |
 
-Внутри — `players.json`, `characters.json`, `monsters.json` и `settings.json`. Открыть папку
-можно на странице «Настройки».
+Внутри — `games.json`, `players.json`, `characters.json`, `monsters.json` и `settings.json`.
+Открыть папку можно на странице «Настройки».
+
+`games.json`:
+
+```json
+{
+  "schemaVersion": 1,
+  "games": [
+    {
+      "id": "5d2a…",
+      "name": "Проклятие Страда",
+      "createdAt": "2026-11-12T10:00:00.000Z",
+      "updatedAt": "2026-11-12T10:00:00.000Z"
+    }
+  ]
+}
+```
 
 `players.json`:
 
@@ -313,6 +342,7 @@ npm run pack       # распакованное приложение без ин
 
 ## Дальше по плану
 
+- формы подготовки и проведения игры (участники, сцены, заметки);
 - печать и экспорт карточек персонажей и статблоков монстров (PDF/PNG);
 - импорт и экспорт баз игроков, персонажей и бестиария одним файлом;
 - поиск и фильтры по персонажам, классам, монстрам и статусам;

@@ -1259,6 +1259,115 @@ input[type='number'] {
 }
 
 /* ------------------------------------------------------------------ */
+/* Игры                                                               */
+/* ------------------------------------------------------------------ */
+
+.game-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.game-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: linear-gradient(120deg, var(--panel), #1a1622);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.game-card:hover {
+  border-color: var(--border-strong);
+}
+
+.game-card__sigil {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 13px;
+  color: var(--gold-strong);
+  background: rgba(216, 178, 92, 0.1);
+  border: 1px solid rgba(216, 178, 92, 0.3);
+}
+
+.game-card__identity {
+  flex: 1 1 240px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.game-card__name {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.game-card__meta {
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+.game-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.game-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.run-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 54px 28px;
+  text-align: center;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.run-placeholder__icon {
+  display: grid;
+  place-items: center;
+  width: 86px;
+  height: 86px;
+  border-radius: 26px;
+  color: var(--gold);
+  background: rgba(216, 178, 92, 0.1);
+  border: 1px solid rgba(216, 178, 92, 0.3);
+}
+
+.run-placeholder h2 {
+  font-size: 22px;
+}
+
+.run-placeholder p {
+  max-width: 62ch;
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 14px;
+}
+
+/* ------------------------------------------------------------------ */
 /* Настройки                                                          */
 /* ------------------------------------------------------------------ */
 

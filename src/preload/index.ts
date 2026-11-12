@@ -7,6 +7,12 @@ const api: GameMasterApi = {
     info: () => ipcRenderer.invoke(IPC.appInfo),
     openDataFolder: () => ipcRenderer.invoke(IPC.appOpenDataFolder)
   },
+  games: {
+    list: () => ipcRenderer.invoke(IPC.gamesList),
+    create: (input) => ipcRenderer.invoke(IPC.gameCreate, input),
+    update: (game) => ipcRenderer.invoke(IPC.gameUpdate, game),
+    remove: (id) => ipcRenderer.invoke(IPC.gameRemove, id)
+  },
   players: {
     list: () => ipcRenderer.invoke(IPC.playersList),
     create: (input) => ipcRenderer.invoke(IPC.playerCreate, input),

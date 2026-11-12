@@ -2,9 +2,11 @@ import type { AppInfo, GameMasterApi } from '@shared/api'
 import type { Player, PlayerInput } from '@shared/player'
 import type { CharacterProfile, CharacterProfileInput } from '@shared/characterProfile'
 import type { Monster, MonsterInput } from '@shared/monster'
+import type { Game, GameInput } from '@shared/game'
 import {
   clampMonsterScore,
   createCharacterProfile,
+  createGame,
   createMonster,
   createPlayer,
   normalizeCharacterProfileInput,
@@ -27,6 +29,7 @@ import {
  * В Electron этот модуль не используется — window.gameMaster всегда есть.
  */
 
+const GAMES_KEY = 'game-master.preview.games'
 const PLAYERS_KEY = 'game-master.preview.players'
 const CHARACTERS_KEY = 'game-master.preview.characters'
 const MONSTERS_KEY = 'game-master.preview.monsters'
@@ -34,6 +37,7 @@ const SETTINGS_KEY = 'game-master.preview.settings'
 
 /** Полный сброс предпросмотра (кнопка на главном экране). */
 export function resetWebPreview(): void {
+  window.localStorage.removeItem(GAMES_KEY)
   window.localStorage.removeItem(PLAYERS_KEY)
   window.localStorage.removeItem(CHARACTERS_KEY)
   window.localStorage.removeItem(MONSTERS_KEY)
@@ -103,6 +107,22 @@ function writeMonsters(monsters: Monster[]): void {
   window.localStorage.setItem(MONSTERS_KEY, JSON.stringify(monsters))
 }
 
+function readGames(): Game[] {
+  try {
+    const raw = window.localStorage.getItem(GAMES_KEY)
+    if (!raw) return []
+
+    const parsed: unknown = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as Game[]) : []
+  } catch {
+    return []
+  }
+}
+
+function writeGames(games: Game[]): void {
+  window.localStorage.setItem(GAMES_KEY, JSON.stringify(games))
+}
+
 function readSettings(): AppSettings {
   try {
     const raw = window.localStorage.getItem(SETTINGS_KEY)
@@ -135,6 +155,31 @@ export function createWebBridge(): GameMasterApi {
         dataDir: 'localStorage браузера'
       }),
       openDataFolder: async (): Promise<void> => undefined
+    },
+
+    games: {
+      list: async (): Promise<Game[]> => readGames(),
+
+      create: async (input: GameInput): Promise<Game> => {
+        const game = createGame(input)
+        writeGames([...readGames(), game])
+        return game
+      },
+
+      update: async (game: Game): Promise<Game> => {
+        const updated: Game = {
+          ...game,
+          name: game.name.trim().slice(0, 120),
+          updatedAt: new Date().toISOString()
+        }
+
+        writeGames(readGames().map((item) => (item.id === game.id ? updated : item)))
+        return updated
+      },
+
+      remove: async (id: string): Promise<void> => {
+        writeGames(readGames().filter((item) => item.id !== id))
+      }
     },
 
     players: {

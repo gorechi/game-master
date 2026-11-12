@@ -1,6 +1,7 @@
 import type { Player, PlayerInput } from './player'
 import type { CharacterProfile, CharacterProfileInput } from './characterProfile'
 import type { Monster, MonsterInput } from './monster'
+import type { Game, GameInput } from './game'
 import type { AppSettings, SettingsPatch } from './settings'
 
 /**
@@ -10,6 +11,10 @@ import type { AppSettings, SettingsPatch } from './settings'
 export const IPC = {
   appInfo: 'app:info',
   appOpenDataFolder: 'app:open-data-folder',
+  gamesList: 'games:list',
+  gameCreate: 'game:create',
+  gameUpdate: 'game:update',
+  gameRemove: 'game:remove',
   playersList: 'players:list',
   playerCreate: 'player:create',
   playerUpdate: 'player:update',
@@ -39,6 +44,13 @@ export interface GameMasterApi {
   app: {
     info(): Promise<AppInfo>
     openDataFolder(): Promise<void>
+  }
+  /** Игры — основная сущность приложения. */
+  games: {
+    list(): Promise<Game[]>
+    create(input: GameInput): Promise<Game>
+    update(game: Game): Promise<Game>
+    remove(id: string): Promise<void>
   }
   /** Общая база игроков-людей. */
   players: {

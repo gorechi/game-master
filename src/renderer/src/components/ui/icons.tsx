@@ -114,6 +114,15 @@ export function IconSkull(props: IconProps): JSX.Element {
   )
 }
 
+export function IconPlay(props: IconProps): JSX.Element {
+  return (
+    <Svg {...props}>
+      <circle cx="12" cy="12" r="8.6" />
+      <path d="M10.1 8.6 15.7 12l-5.6 3.4V8.6Z" />
+    </Svg>
+  )
+}
+
 /** d20 — силуэт гексагона с вписанной гранью. */
 export function IconD20(props: IconProps): JSX.Element {
   return (

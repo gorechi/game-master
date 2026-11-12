@@ -352,6 +352,34 @@
 }
 
 /* ------------------------------------------------------------------ */
+/* Игры                                                               */
+/* ------------------------------------------------------------------ */
+
+:root[data-theme='light'] .game-card {
+  background: linear-gradient(120deg, #fbf3e2, #f4e9d3);
+}
+
+:root[data-theme='light'] .game-card:hover {
+  border-color: var(--border-strong);
+}
+
+:root[data-theme='light'] .game-card__sigil {
+  color: #7a4f12;
+  background: rgba(154, 106, 36, 0.1);
+  border-color: rgba(154, 106, 36, 0.32);
+}
+
+:root[data-theme='light'] .run-placeholder {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+:root[data-theme='light'] .run-placeholder__icon {
+  color: var(--rubric);
+  background: rgba(143, 58, 44, 0.08);
+  border-color: rgba(143, 58, 44, 0.28);
+}
+
+/* ------------------------------------------------------------------ */
 /* Модальные окна                                                     */
 /* ------------------------------------------------------------------ */
 

@@ -1,6 +1,7 @@
 import type { Player, PlayerInput } from './player'
 import type { CharacterProfile, CharacterProfileInput } from './characterProfile'
 import type { Monster, MonsterAbility, MonsterInput } from './monster'
+import type { Game, GameInput } from './game'
 
 /**
  * Доменный слой без зависимостей: фабрики, подписи и сводки.
@@ -179,4 +180,19 @@ const challengeRatingFormatter = new Intl.NumberFormat('ru-RU', { maximumFractio
 /** «КО 0,125» и «КО 3» без лишних нулей. */
 export function formatChallengeRating(value: number): string {
   return challengeRatingFormatter.format(value)
+}
+
+/* ------------------------------------------------------------------ */
+/* Игры                                                               */
+/* ------------------------------------------------------------------ */
+
+export function createGame(input: GameInput, id: string = crypto.randomUUID()): Game {
+  const now = new Date().toISOString()
+
+  return {
+    id,
+    name: input.name.trim().slice(0, 120),
+    createdAt: now,
+    updatedAt: now
+  }
 }

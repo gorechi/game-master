@@ -2,6 +2,7 @@ import { app, ipcMain, shell } from 'electron'
 import { playerSchema, type PlayerInput } from '@shared/player'
 import { characterProfileInputSchema, characterProfileSchema } from '@shared/characterProfile'
 import { monsterInputSchema, monsterSchema } from '@shared/monster'
+import { gameSchema, type GameInput } from '@shared/game'
 import { isThemeName, type SettingsPatch } from '@shared/settings'
 import { IPC, type AppInfo } from '@shared/api'
 import { addPlayer, listPlayers, removePlayer, updatePlayer } from './storage/playerStore'
@@ -12,6 +13,7 @@ import {
   updateCharacter
 } from './storage/characterStore'
 import { addMonster, listMonsters, removeMonster, updateMonster } from './storage/monsterStore'
+import { addGame, listGames, removeGame, updateGame } from './storage/gameStore'
 import { getSettings, updateSettings } from './storage/settingsStore'
 
 function assertId(value: unknown): string {
@@ -47,6 +49,19 @@ function parseSettingsPatch(value: unknown): SettingsPatch {
   return { theme }
 }
 
+function parseGameInput(value: unknown): GameInput {
+  if (!value || typeof value !== 'object') {
+    throw new Error('Некорректные данные игры')
+  }
+
+  const { name } = value as Record<string, unknown>
+  if (typeof name !== 'string' || name.length > 200) {
+    throw new Error('Некорректное название игры')
+  }
+
+  return { name }
+}
+
 export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.appInfo, (): AppInfo => {
     const platform =
@@ -68,6 +83,16 @@ export function registerIpcHandlers(): void {
     const error = await shell.openPath(app.getPath('userData'))
     if (error) throw new Error(`Не удалось открыть папку: ${error}`)
   })
+
+  ipcMain.handle(IPC.gamesList, () => listGames())
+
+  ipcMain.handle(IPC.gameCreate, (_event, input: unknown) => addGame(parseGameInput(input)))
+
+  ipcMain.handle(IPC.gameUpdate, (_event, input: unknown) => updateGame(gameSchema.parse(input)))
+
+  ipcMain.handle(IPC.gameRemove, (_event, id: unknown): Promise<void> =>
+    removeGame(assertId(id))
+  )
 
   ipcMain.handle(IPC.playersList, () => listPlayers())
 
