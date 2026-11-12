@@ -14,17 +14,18 @@ const outDir = resolve(here, '../src/renderer/public/fonts')
 mkdirSync(outDir, { recursive: true })
 
 const FAMILIES = [
-  { family: 'Alegreya', weights: [400, 600] },
+  { family: 'Yeseva One', weights: [400] },
+  { family: 'Ruslan Display', weights: [400] },
+  { family: 'Oranienbaum', weights: [400] },
+  { family: 'Forum', weights: [400] },
+  { family: 'Kelly Slab', weights: [400] },
+  { family: 'Underdog', weights: [400] },
   { family: 'Alegreya Sans', weights: [400, 500, 700] },
-  { family: 'Vollkorn', weights: [400, 600] },
-  { family: 'Nunito', weights: [400, 600, 700] },
-  { family: 'Cormorant Garamond', weights: [400, 600] },
-  { family: 'Onest', weights: [400, 500, 600] },
-  { family: 'Philosopher', weights: [400, 700] },
   { family: 'Golos Text', weights: [400, 500, 600] },
-  { family: 'Literata', weights: [400, 600] },
-  { family: 'Manrope', weights: [400, 500, 600] },
-  { family: 'Rubik', weights: [400, 500, 600] }
+  { family: 'Onest', weights: [400, 500, 600] },
+  { family: 'Nunito', weights: [400, 600, 700] },
+  { family: 'Rubik', weights: [400, 500, 600] },
+  { family: 'Manrope', weights: [400, 600, 700] }
 ]
 
 const SUBSETS = ['cyrillic', 'latin']
