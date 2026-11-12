@@ -1,7 +1,16 @@
 import type { GameMasterApi } from '@shared/api'
+import { createWebBridge } from './webBridge'
 
-/** Типизированный доступ к мосту preload → main. */
-export const api: GameMasterApi = window.gameMaster
+const bridge: GameMasterApi | undefined = window.gameMaster
+
+/** true, если интерфейс открыт в обычном браузере (веб-предпросмотр без Electron). */
+export const isWebPreview = !bridge
+
+/**
+ * Типизированный доступ к бэкенду.
+ * В Electron — мост preload → main; в браузере — локальный веб-адаптер.
+ */
+export const api: GameMasterApi = bridge ?? createWebBridge()
 
 /**
  * Electron оборачивает ошибки IPC в «Error invoking remote method 'x': Error: ...».

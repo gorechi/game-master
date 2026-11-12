@@ -64,6 +64,8 @@
 ```
 build/                     иконка-исходник и entitlements для macOS
 scripts/generate-icon.mjs  генерация build/icon.png без зависимостей
+electron.vite.config.ts    сборка Electron (main/preload/renderer)
+vite.web.config.ts         браузерный предпросмотр без Electron
 src/
   main/                    главный процесс
     index.ts               жизненный цикл, CSP, внешние ссылки, single instance
@@ -74,7 +76,7 @@ src/
   renderer/                React-приложение
     src/components/        Library, CampaignView, InitiativeBoard, PartyRoster, NotesEditor
     src/hooks/             useCampaignSession (загрузка + автосохранение)
-    src/lib/               доступ к API, форматирование
+    src/lib/               доступ к API, веб-адаптер, форматирование
     src/styles.css         тема и вёрстка
   shared/                  код, общий для main и renderer
     api.ts                 контракт IPC
@@ -90,10 +92,21 @@ src/
 ```bash
 npm install
 npm run dev        # dev-сервер + Electron с HMR
+npm run dev:web    # только интерфейс в браузере (http://localhost:5180)
 npm run typecheck  # проверка типов main и renderer
 npm run build      # production-сборка в out/
 npm run icons      # перегенерировать build/icon.png
 ```
+
+### Веб-предпросмотр
+
+`npm run dev:web` поднимает только renderer — без Electron. UI работает на том же контракте
+`GameMasterApi`, но вместо IPC подставляется адаптер на `localStorage`
+(`src/renderer/src/lib/webBridge.ts`).
+
+- данные живут в браузере, файлов на диске нет;
+- кнопка «Сбросить данные» на главном экране очищает предпросмотр;
+- это режим для быстрой проверки интерфейса — реальные кампании хранит только десктопная версия.
 
 Данные dev-сборки хранятся отдельно от рабочих: `…/Game Master (dev)/campaigns`.
 

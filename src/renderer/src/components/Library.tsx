@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent, JSX } from 'react'
 import type { CampaignSummary } from '@shared/campaign'
-import { api, errorMessage } from '@renderer/lib/api'
+import { api, errorMessage, isWebPreview } from '@renderer/lib/api'
+import { resetWebPreview } from '@renderer/lib/webBridge'
 import { formatDateTime, pluralize } from '@renderer/lib/format'
 
 interface LibraryProps {
@@ -70,9 +71,18 @@ export function Library({ onOpen }: LibraryProps): JSX.Element {
             <p>Рабочее место мастера: инициатива, состав группы и заметки по партии.</p>
           </div>
         </div>
-        <button className="button button--ghost" onClick={() => void api.app.openDataFolder()}>
-          Папка с кампаниями
-        </button>
+        {isWebPreview ? (
+          <div className="hero__preview">
+            <span className="badge badge--preview">Веб-предпросмотр</span>
+            <button className="button button--ghost" onClick={resetWebPreview}>
+              Сбросить данные
+            </button>
+          </div>
+        ) : (
+          <button className="button button--ghost" onClick={() => void api.app.openDataFolder()}>
+            Папка с кампаниями
+          </button>
+        )}
       </header>
 
       <section className="create">
@@ -104,7 +114,11 @@ export function Library({ onOpen }: LibraryProps): JSX.Element {
           <p className="muted">Загружаем…</p>
         ) : campaigns.length === 0 ? (
           <div className="empty">
-            <p>Пока ни одной кампании. Создайте первую — файл появится на диске автоматически.</p>
+            <p>
+              {isWebPreview
+                ? 'Пока ни одной кампании. Создайте первую — данные сохранятся в браузере.'
+                : 'Пока ни одной кампании. Создайте первую — файл появится на диске автоматически.'}
+            </p>
           </div>
         ) : (
           <ul className="campaign-grid">

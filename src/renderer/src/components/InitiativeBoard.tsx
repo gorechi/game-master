@@ -112,6 +112,7 @@ export function InitiativeBoard({ campaign, update }: InitiativeBoardProps): JSX
         <input
           className="input"
           placeholder="Имя участника"
+          aria-label="Имя участника"
           value={name}
           maxLength={60}
           onChange={(event) => setName(event.target.value)}
@@ -121,6 +122,7 @@ export function InitiativeBoard({ campaign, update }: InitiativeBoardProps): JSX
           <input
             className="input input--num"
             type="number"
+            aria-label="Бонус инициативы"
             value={bonus}
             onChange={(event) => setBonus(event.target.value)}
           />
@@ -131,6 +133,7 @@ export function InitiativeBoard({ campaign, update }: InitiativeBoardProps): JSX
             className="input input--num"
             type="number"
             placeholder="d20"
+            aria-label="Инициатива"
             value={initiative}
             onChange={(event) => setInitiative(event.target.value)}
           />

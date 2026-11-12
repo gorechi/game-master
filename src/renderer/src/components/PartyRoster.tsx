@@ -64,13 +64,20 @@ export function PartyRoster({ campaign, update }: PartyRosterProps): JSX.Element
   }
 
   function addToEncounter(character: Character): void {
-    update((draft) => ({
-      ...draft,
-      encounter: {
-        ...draft.encounter,
-        combatants: [...draft.encounter.combatants, combatantFromCharacter(character)]
+    update((draft) => {
+      // Повторный клик (или двойной клик) не должен добавлять дубликата в бой.
+      if (draft.encounter.combatants.some((c) => c.characterId === character.id)) {
+        return draft
       }
-    }))
+
+      return {
+        ...draft,
+        encounter: {
+          ...draft.encounter,
+          combatants: [...draft.encounter.combatants, combatantFromCharacter(character)]
+        }
+      }
+    })
   }
 
   function isInEncounter(character: Character): boolean {
@@ -85,6 +92,7 @@ export function PartyRoster({ campaign, update }: PartyRosterProps): JSX.Element
           <input
             className="input"
             placeholder="Ария Среброкрылая"
+            aria-label="Имя персонажа"
             value={form.name}
             maxLength={60}
             onChange={(event) => setForm({ ...form, name: event.target.value })}
@@ -95,6 +103,7 @@ export function PartyRoster({ campaign, update }: PartyRosterProps): JSX.Element
           <input
             className="input"
             placeholder="Плут 5 · или «гоблин»"
+            aria-label="Класс или тип"
             value={form.subtitle}
             maxLength={60}
             onChange={(event) => setForm({ ...form, subtitle: event.target.value })}
@@ -104,6 +113,7 @@ export function PartyRoster({ campaign, update }: PartyRosterProps): JSX.Element
           <span className="field__label">Тип</span>
           <select
             className="select"
+            aria-label="Тип персонажа"
             value={form.kind}
             onChange={(event) => setForm({ ...form, kind: event.target.value as CharacterKind })}
           >
@@ -119,6 +129,7 @@ export function PartyRoster({ campaign, update }: PartyRosterProps): JSX.Element
           <input
             className="input input--num"
             type="number"
+            aria-label="Бонус инициативы"
             value={form.bonus}
             onChange={(event) => setForm({ ...form, bonus: event.target.value })}
           />
@@ -129,6 +140,7 @@ export function PartyRoster({ campaign, update }: PartyRosterProps): JSX.Element
             className="input input--num"
             type="number"
             placeholder="—"
+            aria-label="Класс доспеха"
             value={form.armorClass}
             onChange={(event) => setForm({ ...form, armorClass: event.target.value })}
           />
@@ -139,6 +151,7 @@ export function PartyRoster({ campaign, update }: PartyRosterProps): JSX.Element
             className="input input--num"
             type="number"
             placeholder="—"
+            aria-label="Максимум хитов"
             value={form.maxHp}
             onChange={(event) => setForm({ ...form, maxHp: event.target.value })}
           />

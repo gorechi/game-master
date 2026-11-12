@@ -345,6 +345,20 @@ input[type='number'] {
   border: 1px solid rgba(209, 88, 79, 0.45);
 }
 
+.badge--preview {
+  color: var(--gold-strong);
+  background: rgba(216, 178, 92, 0.12);
+  border: 1px solid rgba(216, 178, 92, 0.4);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hero__preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .empty {
   padding: 30px 24px;
   border: 1px dashed var(--border-strong);
