@@ -5,6 +5,7 @@ import {
   type CampaignSummary
 } from '@shared/campaign'
 import { playerSchema, type PlayerInput } from '@shared/player'
+import { isThemeName, type SettingsPatch } from '@shared/settings'
 import {
   IPC,
   type AppInfo,
@@ -22,6 +23,7 @@ import {
   saveCampaign
 } from './storage/campaignStore'
 import { addPlayer, listPlayers, removePlayer, updatePlayer } from './storage/playerStore'
+import { getSettings, updateSettings } from './storage/settingsStore'
 import { finishClose } from './window'
 
 function assertId(value: unknown): string {
@@ -42,6 +44,19 @@ function parsePlayerInput(value: unknown): PlayerInput {
   }
 
   return { firstName, lastName }
+}
+
+function parseSettingsPatch(value: unknown): SettingsPatch {
+  if (!value || typeof value !== 'object') {
+    throw new Error('Некорректные настройки')
+  }
+
+  const { theme } = value as Record<string, unknown>
+  if (theme !== undefined && !isThemeName(theme)) {
+    throw new Error('Некорректная тема оформления')
+  }
+
+  return { theme }
 }
 
 export function registerIpcHandlers(): void {
@@ -110,5 +125,11 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(IPC.playerRemove, (_event, id: unknown): Promise<void> =>
     removePlayer(assertId(id))
+  )
+
+  ipcMain.handle(IPC.settingsGet, () => getSettings())
+
+  ipcMain.handle(IPC.settingsUpdate, (_event, patch: unknown) =>
+    updateSettings(parseSettingsPatch(patch))
   )
 }

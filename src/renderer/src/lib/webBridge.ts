@@ -2,6 +2,13 @@ import type { AppInfo, GameMasterApi, SaveCampaignResult } from '@shared/api'
 import type { Campaign, CampaignSummary } from '@shared/campaign'
 import type { Player, PlayerInput } from '@shared/player'
 import {
+  DEFAULT_SETTINGS,
+  SETTINGS_SCHEMA_VERSION,
+  isThemeName,
+  type AppSettings,
+  type SettingsPatch
+} from '@shared/settings'
+import {
   createEmptyCampaign,
   createPlayer,
   normalizePlayerInput,
@@ -18,6 +25,7 @@ import {
 
 const STORAGE_KEY = 'game-master.preview.campaigns'
 const PLAYERS_KEY = 'game-master.preview.players'
+const SETTINGS_KEY = 'game-master.preview.settings'
 
 function readAll(): Record<string, Campaign> {
   try {
@@ -58,6 +66,26 @@ function readPlayers(): Player[] {
 
 function writePlayers(players: Player[]): void {
   window.localStorage.setItem(PLAYERS_KEY, JSON.stringify(players))
+}
+
+function readSettings(): AppSettings {
+  try {
+    const raw = window.localStorage.getItem(SETTINGS_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<AppSettings>
+      if (isThemeName(parsed.theme)) {
+        return { schemaVersion: SETTINGS_SCHEMA_VERSION, theme: parsed.theme }
+      }
+    }
+  } catch {
+    // повреждённые настройки предпросмотра не должны ломать приложение
+  }
+
+  return { ...DEFAULT_SETTINGS }
+}
+
+function writeSettings(settings: AppSettings): void {
+  window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
 }
 
 const beforeCloseListeners = new Set<() => void>()
@@ -158,6 +186,20 @@ export function createWebBridge(): GameMasterApi {
 
       remove: async (id: string): Promise<void> => {
         writePlayers(readPlayers().filter((item) => item.id !== id))
+      }
+    },
+
+    settings: {
+      get: async (): Promise<AppSettings> => readSettings(),
+
+      update: async (patch: SettingsPatch): Promise<AppSettings> => {
+        const next: AppSettings = {
+          ...readSettings(),
+          ...(patch.theme ? { theme: patch.theme } : {})
+        }
+
+        writeSettings(next)
+        return next
       }
     }
   }

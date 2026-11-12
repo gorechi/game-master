@@ -1,13 +1,44 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { JSX } from 'react'
+import { DEFAULT_SETTINGS, type AppSettings, type ThemeName } from '@shared/settings'
 import { Sidebar } from './components/Sidebar'
 import { PlayersPage } from './components/PlayersPage'
 import { Library } from './components/Library'
 import { CampaignView } from './components/CampaignView'
+import { SettingsPage } from './components/SettingsPage'
+import { api } from './lib/api'
+import { applyTheme } from './lib/theme'
 import type { Route } from './lib/routes'
 
 export default function App(): JSX.Element {
   const [route, setRoute] = useState<Route>({ name: 'players' })
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS)
+
+  useEffect(() => {
+    let cancelled = false
+
+    void api.settings
+      .get()
+      .then((loaded) => {
+        if (cancelled) return
+        setSettings(loaded)
+        applyTheme(loaded.theme)
+      })
+      .catch(() => {
+        // Настройки недоступны — остаёмся на теме из кэша.
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const changeTheme = useCallback((theme: ThemeName): void => {
+    // Сначала визуально, потом сохраняем: переключение не должно ждать диск.
+    applyTheme(theme)
+    setSettings((previous) => ({ ...previous, theme }))
+    void api.settings.update({ theme }).catch(() => undefined)
+  }, [])
 
   return (
     <div className="app">
@@ -25,6 +56,10 @@ export default function App(): JSX.Element {
             campaignId={route.id}
             onBack={() => setRoute({ name: 'campaigns' })}
           />
+        ) : null}
+
+        {route.name === 'settings' ? (
+          <SettingsPage settings={settings} onThemeChange={changeTheme} />
         ) : null}
       </div>
     </div>

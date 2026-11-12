@@ -1,0 +1,532 @@
+/* ==================================================================
+   Светлая тема «Рукопись»
+   ------------------------------------------------------------------
+   Пергамент, сепия, киноварь и золото; книжная антиква вместо
+   рукописных шрифтов. Тёмная тема живёт в :root (styles.css),
+   здесь — только переменные и точечные переопределения.
+   ================================================================== */
+
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #ece0c7;
+  --bg-soft: #f2e7d2;
+  --panel: #f8efdb;
+  --panel-soft: #f1e5cd;
+  --panel-raised: #fdf6e6;
+  --border: #d8c5a2;
+  --border-strong: #b99c70;
+
+  --ink: #33261a;
+  --ink-muted: #6d5941;
+  --ink-faint: #96805f;
+
+  --gold: #9a6a24;
+  --gold-strong: #7a4f12;
+
+  --danger: #a53a2c;
+  --danger-soft: rgba(165, 58, 44, 0.12);
+  --ok: #4f7d51;
+
+  --font-display: 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, 'Times New Roman', serif;
+
+  --shadow: 0 14px 30px rgba(74, 52, 26, 0.16);
+  --rule-color: rgba(122, 86, 44, 0.5);
+  --rubric: #8f3a2c;
+}
+
+/* ------------------------------------------------------------------ */
+/* Пергамент                                                          */
+/* ------------------------------------------------------------------ */
+
+:root[data-theme='light'] body {
+  background-color: #ece0c7;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='0.2'/%3E%3C/svg%3E"),
+    radial-gradient(1200px 720px at 10% -14%, rgba(255, 253, 245, 0.9), transparent 62%),
+    radial-gradient(900px 620px at 94% 0%, rgba(183, 138, 78, 0.22), transparent 62%),
+    radial-gradient(820px 580px at 4% 103%, rgba(176, 129, 70, 0.2), transparent 62%),
+    radial-gradient(1400px 1000px at 50% 44%, transparent 54%, rgba(116, 82, 42, 0.22) 100%),
+    repeating-linear-gradient(0deg, rgba(120, 88, 45, 0.035) 0 1px, transparent 1px 30px);
+  background-attachment: fixed;
+}
+
+:root[data-theme='light'] ::selection {
+  background: rgba(143, 58, 44, 0.22);
+}
+
+:root[data-theme='light'] ::-webkit-scrollbar-thumb {
+  background: #cdb892;
+  border-color: var(--bg);
+}
+
+:root[data-theme='light'] ::-webkit-scrollbar-thumb:hover {
+  background: #b79c72;
+}
+
+/* ------------------------------------------------------------------ */
+/* Типографика и декор                                               */
+/* ------------------------------------------------------------------ */
+
+:root[data-theme='light'] .page-head h1 {
+  background: linear-gradient(180deg, #4a3520, #7a4c1c 65%, #8f3a2c);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+:root[data-theme='light'] .campaigns__head {
+  border-bottom-color: var(--border-strong);
+}
+
+:root[data-theme='light'] .campaigns__head h2 {
+  letter-spacing: 0.015em;
+}
+
+:root[data-theme='light'] .settings-block,
+:root[data-theme='light'] .player-card,
+:root[data-theme='light'] .campaign-card,
+:root[data-theme='light'] .init-row,
+:root[data-theme='light'] .roster-row,
+:root[data-theme='light'] .modal,
+:root[data-theme='light'] .theme-card {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.55),
+    0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+:root[data-theme='light'] .theme-card--active {
+  border-color: var(--rubric);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.55),
+    0 0 0 3px rgba(143, 58, 44, 0.12);
+}
+
+/* ------------------------------------------------------------------ */
+/* Кнопки                                                             */
+/* ------------------------------------------------------------------ */
+
+:root[data-theme='light'] .button {
+  background: var(--panel-soft);
+  border-color: var(--border-strong);
+}
+
+:root[data-theme='light'] .button:hover:not(:disabled) {
+  background: var(--panel-raised);
+  border-color: #a8875a;
+}
+
+:root[data-theme='light'] .button--primary {
+  background: linear-gradient(180deg, #a4452f, #8c3423);
+  border-color: #7d2e1e;
+  color: #fdf3e0;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 1px 2px rgba(74, 35, 20, 0.25);
+}
+
+:root[data-theme='light'] .button--primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #b34f37, #963a27);
+  border-color: #8a3421;
+}
+
+:root[data-theme='light'] .button--danger {
+  color: #8c3423;
+}
+
+:root[data-theme='light'] .button--danger:hover:not(:disabled) {
+  background: var(--danger-soft);
+  border-color: rgba(140, 52, 35, 0.45);
+}
+
+:root[data-theme='light'] .button--danger-solid {
+  background: linear-gradient(180deg, #a4452f, #8c3423);
+  border-color: #7d2e1e;
+  color: #fdf3e0;
+}
+
+:root[data-theme='light'] .button--danger-solid:hover:not(:disabled) {
+  background: linear-gradient(180deg, #b34f37, #963a27);
+  border-color: #8a3421;
+}
+
+:root[data-theme='light'] .icon-button:hover {
+  color: var(--ink);
+  background: var(--panel-soft);
+  border-color: var(--border-strong);
+}
+
+:root[data-theme='light'] .icon-button--danger:hover {
+  color: #8c3423;
+  background: var(--danger-soft);
+  border-color: rgba(140, 52, 35, 0.4);
+}
+
+/* ------------------------------------------------------------------ */
+/* Поля и списки                                                      */
+/* ------------------------------------------------------------------ */
+
+:root[data-theme='light'] .input,
+:root[data-theme='light'] .notes__area,
+:root[data-theme='light'] .picker--field .picker__trigger {
+  background: #fbf3e2;
+  border-color: var(--border);
+  box-shadow: inset 0 1px 2px rgba(90, 66, 38, 0.1);
+}
+
+:root[data-theme='light'] .input:focus,
+:root[data-theme='light'] .notes__area:focus,
+:root[data-theme='light'] .picker--open .picker__trigger {
+  background: #fffaf0;
+  border-color: var(--gold);
+  box-shadow:
+    0 0 0 3px rgba(154, 106, 36, 0.14),
+    inset 0 1px 2px rgba(90, 66, 38, 0.08);
+}
+
+:root[data-theme='light'] .picker__menu {
+  background: #fdf6e6;
+  border-color: var(--border-strong);
+  box-shadow: 0 18px 40px rgba(58, 42, 24, 0.22);
+}
+
+:root[data-theme='light'] .picker__option--active {
+  color: var(--ink);
+  background: rgba(122, 86, 44, 0.1);
+}
+
+:root[data-theme='light'] .picker__option--selected {
+  color: var(--rubric);
+}
+
+:root[data-theme='light'] .picker--chip .picker__trigger {
+  color: var(--ink-muted);
+  border-color: var(--border);
+}
+
+/* ------------------------------------------------------------------ */
+/* Теги, плашки, состояния                                            */
+/* ------------------------------------------------------------------ */
+
+:root[data-theme='light'] .tag {
+  background: rgba(122, 86, 44, 0.06);
+  border-color: var(--border);
+  color: var(--ink-muted);
+}
+
+:root[data-theme='light'] .tag--player,
+:root[data-theme='light'] .tag--pc {
+  color: #2f5a86;
+  border-color: rgba(47, 90, 134, 0.32);
+  background: rgba(47, 90, 134, 0.08);
+}
+
+:root[data-theme='light'] .tag--npc {
+  color: #5b4478;
+  border-color: rgba(91, 68, 120, 0.3);
+  background: rgba(91, 68, 120, 0.08);
+}
+
+:root[data-theme='light'] .tag--monster {
+  color: #8c3423;
+  border-color: rgba(140, 52, 35, 0.3);
+  background: rgba(140, 52, 35, 0.08);
+}
+
+:root[data-theme='light'] .tag--active {
+  color: #fdf3e0;
+  background: var(--rubric);
+  border-color: #7d2e1e;
+}
+
+:root[data-theme='light'] .badge--error {
+  color: #8c3423;
+  background: var(--danger-soft);
+  border-color: rgba(140, 52, 35, 0.35);
+}
+
+:root[data-theme='light'] .notice--error {
+  color: #8c3423;
+  border-color: rgba(140, 52, 35, 0.35);
+  background: var(--danger-soft);
+}
+
+:root[data-theme='light'] .save--ok {
+  color: #3f6b41;
+  border-color: rgba(63, 107, 65, 0.35);
+  background: rgba(79, 125, 81, 0.1);
+}
+
+:root[data-theme='light'] .save--error {
+  color: #8c3423;
+  border-color: rgba(140, 52, 35, 0.4);
+  background: var(--danger-soft);
+}
+
+/* ------------------------------------------------------------------ */
+/* Пустые состояния и панели                                          */
+/* ------------------------------------------------------------------ */
+
+:root[data-theme='light'] .empty {
+  background: rgba(255, 255, 255, 0.32);
+  border-color: var(--border-strong);
+}
+
+:root[data-theme='light'] .create__form {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.2));
+}
+
+:root[data-theme='light'] .settings-block {
+  background: linear-gradient(180deg, #f9f1de, #f4e9d3);
+}
+
+/* ------------------------------------------------------------------ */
+/* Библиотека кампаний                                                */
+/* ------------------------------------------------------------------ */
+
+:root[data-theme='light'] .campaign-card {
+  background: linear-gradient(180deg, #fbf3e2, #f3e8d2);
+}
+
+:root[data-theme='light'] .campaign-card:hover {
+  border-color: rgba(143, 58, 44, 0.45);
+  box-shadow: 0 18px 34px rgba(74, 52, 26, 0.18);
+}
+
+:root[data-theme='light'] .campaign-card__date {
+  color: var(--ink-faint);
+}
+
+:root[data-theme='light'] .campaign-card__actions {
+  background: rgba(122, 86, 44, 0.06);
+}
+
+:root[data-theme='light'] .icon-button {
+  color: #6b5338;
+}
+
+:root[data-theme='light'] .icon-button--danger {
+  color: #8c3423;
+}
+
+/* ------------------------------------------------------------------ */
+/* Экран кампании                                                     */
+/* ------------------------------------------------------------------ */
+
+:root[data-theme='light'] .campaign__bar {
+  background: rgba(240, 229, 208, 0.88);
+  border-bottom-color: var(--border);
+}
+
+:root[data-theme='light'] .campaign__title:hover {
+  background: rgba(122, 86, 44, 0.07);
+}
+
+:root[data-theme='light'] .campaign__title:focus {
+  background: #fffaf0;
+  border-color: var(--border-strong);
+}
+
+:root[data-theme='light'] .tabs {
+  background: rgba(240, 229, 208, 0.62);
+}
+
+:root[data-theme='light'] .tab {
+  color: var(--ink-muted);
+}
+
+:root[data-theme='light'] .tab--active {
+  color: var(--rubric);
+  border-bottom-color: var(--rubric);
+}
+
+:root[data-theme='light'] .tab__hint {
+  background: rgba(122, 86, 44, 0.09);
+  color: var(--ink-muted);
+}
+
+/* ------------------------------------------------------------------ */
+/* Трекер инициативы                                                  */
+/* ------------------------------------------------------------------ */
+
+:root[data-theme='light'] .board__toolbar {
+  background: linear-gradient(180deg, #f9f0dd, #f2e6cf);
+}
+
+:root[data-theme='light'] .round__value {
+  color: var(--rubric);
+}
+
+:root[data-theme='light'] .add-row {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: var(--border-strong);
+}
+
+:root[data-theme='light'] .init-row {
+  background: linear-gradient(180deg, #fbf3e2, #f6ecd8);
+}
+
+:root[data-theme='light'] .init-row:hover {
+  border-color: var(--border-strong);
+}
+
+:root[data-theme='light'] .init-row--active {
+  border-color: rgba(143, 58, 44, 0.55);
+  background: linear-gradient(90deg, rgba(143, 58, 44, 0.09), #f8efdb 48%);
+  box-shadow:
+    0 0 0 1px rgba(143, 58, 44, 0.12),
+    0 10px 22px rgba(74, 52, 26, 0.1);
+}
+
+:root[data-theme='light'] .input--init {
+  color: var(--rubric);
+  background: rgba(143, 58, 44, 0.06);
+  border-color: rgba(143, 58, 44, 0.28);
+}
+
+:root[data-theme='light'] .inline-input:hover {
+  background: rgba(122, 86, 44, 0.07);
+}
+
+:root[data-theme='light'] .inline-input:focus {
+  background: #fffaf0;
+  border-color: var(--border-strong);
+}
+
+:root[data-theme='light'] .hp {
+  background: rgba(255, 255, 255, 0.45);
+  border-color: var(--border);
+}
+
+:root[data-theme='light'] .hp__btn:hover {
+  background: rgba(122, 86, 44, 0.12);
+  color: var(--ink);
+}
+
+:root[data-theme='light'] .hp__value:focus {
+  background: #fffaf0;
+}
+
+:root[data-theme='light'] .chip--condition {
+  color: #8c3423;
+  background: rgba(143, 58, 44, 0.1);
+  border-color: rgba(143, 58, 44, 0.3);
+}
+
+:root[data-theme='light'] .chip--condition:hover {
+  background: rgba(143, 58, 44, 0.2);
+}
+
+/* ------------------------------------------------------------------ */
+/* Группа и игроки                                                    */
+/* ------------------------------------------------------------------ */
+
+:root[data-theme='light'] .roster-form {
+  background: linear-gradient(180deg, #f9f0dd, #f2e6cf);
+}
+
+:root[data-theme='light'] .roster-row {
+  background: #f9f0dd;
+}
+
+:root[data-theme='light'] .roster-row--pc {
+  border-left-color: rgba(47, 90, 134, 0.65);
+}
+
+:root[data-theme='light'] .roster-row--npc {
+  border-left-color: rgba(91, 68, 120, 0.6);
+}
+
+:root[data-theme='light'] .roster-row--monster {
+  border-left-color: rgba(140, 52, 35, 0.6);
+}
+
+:root[data-theme='light'] .player-card {
+  background: linear-gradient(120deg, #fbf3e2, #f4e9d3);
+}
+
+:root[data-theme='light'] .player-card:hover {
+  border-color: var(--border-strong);
+}
+
+:root[data-theme='light'] .player-card__avatar {
+  color: #7a4f12;
+  background: rgba(154, 106, 36, 0.1);
+  border-color: rgba(154, 106, 36, 0.32);
+}
+
+:root[data-theme='light'] .player-card__surname {
+  color: var(--ink-muted);
+}
+
+/* ------------------------------------------------------------------ */
+/* Модальные окна                                                     */
+/* ------------------------------------------------------------------ */
+
+:root[data-theme='light'] .modal-overlay {
+  background: rgba(58, 42, 24, 0.4);
+  backdrop-filter: blur(4px);
+}
+
+:root[data-theme='light'] .modal {
+  background: linear-gradient(180deg, #fbf4e5, #f3e8d2);
+  border-color: var(--border-strong);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6),
+    0 26px 60px rgba(58, 42, 24, 0.3);
+}
+
+:root[data-theme='light'] .modal--danger {
+  border-color: rgba(140, 52, 35, 0.45);
+}
+
+:root[data-theme='light'] .modal__footer {
+  background: rgba(122, 86, 44, 0.06);
+  border-top-color: var(--border);
+}
+
+/* ------------------------------------------------------------------ */
+/* Боковое меню — кожаный переплёт                                     */
+/* ------------------------------------------------------------------ */
+
+:root[data-theme='light'] .sidebar {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 32%),
+    linear-gradient(180deg, #4b3624, #39291a 72%);
+  border-right-color: #2a1d12;
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.06);
+}
+
+:root[data-theme='light'] .sidebar__title {
+  color: #f4e9d3;
+}
+
+:root[data-theme='light'] .sidebar__die {
+  color: #e8c77e;
+  background: linear-gradient(160deg, rgba(232, 199, 126, 0.18), rgba(143, 58, 44, 0.14));
+  border-color: rgba(232, 199, 126, 0.4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+:root[data-theme='light'] .nav-item {
+  color: rgba(244, 233, 211, 0.72);
+}
+
+:root[data-theme='light'] .nav-item:hover {
+  color: #fbf3e2;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+:root[data-theme='light'] .nav-item--active {
+  color: #f5d79a;
+  background: rgba(232, 199, 126, 0.14);
+  border-color: rgba(232, 199, 126, 0.35);
+}
+
+:root[data-theme='light'] .sidebar__note {
+  color: rgba(244, 233, 211, 0.7);
+  border-color: rgba(244, 233, 211, 0.25);
+}
+
+:root[data-theme='light'] .sidebar__note span {
+  color: rgba(244, 233, 211, 0.45);
+}

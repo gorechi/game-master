@@ -26,6 +26,10 @@ const api: GameMasterApi = {
     create: (input) => ipcRenderer.invoke(IPC.playerCreate, input),
     update: (player) => ipcRenderer.invoke(IPC.playerUpdate, player),
     remove: (id) => ipcRenderer.invoke(IPC.playerRemove, id)
+  },
+  settings: {
+    get: () => ipcRenderer.invoke(IPC.settingsGet),
+    update: (patch) => ipcRenderer.invoke(IPC.settingsUpdate, patch)
   }
 }
 

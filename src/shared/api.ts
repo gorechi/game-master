@@ -1,5 +1,6 @@
 import type { Campaign, CampaignSummary } from './campaign'
 import type { Player, PlayerInput } from './player'
+import type { AppSettings, SettingsPatch } from './settings'
 
 /**
  * Контракт между renderer и main. Единственный источник правды для
@@ -19,7 +20,9 @@ export const IPC = {
   playersList: 'players:list',
   playerCreate: 'player:create',
   playerUpdate: 'player:update',
-  playerRemove: 'player:remove'
+  playerRemove: 'player:remove',
+  settingsGet: 'settings:get',
+  settingsUpdate: 'settings:update'
 } as const
 
 export interface AppInfo {
@@ -63,5 +66,10 @@ export interface GameMasterApi {
     create(input: PlayerInput): Promise<Player>
     update(player: Player): Promise<Player>
     remove(id: string): Promise<void>
+  }
+  /** Настройки приложения (тема и прочее). */
+  settings: {
+    get(): Promise<AppSettings>
+    update(patch: SettingsPatch): Promise<AppSettings>
   }
 }
