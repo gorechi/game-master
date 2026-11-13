@@ -295,7 +295,7 @@ export function GameFormModal({
       <li className="game-monster-row" key={monster.id}>
         <span className="game-monster-row__title">
           <span className="game-monster-row__name">{monster.name}</span>
-          <span className="game-monster-row__badge">готовый</span>
+          <span className="game-monster-row__badge">Уникальный</span>
         </span>
         <span className="game-monster-row__meta">
           КО {formatChallengeRating(monster.challengeRating)} · КЗ {monster.armorClass} · ХП{' '}
@@ -606,125 +606,96 @@ export function GameFormModal({
               >
                 {!readOnly ? (
                   <div className={`monster-pickers${isEdit ? ' monster-pickers--single' : ''}`}>
-                    <div className="monster-column">
+                    <div className="field">
+                      <span className="field__label">Из бестиария</span>
+                      {bestiary.length === 0 ? (
+                        <p className="abilities-editor__empty">В бестиарии пока нет монстров.</p>
+                      ) : !isEdit && availableBestiary.length === 0 ? (
+                        <p className="abilities-editor__empty">
+                          Все монстры из бестиария уже добавлены.
+                        </p>
+                      ) : (
+                        <Select
+                          ariaLabel={
+                            isEdit
+                              ? 'Добавить монстра из бестиария'
+                              : 'Выбрать монстра из бестиария'
+                          }
+                          value=""
+                          searchable
+                          placeholder="Найти монстра…"
+                          options={(isEdit ? bestiary : availableBestiary).map((monster) => ({
+                            value: monster.id,
+                            label: `${monster.name} · КО ${formatChallengeRating(
+                              monster.challengeRating
+                            )}`
+                          }))}
+                          onChange={addMonster}
+                        />
+                      )}
+                    </div>
+
+                    {!isEdit ? (
                       <div className="field">
-                        <span className="field__label">Из бестиария</span>
-                        {bestiary.length === 0 ? (
+                        <span className="field__label">Сохранённые игровые монстры</span>
+                        {savedMonsters.length === 0 ? (
                           <p className="abilities-editor__empty">
-                            В бестиарии пока нет монстров.
+                            Появляются после завершения игры с сохранением монстров.
                           </p>
-                        ) : !isEdit && availableBestiary.length === 0 ? (
+                        ) : availableSaved.length === 0 ? (
                           <p className="abilities-editor__empty">
-                            Все монстры из бестиария уже добавлены.
+                            Все сохранённые монстры уже добавлены.
                           </p>
                         ) : (
                           <Select
-                            ariaLabel={
-                              isEdit
-                                ? 'Добавить монстра из бестиария'
-                                : 'Выбрать монстра из бестиария'
-                            }
+                            ariaLabel="Добавить сохранённого монстра"
                             value=""
                             searchable
-                            placeholder="Найти монстра…"
-                            options={(isEdit ? bestiary : availableBestiary).map((monster) => ({
+                            placeholder="Найти сохранённого монстра…"
+                            options={availableSaved.map((monster) => ({
                               value: monster.id,
                               label: `${monster.name} · КО ${formatChallengeRating(
                                 monster.challengeRating
                               )}`
                             }))}
-                            onChange={addMonster}
+                            onChange={addSavedMonster}
                           />
                         )}
                       </div>
-
-                      <ul
-                        className="game-monster-list game-monster-list--scroll"
-                        aria-label={isEdit ? 'Монстры в игре' : 'Монстры из бестиария'}
-                      >
-                        {isEdit
-                          ? instances.length === 0
-                            ? (
-                                <li className="game-monster-list__empty">
-                                  Пока ни одного монстра в игре.
-                                </li>
-                              )
-                            : instances.map(renderInstanceRow)
-                          : selections.length === 0
-                            ? (
-                                <li className="game-monster-list__empty">
-                                  Добавленные из бестиария появятся здесь.
-                                </li>
-                              )
-                            : selections.map(renderSelectionRow)}
-                      </ul>
-                    </div>
-
-                    {!isEdit ? (
-                      <div className="monster-column">
-                        <div className="field">
-                          <span className="field__label">Сохранённые игровые монстры</span>
-                          {savedMonsters.length === 0 ? (
-                            <p className="abilities-editor__empty">
-                              Появляются после завершения игры с сохранением монстров.
-                            </p>
-                          ) : availableSaved.length === 0 ? (
-                            <p className="abilities-editor__empty">
-                              Все сохранённые монстры уже добавлены.
-                            </p>
-                          ) : (
-                            <Select
-                              ariaLabel="Добавить сохранённого монстра"
-                              value=""
-                              searchable
-                              placeholder="Найти сохранённого монстра…"
-                              options={availableSaved.map((monster) => ({
-                                value: monster.id,
-                                label: `${monster.name} · КО ${formatChallengeRating(
-                                  monster.challengeRating
-                                )}`
-                              }))}
-                              onChange={addSavedMonster}
-                            />
-                          )}
-                        </div>
-
-                        <ul
-                          className="game-monster-list game-monster-list--scroll"
-                          aria-label="Готовые экземпляры"
-                        >
-                          {readyMonsters.length === 0 ? (
-                            <li className="game-monster-list__empty">
-                              Добавленные готовые монстры появятся здесь.
-                            </li>
-                          ) : (
-                            readyMonsters.map(renderReadyRow)
-                          )}
-                        </ul>
-                      </div>
                     ) : null}
                   </div>
-                ) : (
-                  <ul
-                    className="game-monster-list game-monster-list--scroll"
-                    aria-label="Монстры в игре"
-                  >
-                    {instances.length === 0 ? (
+                ) : null}
+
+                <ul
+                  className="game-monster-list game-monster-list--scroll"
+                  aria-label="Монстры в игре"
+                >
+                  {isEdit ? (
+                    instances.length === 0 ? (
                       <li className="game-monster-list__empty">
                         Пока ни одного монстра в игре.
                       </li>
                     ) : (
                       instances.map(renderInstanceRow)
-                    )}
-                  </ul>
-                )}
+                    )
+                  ) : readyMonsters.length === 0 && selections.length === 0 ? (
+                    <li className="game-monster-list__empty">
+                      Добавьте монстров из списков выше.
+                    </li>
+                  ) : (
+                    <>
+                      {readyMonsters.map(renderReadyRow)}
+                      {selections.map(renderSelectionRow)}
+                    </>
+                  )}
+                </ul>
 
                 <p className="game-editor__hint">
                   {readOnly
                     ? 'Только просмотр: завершённую игру нельзя редактировать.'
                     : isEdit
-                      ? 'Экземпляры созданы вместе с игрой: имя и характеристики у каждого свои, бестиарий остаётся нетронутым.'
-                      : 'Экземпляры из бестиария создаются при сохранении. Сохранённые игровые монстры добавляются как есть — без копий и количества.'}
+                      ? 'Экземпляры созданы вместе с игрой: бестиарий остаётся нетронутым.'
+                      : 'Копии из бестиария создаются при сохранении; уникальные добавляются как есть.'}
                 </p>
               </section>
             )}
