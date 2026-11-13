@@ -3,7 +3,7 @@ import type { CharacterProfile, CharacterProfileInput } from './characterProfile
 import type { Monster, MonsterAbility, MonsterInput } from './monster'
 import type { Game, GameInput, GameMonster } from './game'
 import type { GameMonsterEntry } from './gameMonster'
-import type { World, WorldInput, WorldPlace, WorldPath } from './world'
+import type { GameMap, GameMapInput, MapPlace, MapPath } from './map'
 
 /**
  * Доменный слой без зависимостей: фабрики, подписи и сводки.
@@ -185,37 +185,43 @@ export function formatChallengeRating(value: number): string {
 }
 
 /* ------------------------------------------------------------------ */
-/* Сеттинги (пространства с местами и путями)                         */
+/* Карты (пространства с местами и путями)                            */
 /* ------------------------------------------------------------------ */
 
-export function createWorldPlace(name: string, isExit = false): WorldPlace {
+export function createMapPlace(
+  name: string,
+  isExit = false,
+  linkedMapId: string | null = null
+): MapPlace {
   return {
     id: crypto.randomUUID(),
     name: name.trim().slice(0, 100),
-    isExit
+    isExit,
+    linkedMapId: isExit ? linkedMapId : null
   }
 }
 
 /** Одна и та же связь всегда хранится с меньшим id первым. */
-export function canonicalWorldPath(a: string, b: string): WorldPath {
+export function canonicalMapPath(a: string, b: string): MapPath {
   return a < b ? { a, b } : { a: b, b: a }
 }
 
-export function worldPathKey(path: WorldPath): string {
+export function mapPathKey(path: MapPath): string {
   return `${path.a}|${path.b}`
 }
 
-export type NormalizedWorldInput = {
+export type NormalizedMapInput = {
   name: string
-  places: WorldPlace[]
-  paths: WorldPath[]
+  places: MapPlace[]
+  paths: MapPath[]
 }
 
-export function normalizeWorldInput(input: WorldInput): NormalizedWorldInput {
+export function normalizeMapInput(input: GameMapInput): NormalizedMapInput {
   const places = input.places.map((place) => ({
     id: place.id,
     name: place.name.trim().slice(0, 100),
-    isExit: place.isExit
+    isExit: place.isExit,
+    linkedMapId: place.isExit ? (place.linkedMapId ?? null) : null
   }))
 
   if (places.some((place) => !place.name)) {
@@ -228,13 +234,13 @@ export function normalizeWorldInput(input: WorldInput): NormalizedWorldInput {
   }
 
   const seen = new Set<string>()
-  const paths: WorldPath[] = []
+  const paths: MapPath[] = []
 
   for (const path of input.paths) {
     if (!ids.has(path.a) || !ids.has(path.b) || path.a === path.b) continue
 
-    const canonical = canonicalWorldPath(path.a, path.b)
-    const key = worldPathKey(canonical)
+    const canonical = canonicalMapPath(path.a, path.b)
+    const key = mapPathKey(canonical)
     if (seen.has(key)) continue
 
     seen.add(key)
@@ -248,24 +254,24 @@ export function normalizeWorldInput(input: WorldInput): NormalizedWorldInput {
   }
 }
 
-export function createWorld(input: WorldInput, id: string = crypto.randomUUID()): World {
+export function createMap(input: GameMapInput, id: string = crypto.randomUUID()): GameMap {
   const now = new Date().toISOString()
 
   return {
     id,
-    ...normalizeWorldInput(input),
+    ...normalizeMapInput(input),
     createdAt: now,
     updatedAt: now
   }
 }
 
 /** Возвращает пути, в которых участвует место. */
-export function placePaths(paths: readonly WorldPath[], placeId: string): WorldPath[] {
+export function placePaths(paths: readonly MapPath[], placeId: string): MapPath[] {
   return paths.filter((path) => path.a === placeId || path.b === placeId)
 }
 
 /** Список id мест, с которыми связано указанное место. */
-export function connectedPlaceIds(paths: readonly WorldPath[], placeId: string): string[] {
+export function connectedPlaceIds(paths: readonly MapPath[], placeId: string): string[] {
   return placePaths(paths, placeId).map((path) => (path.a === placeId ? path.b : path.a))
 }
 
@@ -274,18 +280,18 @@ export function connectedPlaceIds(paths: readonly WorldPath[], placeId: string):
  * у второго места она появится автоматически.
  */
 export function setPlaceConnections(
-  paths: readonly WorldPath[],
+  paths: readonly MapPath[],
   placeId: string,
   connectedIds: readonly string[]
-): WorldPath[] {
+): MapPath[] {
   const next = paths.filter((path) => path.a !== placeId && path.b !== placeId)
-  const seen = new Set(next.map(worldPathKey))
+  const seen = new Set(next.map(mapPathKey))
 
   for (const connectedId of new Set(connectedIds)) {
     if (connectedId === placeId) continue
 
-    const path = canonicalWorldPath(placeId, connectedId)
-    const key = worldPathKey(path)
+    const path = canonicalMapPath(placeId, connectedId)
+    const key = mapPathKey(path)
     if (seen.has(key)) continue
 
     seen.add(key)

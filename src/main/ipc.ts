@@ -3,7 +3,7 @@ import { playerSchema, type PlayerInput } from '@shared/player'
 import { characterProfileInputSchema, characterProfileSchema } from '@shared/characterProfile'
 import { monsterInputSchema, monsterSchema } from '@shared/monster'
 import { gameInputSchema, gameSchema } from '@shared/game'
-import { worldInputSchema, worldSchema } from '@shared/world'
+import { gameMapInputSchema, gameMapSchema } from '@shared/map'
 import { isGameStatus } from '@shared/gameStatus'
 import { isThemeName, type SettingsPatch } from '@shared/settings'
 import { IPC, type AppInfo } from '@shared/api'
@@ -15,7 +15,7 @@ import {
   updateCharacter
 } from './storage/characterStore'
 import { addMonster, listMonsters, removeMonster, updateMonster } from './storage/monsterStore'
-import { addWorld, listWorlds, removeWorld, updateWorld } from './storage/worldStore'
+import { addMap, listMaps, removeMap, updateMap } from './storage/mapStore'
 import {
   addGame,
   finishGame,
@@ -157,18 +157,18 @@ export function registerIpcHandlers(): void {
     removeMonster(assertId(id))
   )
 
-  ipcMain.handle(IPC.worldsList, () => listWorlds())
+  ipcMain.handle(IPC.mapsList, () => listMaps())
 
-  ipcMain.handle(IPC.worldCreate, (_event, input: unknown) =>
-    addWorld(worldInputSchema.parse(input))
+  ipcMain.handle(IPC.mapCreate, (_event, input: unknown) =>
+    addMap(gameMapInputSchema.parse(input))
   )
 
-  ipcMain.handle(IPC.worldUpdate, (_event, input: unknown) =>
-    updateWorld(worldSchema.parse(input))
+  ipcMain.handle(IPC.mapUpdate, (_event, input: unknown) =>
+    updateMap(gameMapSchema.parse(input))
   )
 
-  ipcMain.handle(IPC.worldRemove, (_event, id: unknown): Promise<void> =>
-    removeWorld(assertId(id))
+  ipcMain.handle(IPC.mapRemove, (_event, id: unknown): Promise<void> =>
+    removeMap(assertId(id))
   )
 
   ipcMain.handle(IPC.settingsGet, () => getSettings())

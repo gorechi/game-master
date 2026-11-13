@@ -3,7 +3,7 @@ import type { Player, PlayerInput } from '@shared/player'
 import type { CharacterProfile, CharacterProfileInput } from '@shared/characterProfile'
 import type { Monster, MonsterInput } from '@shared/monster'
 import type { Game, GameInput } from '@shared/game'
-import type { World, WorldInput } from '@shared/world'
+import type { GameMap, GameMapInput } from '@shared/map'
 import {
   canTransitionGame,
   isGameDeletable,
@@ -16,13 +16,13 @@ import {
   clampMonsterScore,
   createCharacterProfile,
   createGame,
+  createMap,
   createMonster,
   createPlayer,
-  createWorld,
   normalizeCharacterProfileInput,
+  normalizeMapInput,
   normalizeMonsterInput,
-  normalizePlayerInput,
-  normalizeWorldInput
+  normalizePlayerInput
 } from '@shared/domain'
 import {
   DEFAULT_SETTINGS,
@@ -45,7 +45,8 @@ const GAME_MONSTERS_KEY = 'game-master.preview.gameMonsters'
 const PLAYERS_KEY = 'game-master.preview.players'
 const CHARACTERS_KEY = 'game-master.preview.characters'
 const MONSTERS_KEY = 'game-master.preview.monsters'
-const WORLDS_KEY = 'game-master.preview.worlds'
+const MAPS_KEY = 'game-master.preview.maps'
+const LEGACY_WORLDS_KEY = 'game-master.preview.worlds'
 const SETTINGS_KEY = 'game-master.preview.settings'
 
 /** Полный сброс предпросмотра (кнопка на главном экране). */
@@ -55,7 +56,8 @@ export function resetWebPreview(): void {
   window.localStorage.removeItem(PLAYERS_KEY)
   window.localStorage.removeItem(CHARACTERS_KEY)
   window.localStorage.removeItem(MONSTERS_KEY)
-  window.localStorage.removeItem(WORLDS_KEY)
+  window.localStorage.removeItem(MAPS_KEY)
+  window.localStorage.removeItem(LEGACY_WORLDS_KEY)
   window.location.reload()
 }
 
@@ -122,26 +124,35 @@ function writeMonsters(monsters: Monster[]): void {
   window.localStorage.setItem(MONSTERS_KEY, JSON.stringify(monsters))
 }
 
-function readWorlds(): World[] {
+function readMaps(): GameMap[] {
   try {
-    const raw = window.localStorage.getItem(WORLDS_KEY)
+    const raw =
+      window.localStorage.getItem(MAPS_KEY) ?? window.localStorage.getItem(LEGACY_WORLDS_KEY)
     if (!raw) return []
 
     const parsed: unknown = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
 
-    return (parsed as World[]).map((world) => ({
-      ...world,
-      places: Array.isArray(world.places) ? world.places : [],
-      paths: Array.isArray(world.paths) ? world.paths : []
+    const maps = (parsed as GameMap[]).map((map) => ({
+      ...map,
+      places: Array.isArray(map.places)
+        ? map.places.map((place) => ({
+            ...place,
+            linkedMapId: typeof place.linkedMapId === 'string' ? place.linkedMapId : null
+          }))
+        : [],
+      paths: Array.isArray(map.paths) ? map.paths : []
     }))
+
+    window.localStorage.setItem(MAPS_KEY, JSON.stringify(maps))
+    return maps
   } catch {
     return []
   }
 }
 
-function writeWorlds(worlds: World[]): void {
-  window.localStorage.setItem(WORLDS_KEY, JSON.stringify(worlds))
+function writeMaps(maps: GameMap[]): void {
+  window.localStorage.setItem(MAPS_KEY, JSON.stringify(maps))
 }
 
 function readGames(): Game[] {
@@ -408,28 +419,46 @@ export function createWebBridge(): GameMasterApi {
       }
     },
 
-    worlds: {
-      list: async (): Promise<World[]> => readWorlds(),
+    maps: {
+      list: async (): Promise<GameMap[]> => readMaps(),
 
-      create: async (input: WorldInput): Promise<World> => {
-        const world = createWorld(input)
-        writeWorlds([...readWorlds(), world])
-        return world
+      create: async (input: GameMapInput): Promise<GameMap> => {
+        const map = createMap(input)
+        writeMaps([...readMaps(), map])
+        return map
       },
 
-      update: async (world: World): Promise<World> => {
-        const updated: World = {
-          ...world,
-          ...normalizeWorldInput(world),
+      update: async (map: GameMap): Promise<GameMap> => {
+        const normalized = normalizeMapInput(map)
+        const updated: GameMap = {
+          ...map,
+          ...normalized,
+          places: normalized.places.map((place) =>
+            place.linkedMapId === map.id ? { ...place, linkedMapId: null } : place
+          ),
           updatedAt: new Date().toISOString()
         }
 
-        writeWorlds(readWorlds().map((item) => (item.id === world.id ? updated : item)))
+        writeMaps(readMaps().map((item) => (item.id === map.id ? updated : item)))
         return updated
       },
 
       remove: async (id: string): Promise<void> => {
-        writeWorlds(readWorlds().filter((item) => item.id !== id))
+        const maps = readMaps()
+          .filter((item) => item.id !== id)
+          .map((item) =>
+            item.places.some((place) => place.linkedMapId === id)
+              ? {
+                  ...item,
+                  places: item.places.map((place) =>
+                    place.linkedMapId === id ? { ...place, linkedMapId: null } : place
+                  ),
+                  updatedAt: new Date().toISOString()
+                }
+              : item
+          )
+
+        writeMaps(maps)
       }
     },
 

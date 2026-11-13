@@ -1,32 +1,35 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { JSX } from 'react'
-import type { World } from '@shared/world'
+import type { GameMap } from '@shared/map'
 import { api, errorMessage } from '@renderer/lib/api'
 import { pluralize } from '@renderer/lib/format'
 import { IconPencil } from './ui/icons'
-import { WorldFormModal } from './worlds/WorldFormModal'
-import { WorldGraph } from './worlds/WorldGraph'
+import { MapFormModal } from './maps/MapFormModal'
+import { MapGraph } from './maps/MapGraph'
 
-interface WorldGraphPageProps {
-  worldId: string
+interface MapGraphPageProps {
+  mapId: string
   onBack: () => void
+  onOpenMap: (mapId: string) => void
 }
 
-/** Просмотр сеттинга: карта мест и путей. */
-export function WorldGraphPage({ worldId, onBack }: WorldGraphPageProps): JSX.Element {
-  const [world, setWorld] = useState<World | null | undefined>(undefined)
+/** Просмотр карты: граф мест и путей. */
+export function MapGraphPage({ mapId, onBack, onOpenMap }: MapGraphPageProps): JSX.Element {
+  const [map, setMap] = useState<GameMap | null | undefined>(undefined)
+  const [linkedMapNames, setLinkedMapNames] = useState<Record<string, string>>({})
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
 
   const load = useCallback(async (): Promise<void> => {
     try {
-      const worlds = await api.worlds.list()
-      setWorld(worlds.find((item) => item.id === worldId) ?? null)
+      const maps = await api.maps.list()
+      setMap(maps.find((item) => item.id === mapId) ?? null)
+      setLinkedMapNames(Object.fromEntries(maps.map((item) => [item.id, item.name])))
       setError(null)
     } catch (caught) {
       setError(errorMessage(caught))
     }
-  }, [worldId])
+  }, [mapId])
 
   useEffect(() => {
     void load()
@@ -41,32 +44,32 @@ export function WorldGraphPage({ worldId, onBack }: WorldGraphPageProps): JSX.El
             className="button button--ghost button--tiny page-back"
             onClick={onBack}
           >
-            ← Сеттинги
+            ← Карты
           </button>
 
           <header className="page-head">
             <div>
-              <p className="page-kicker">Карта сеттинга</p>
-              <h1>{world ? world.name : 'Сеттинг'}</h1>
+              <p className="page-kicker">Карта</p>
+              <h1>{map ? map.name : 'Карта'}</h1>
               <p className="muted">
-                {world
-                  ? `${world.places.length} ${pluralize(
-                      world.places.length,
+                {map
+                  ? `${map.places.length} ${pluralize(
+                      map.places.length,
                       'место',
                       'места',
                       'мест'
-                    )} · ${world.paths.length} ${pluralize(
-                      world.paths.length,
+                    )} · ${map.paths.length} ${pluralize(
+                      map.paths.length,
                       'путь',
                       'пути',
                       'путей'
                     )}`
-                  : 'Загружаем сеттинг…'}
+                  : 'Загружаем карту…'}
               </p>
             </div>
 
-            {world ? (
-              <div className="world-view-actions">
+            {map ? (
+              <div className="map-view-actions">
                 <button className="button" onClick={() => setEditing(true)}>
                   <IconPencil width={15} height={15} />
                   Редактировать
@@ -78,42 +81,47 @@ export function WorldGraphPage({ worldId, onBack }: WorldGraphPageProps): JSX.El
 
         {error ? <p className="notice notice--error">{error}</p> : null}
 
-        {world === null ? (
+        {map === null ? (
           <div className="empty">
-            <p>Сеттинг не найден — возможно, запись уже удалена.</p>
+            <p>Карта не найдена — возможно, запись уже удалена.</p>
             <button className="button" onClick={onBack}>
-              Вернуться к сеттингам
+              Вернуться к картам
             </button>
           </div>
-        ) : world === undefined ? (
+        ) : map === undefined ? (
           <p className="muted">Загружаем карту…</p>
         ) : (
-          <section className="world-graph-card">
-            <div className="world-graph-card__legend">
+          <section className="map-graph-card">
+            <div className="map-graph-card__legend">
               <span>
-                <i className="world-legend__line" aria-hidden="true" />
+                <i className="map-legend__line" aria-hidden="true" />
                 Путь между местами
               </span>
               <span>
-                <span className="world-badge">Выход</span>
-                Выход из сеттинга
+                <span className="map-badge">Выход</span>
+                Выход на другую карту
               </span>
             </div>
 
-            <div className="world-graph-scroll">
-              <WorldGraph world={world} />
+            <div className="map-graph-scroll">
+              <MapGraph
+                map={map}
+                linkedMapNames={linkedMapNames}
+                onOpenMap={onOpenMap}
+              />
             </div>
           </section>
         )}
       </div>
 
-      <WorldFormModal
+      <MapFormModal
         open={editing}
-        world={world ?? null}
+        map={map ?? null}
         onClose={() => setEditing(false)}
         onSaved={(saved) => {
-          setWorld(saved)
+          setMap(saved)
           setEditing(false)
+          setLinkedMapNames((current) => ({ ...current, [saved.id]: saved.name }))
         }}
       />
     </main>

@@ -1,9 +1,9 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { FormEvent, JSX } from 'react'
-import type { World, WorldPath, WorldPlace } from '@shared/world'
+import type { GameMap, MapPath, MapPlace } from '@shared/map'
 import {
   connectedPlaceIds,
-  createWorldPlace,
+  createMapPlace,
   placePaths,
   setPlaceConnections
 } from '@shared/domain'
@@ -13,23 +13,19 @@ import { Modal } from '../ui/Modal'
 import { IconPencil, IconPlus, IconTrash } from '../ui/icons'
 import { PlaceFormModal } from './PlaceFormModal'
 
-interface WorldFormModalProps {
+interface MapFormModalProps {
   open: boolean
-  world: World | null
+  map: GameMap | null
   onClose: () => void
-  onSaved: (world: World) => void
+  onSaved: (map: GameMap) => void
 }
 
-/** Создание и редактирование сеттинга: название, места и пути между ними. */
-export function WorldFormModal({
-  open,
-  world,
-  onClose,
-  onSaved
-}: WorldFormModalProps): JSX.Element {
+/** Создание и редактирование карты: название, места и пути между ними. */
+export function MapFormModal({ open, map, onClose, onSaved }: MapFormModalProps): JSX.Element {
   const [name, setName] = useState('')
-  const [places, setPlaces] = useState<WorldPlace[]>([])
-  const [paths, setPaths] = useState<WorldPath[]>([])
+  const [places, setPlaces] = useState<MapPlace[]>([])
+  const [paths, setPaths] = useState<MapPath[]>([])
+  const [otherMaps, setOtherMaps] = useState<GameMap[]>([])
   const [placeName, setPlaceName] = useState('')
   const [editingPlaceId, setEditingPlaceId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -40,15 +36,31 @@ export function WorldFormModal({
   useEffect(() => {
     if (!open) return
 
-    setName(world?.name ?? '')
-    setPlaces(world?.places ?? [])
-    setPaths(world?.paths ?? [])
+    setName(map?.name ?? '')
+    setPlaces(map?.places ?? [])
+    setPaths(map?.paths ?? [])
+    setOtherMaps([])
     setPlaceName('')
     setEditingPlaceId(null)
     setError(null)
     setSaving(false)
     window.setTimeout(() => nameRef.current?.focus(), 0)
-  }, [open, world])
+
+    let cancelled = false
+
+    void api.maps
+      .list()
+      .then((maps) => {
+        if (!cancelled) setOtherMaps(maps.filter((item) => item.id !== map?.id))
+      })
+      .catch(() => {
+        if (!cancelled) setOtherMaps([])
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [open, map])
 
   const editingPlace = editingPlaceId
     ? (places.find((place) => place.id === editingPlaceId) ?? null)
@@ -62,7 +74,7 @@ export function WorldFormModal({
     const trimmed = placeName.trim()
     if (!trimmed) return
 
-    setPlaces((current) => [...current, createWorldPlace(trimmed)])
+    setPlaces((current) => [...current, createMapPlace(trimmed)])
     setPlaceName('')
   }
 
@@ -75,6 +87,7 @@ export function WorldFormModal({
   function savePlace(input: {
     name: string
     isExit: boolean
+    linkedMapId: string | null
     connectedIds: string[]
   }): void {
     if (!editingPlace) return
@@ -82,7 +95,12 @@ export function WorldFormModal({
     setPlaces((current) =>
       current.map((place) =>
         place.id === editingPlace.id
-          ? { ...place, name: input.name, isExit: input.isExit }
+          ? {
+              ...place,
+              name: input.name,
+              isExit: input.isExit,
+              linkedMapId: input.linkedMapId
+            }
           : place
       )
     )
@@ -96,7 +114,7 @@ export function WorldFormModal({
 
     const trimmed = name.trim()
     if (!trimmed) {
-      setError('Укажите название сеттинга')
+      setError('Укажите название карты')
       nameRef.current?.focus()
       return
     }
@@ -106,9 +124,9 @@ export function WorldFormModal({
 
     try {
       const input = { name: trimmed, places, paths }
-      const saved = world
-        ? await api.worlds.update({ ...world, ...input })
-        : await api.worlds.create(input)
+      const saved = map
+        ? await api.maps.update({ ...map, ...input })
+        : await api.maps.create(input)
 
       onSaved(saved)
     } catch (caught) {
@@ -118,11 +136,14 @@ export function WorldFormModal({
     }
   }
 
+  const linkedMapName = (mapId: string | null): string | null =>
+    mapId ? (otherMaps.find((item) => item.id === mapId)?.name ?? null) : null
+
   return (
     <>
       <Modal
         open={open}
-        title={world ? 'Редактировать сеттинг' : 'Новый сеттинг'}
+        title={map ? 'Редактировать карту' : 'Новая карта'}
         description="Пространство, в котором проходит игра. Добавьте места и соедините их путями."
         size="lg"
         onClose={onClose}
@@ -138,14 +159,14 @@ export function WorldFormModal({
               className="button button--primary"
               disabled={saving}
             >
-              {saving ? 'Сохраняем…' : 'Сохранить сеттинг'}
+              {saving ? 'Сохраняем…' : 'Сохранить карту'}
             </button>
           </>
         }
       >
-        <form id={formId} className="world-editor" onSubmit={(event) => void submit(event)}>
+        <form id={formId} className="map-editor" onSubmit={(event) => void submit(event)}>
           <label className="field">
-            <span className="field__label">Название сеттинга</span>
+            <span className="field__label">Название карты</span>
             <input
               ref={nameRef}
               className="input"
@@ -165,7 +186,7 @@ export function WorldFormModal({
               </span>
             </header>
 
-            <div className="world-add-place">
+            <div className="map-add-place">
               <input
                 className="input"
                 value={placeName}
@@ -191,23 +212,27 @@ export function WorldFormModal({
             </div>
 
             {places.length === 0 ? (
-              <div className="world-place-list world-place-list--empty">
+              <div className="map-place-list map-place-list--empty">
                 <p>Пока ни одного места. Добавьте первое — с него начнётся карта.</p>
               </div>
             ) : (
-              <ul className="world-place-list">
+              <ul className="map-place-list">
                 {places.map((place) => {
                   const links = placePaths(paths, place.id).length
+                  const linkedName = linkedMapName(place.linkedMapId)
 
                   return (
-                    <li key={place.id} className="world-place-row">
-                      <span className="world-place-row__name">{place.name}</span>
-                      {place.isExit ? <span className="world-badge">Выход</span> : null}
-                      <span className="world-place-row__meta">
+                    <li key={place.id} className="map-place-row">
+                      <span className="map-place-row__name">{place.name}</span>
+                      {place.isExit ? <span className="map-badge">Выход</span> : null}
+                      {linkedName ? (
+                        <span className="map-place-row__link">→ {linkedName}</span>
+                      ) : null}
+                      <span className="map-place-row__meta">
                         {links} {pluralize(links, 'путь', 'пути', 'путей')}
                       </span>
 
-                      <div className="world-place-row__actions">
+                      <div className="map-place-row__actions">
                         <button
                           type="button"
                           className="icon-button"
@@ -235,7 +260,8 @@ export function WorldFormModal({
 
             <p className="game-editor__hint">
               Откройте место, чтобы отметить, с какими местами оно связано. Пути двусторонние:
-              связь сразу появится у второго места.
+              связь сразу появится у второго места. У выхода можно выбрать карту, на которую
+              он ведёт.
             </p>
           </section>
 
@@ -248,6 +274,7 @@ export function WorldFormModal({
         place={editingPlace}
         otherPlaces={otherPlaces}
         connectedIds={editingConnections}
+        otherMaps={otherMaps}
         onClose={() => setEditingPlaceId(null)}
         onSave={savePlace}
       />

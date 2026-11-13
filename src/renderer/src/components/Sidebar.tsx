@@ -12,8 +12,8 @@ export function Sidebar({ route, onNavigate }: SidebarProps): JSX.Element {
   const active =
     route.name === 'game'
       ? 'games'
-      : route.name === 'world'
-        ? 'worlds'
+      : route.name === 'map'
+        ? 'maps'
         : route.name === 'player'
           ? 'players'
           : route.name
@@ -70,12 +70,12 @@ export function Sidebar({ route, onNavigate }: SidebarProps): JSX.Element {
 
         <button
           type="button"
-          className={`nav-item${active === 'worlds' ? ' nav-item--active' : ''}`}
-          aria-current={active === 'worlds' ? 'page' : undefined}
-          onClick={() => onNavigate({ name: 'worlds' })}
+          className={`nav-item${active === 'maps' ? ' nav-item--active' : ''}`}
+          aria-current={active === 'maps' ? 'page' : undefined}
+          onClick={() => onNavigate({ name: 'maps' })}
         >
           <IconMap />
-          <span>Сеттинги</span>
+          <span>Карты</span>
         </button>
 
         <button

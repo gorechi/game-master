@@ -8,8 +8,8 @@ import { PlayersPage } from './components/PlayersPage'
 import { PlayerCharactersPage } from './components/PlayerCharactersPage'
 import { CharactersPage } from './components/CharactersPage'
 import { MonstersPage } from './components/MonstersPage'
-import { WorldsPage } from './components/WorldsPage'
-import { WorldGraphPage } from './components/WorldGraphPage'
+import { MapsPage } from './components/MapsPage'
+import { MapGraphPage } from './components/MapGraphPage'
 import { SettingsPage } from './components/SettingsPage'
 import { api } from './lib/api'
 import { applyTheme } from './lib/theme'
@@ -85,12 +85,16 @@ export default function App(): JSX.Element {
 
         {route.name === 'monsters' ? <MonstersPage /> : null}
 
-        {route.name === 'worlds' ? (
-          <WorldsPage onOpenWorld={(id) => setRoute({ name: 'world', id })} />
+        {route.name === 'maps' ? (
+          <MapsPage onOpenMap={(id) => setRoute({ name: 'map', id })} />
         ) : null}
 
-        {route.name === 'world' ? (
-          <WorldGraphPage worldId={route.id} onBack={() => setRoute({ name: 'worlds' })} />
+        {route.name === 'map' ? (
+          <MapGraphPage
+            mapId={route.id}
+            onBack={() => setRoute({ name: 'maps' })}
+            onOpenMap={(id) => setRoute({ name: 'map', id })}
+          />
         ) : null}
 
         {route.name === 'settings' ? (

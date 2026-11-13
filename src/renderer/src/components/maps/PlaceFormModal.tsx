@@ -1,30 +1,40 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { FormEvent, JSX } from 'react'
-import type { WorldPlace } from '@shared/world'
+import type { GameMap, MapPlace } from '@shared/map'
 import { Modal } from '../ui/Modal'
+import { Select } from '../ui/Select'
 
 interface PlaceFormModalProps {
   open: boolean
-  place: WorldPlace | null
-  /** Все остальные места сеттинга — с ними можно соединить путь. */
-  otherPlaces: readonly WorldPlace[]
+  place: MapPlace | null
+  /** Все остальные места карты — с ними можно соединить путь. */
+  otherPlaces: readonly MapPlace[]
   /** Места, уже связанные с этим (пути симметричны). */
   connectedIds: readonly string[]
+  /** Другие карты, на которые может вести выход. */
+  otherMaps: readonly GameMap[]
   onClose: () => void
-  onSave: (input: { name: string; isExit: boolean; connectedIds: string[] }) => void
+  onSave: (input: {
+    name: string
+    isExit: boolean
+    linkedMapId: string | null
+    connectedIds: string[]
+  }) => void
 }
 
-/** Редактирование места: имя, признак выхода и пути к другим местам. */
+/** Редактирование места: имя, выход на другую карту и пути к другим местам. */
 export function PlaceFormModal({
   open,
   place,
   otherPlaces,
   connectedIds,
+  otherMaps,
   onClose,
   onSave
 }: PlaceFormModalProps): JSX.Element {
   const [name, setName] = useState('')
   const [isExit, setIsExit] = useState(false)
+  const [linkedMapId, setLinkedMapId] = useState<string | null>(null)
   const [connections, setConnections] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
   const nameRef = useRef<HTMLInputElement>(null)
@@ -35,6 +45,7 @@ export function PlaceFormModal({
 
     setName(place.name)
     setIsExit(place.isExit)
+    setLinkedMapId(place.linkedMapId)
     setConnections([...connectedIds])
     setError(null)
     window.setTimeout(() => nameRef.current?.focus(), 0)
@@ -56,14 +67,19 @@ export function PlaceFormModal({
       return
     }
 
-    onSave({ name: trimmed, isExit, connectedIds: connections })
+    onSave({
+      name: trimmed,
+      isExit,
+      linkedMapId: isExit ? linkedMapId : null,
+      connectedIds: connections
+    })
   }
 
   return (
     <Modal
       open={open}
       title={place ? 'Место' : 'Новое место'}
-      description="Название, выход из сеттинга и пути к другим местам. Путь всегда двусторонний."
+      description="Название, выход на другую карту и пути к другим местам. Путь всегда двусторонний."
       size="md"
       onClose={onClose}
       initialFocusRef={nameRef}
@@ -78,7 +94,7 @@ export function PlaceFormModal({
         </>
       }
     >
-      <form id={formId} className="world-place-editor" onSubmit={submit} noValidate>
+      <form id={formId} className="map-place-editor" onSubmit={submit} noValidate>
         <label className="field">
           <span className="field__label">Название места</span>
           <input
@@ -92,7 +108,7 @@ export function PlaceFormModal({
           />
         </label>
 
-        <label className="world-exit-toggle">
+        <label className="map-exit-toggle">
           <input
             type="checkbox"
             className="checkbox"
@@ -100,12 +116,34 @@ export function PlaceFormModal({
             onChange={(event) => setIsExit(event.target.checked)}
           />
           <span>
-            <strong>Выход из сеттинга</strong>
-            <small>Место, через которое можно покинуть это пространство.</small>
+            <strong>Выход из карты</strong>
+            <small>Место, через которое можно перейти на другую карту.</small>
           </span>
         </label>
 
-        <section className="world-connection-section">
+        {isExit ? (
+          <div className="field">
+            <span className="field__label">Выход ведёт на карту</span>
+            {otherMaps.length === 0 ? (
+              <p className="abilities-editor__empty">
+                Других карт пока нет. Создайте их в разделе «Карты», чтобы связать выход.
+              </p>
+            ) : (
+              <Select
+                ariaLabel="Карта, на которую ведёт выход"
+                value={linkedMapId ?? ''}
+                placeholder="Не выбрано"
+                options={[
+                  { value: '', label: 'Не выбрано' },
+                  ...otherMaps.map((map) => ({ value: map.id, label: map.name }))
+                ]}
+                onChange={(value) => setLinkedMapId(value || null)}
+              />
+            )}
+          </div>
+        ) : null}
+
+        <section className="map-connection-section">
           <header className="editor-section__head">
             <h3>Пути</h3>
             <span className="editor-section__count">выбрано {connections.length}</span>
@@ -113,17 +151,17 @@ export function PlaceFormModal({
 
           {otherPlaces.length === 0 ? (
             <p className="notice">
-              В сеттинге пока нет других мест. Добавьте их, чтобы проложить пути.
+              На карте пока нет других мест. Добавьте их, чтобы проложить пути.
             </p>
           ) : (
-            <div className="world-connection-list">
+            <div className="map-connection-list">
               {otherPlaces.map((other) => {
                 const checked = connections.includes(other.id)
 
                 return (
                   <label
                     key={other.id}
-                    className={`world-connection-row${checked ? ' world-connection-row--on' : ''}`}
+                    className={`map-connection-row${checked ? ' map-connection-row--on' : ''}`}
                   >
                     <input
                       type="checkbox"
@@ -131,8 +169,8 @@ export function PlaceFormModal({
                       checked={checked}
                       onChange={() => toggleConnection(other.id)}
                     />
-                    <span className="world-connection-row__name">{other.name}</span>
-                    {other.isExit ? <span className="world-badge">Выход</span> : null}
+                    <span className="map-connection-row__name">{other.name}</span>
+                    {other.isExit ? <span className="map-badge">Выход</span> : null}
                   </label>
                 )
               })}

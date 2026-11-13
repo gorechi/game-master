@@ -4,7 +4,7 @@ import type { Monster, MonsterInput } from './monster'
 import type { Game, GameInput } from './game'
 import type { GameStatus } from './gameStatus'
 import type { GameMonsterEntry } from './gameMonster'
-import type { World, WorldInput } from './world'
+import type { GameMap, GameMapInput } from './map'
 import type { AppSettings, SettingsPatch } from './settings'
 
 /**
@@ -33,10 +33,10 @@ export const IPC = {
   monsterCreate: 'monster:create',
   monsterUpdate: 'monster:update',
   monsterRemove: 'monster:remove',
-  worldsList: 'worlds:list',
-  worldCreate: 'world:create',
-  worldUpdate: 'world:update',
-  worldRemove: 'world:remove',
+  mapsList: 'maps:list',
+  mapCreate: 'map:create',
+  mapUpdate: 'map:update',
+  mapRemove: 'map:remove',
   settingsGet: 'settings:get',
   settingsUpdate: 'settings:update'
 } as const
@@ -92,11 +92,11 @@ export interface GameMasterApi {
     update(monster: Monster): Promise<Monster>
     remove(id: string): Promise<void>
   }
-  /** Сеттинги: пространства с местами и путями между ними. */
-  worlds: {
-    list(): Promise<World[]>
-    create(input: WorldInput): Promise<World>
-    update(world: World): Promise<World>
+  /** Карты: пространства с местами и путями между ними. */
+  maps: {
+    list(): Promise<GameMap[]>
+    create(input: GameMapInput): Promise<GameMap>
+    update(map: GameMap): Promise<GameMap>
     remove(id: string): Promise<void>
   }
   /** Настройки приложения (тема и прочее). */
