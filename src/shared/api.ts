@@ -2,6 +2,7 @@ import type { Player, PlayerInput } from './player'
 import type { CharacterProfile, CharacterProfileInput } from './characterProfile'
 import type { Monster, MonsterInput } from './monster'
 import type { Game, GameInput } from './game'
+import type { GameMonsterEntry } from './gameMonster'
 import type { AppSettings, SettingsPatch } from './settings'
 
 /**
@@ -15,6 +16,7 @@ export const IPC = {
   gameCreate: 'game:create',
   gameUpdate: 'game:update',
   gameRemove: 'game:remove',
+  gameMonstersList: 'game-monsters:list',
   playersList: 'players:list',
   playerCreate: 'player:create',
   playerUpdate: 'player:update',
@@ -52,6 +54,10 @@ export interface GameMasterApi {
     update(game: Game): Promise<Game>
     /** Удаляет игру; отмеченные экземпляры сохраняются в список игровых монстров. */
     remove(id: string, keepMonsterIds?: string[]): Promise<void>
+  }
+  /** Готовые игровые монстры, сохранённые из удалённых игр. */
+  gameMonsters: {
+    list(): Promise<GameMonsterEntry[]>
   }
   /** Общая база игроков-людей. */
   players: {

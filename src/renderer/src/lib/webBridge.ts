@@ -230,6 +230,10 @@ export function createWebBridge(): GameMasterApi {
       }
     },
 
+    gameMonsters: {
+      list: async (): Promise<GameMonsterEntry[]> => readGameMonsters()
+    },
+
     players: {
       list: async (): Promise<Player[]> => readPlayers(),
 

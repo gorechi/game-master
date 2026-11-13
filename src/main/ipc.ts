@@ -14,6 +14,7 @@ import {
 } from './storage/characterStore'
 import { addMonster, listMonsters, removeMonster, updateMonster } from './storage/monsterStore'
 import { addGame, listGames, removeGame, updateGame } from './storage/gameStore'
+import { listGameMonsters } from './storage/gameMonsterStore'
 import { getSettings, updateSettings } from './storage/settingsStore'
 
 function assertId(value: unknown): string {
@@ -91,6 +92,8 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.gameRemove, (_event, id: unknown, keepMonsterIds: unknown): Promise<void> =>
     removeGame(assertId(id), parseMonsterIds(keepMonsterIds))
   )
+
+  ipcMain.handle(IPC.gameMonstersList, () => listGameMonsters())
 
   ipcMain.handle(IPC.playersList, () => listPlayers())
 

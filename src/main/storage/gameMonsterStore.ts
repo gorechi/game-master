@@ -58,3 +58,7 @@ export async function saveGameMonsters(entries: readonly GameMonsterEntry[]): Pr
     })
   })
 }
+
+export async function listGameMonsters(): Promise<GameMonsterEntry[]> {
+  return (await readGameMonstersFile()).monsters
+}

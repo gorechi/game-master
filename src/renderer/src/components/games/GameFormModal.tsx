@@ -1,10 +1,11 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { FormEvent, JSX } from 'react'
 import type { Game, GameMonster } from '@shared/game'
+import type { GameMonsterEntry } from '@shared/gameMonster'
 import type { CharacterProfile } from '@shared/characterProfile'
 import type { Monster } from '@shared/monster'
 import type { Player } from '@shared/player'
-import { createGameMonster, formatChallengeRating, playerFullName } from '@shared/domain'
+import { createGameMonster, formatChallengeRating, gameMonsterFromEntry, playerFullName } from '@shared/domain'
 import { api, errorMessage } from '@renderer/lib/api'
 import { Modal } from '../ui/Modal'
 import { Select } from '../ui/Select'
@@ -38,9 +39,10 @@ function characterInitial(character: CharacterProfile): string {
  */
 function expandSelections(
   selections: MonsterSelection[],
-  bestiary: Monster[]
+  bestiary: Monster[],
+  initialNames: readonly string[] = []
 ): GameMonster[] {
-  const usedNames: string[] = []
+  const usedNames = [...initialNames]
   const result: GameMonster[] = []
 
   for (const selection of selections) {
@@ -64,6 +66,8 @@ export function GameFormModal({ open, game, onClose, onSaved }: GameFormModalPro
   const [characterIds, setCharacterIds] = useState<string[]>([])
   const [selections, setSelections] = useState<MonsterSelection[]>([])
   const [instances, setInstances] = useState<GameMonster[]>([])
+  const [savedMonsters, setSavedMonsters] = useState<GameMonsterEntry[]>([])
+  const [readyIds, setReadyIds] = useState<string[]>([])
   const [editingMonsterId, setEditingMonsterId] = useState<string | null>(null)
   const [characters, setCharacters] = useState<CharacterProfile[]>([])
   const [players, setPlayers] = useState<Player[]>([])
@@ -83,6 +87,7 @@ export function GameFormModal({ open, game, onClose, onSaved }: GameFormModalPro
     setCharacterIds(game?.characterIds ?? [])
     setSelections([])
     setInstances(game?.monsters ?? [])
+    setReadyIds([])
     setEditingMonsterId(null)
     setError(null)
     setSaving(false)
@@ -91,12 +96,18 @@ export function GameFormModal({ open, game, onClose, onSaved }: GameFormModalPro
 
     let cancelled = false
 
-    void Promise.all([api.characters.list(), api.players.list(), api.monsters.list()])
-      .then(([nextCharacters, nextPlayers, nextBestiary]) => {
+    void Promise.all([
+      api.characters.list(),
+      api.players.list(),
+      api.monsters.list(),
+      api.gameMonsters.list()
+    ])
+      .then(([nextCharacters, nextPlayers, nextBestiary, nextSavedMonsters]) => {
         if (cancelled) return
         setCharacters(nextCharacters)
         setPlayers(nextPlayers)
         setBestiary(nextBestiary)
+        setSavedMonsters(nextSavedMonsters)
       })
       .catch((caught: unknown) => {
         if (!cancelled) setDataError(errorMessage(caught))
@@ -176,6 +187,14 @@ export function GameFormModal({ open, game, onClose, onSaved }: GameFormModalPro
     setSelections((current) => current.filter((selection) => selection.sourceId !== sourceId))
   }
 
+  function addSavedMonster(entryId: string): void {
+    setReadyIds((current) => (current.includes(entryId) ? current : [...current, entryId]))
+  }
+
+  function removeSavedMonster(entryId: string): void {
+    setReadyIds((current) => current.filter((id) => id !== entryId))
+  }
+
   function removeInstance(instanceId: string): void {
     setInstances((current) => current.filter((monster) => monster.id !== instanceId))
     setEditingMonsterId((current) => (current === instanceId ? null : current))
@@ -189,6 +208,10 @@ export function GameFormModal({ open, game, onClose, onSaved }: GameFormModalPro
   const availableBestiary = bestiary.filter(
     (monster) => !selections.some((selection) => selection.sourceId === monster.id)
   )
+
+  const readyMonsters = savedMonsters.filter((monster) => readyIds.includes(monster.id))
+  const availableSaved = savedMonsters.filter((monster) => !readyIds.includes(monster.id))
+  const totalMonsters = isEdit ? instances.length : totalSelections + readyMonsters.length
 
   async function submit(event: FormEvent): Promise<void> {
     event.preventDefault()
@@ -214,10 +237,21 @@ export function GameFormModal({ open, game, onClose, onSaved }: GameFormModalPro
     setError(null)
 
     try {
+      const readyInstances = isEdit ? [] : readyMonsters.map(gameMonsterFromEntry)
+
       const input = {
         name: trimmedName,
         characterIds: validCharacterIds,
-        monsters: isEdit ? instances : expandSelections(selections, bestiary)
+        monsters: isEdit
+          ? instances
+          : [
+              ...readyInstances,
+              ...expandSelections(
+                selections,
+                bestiary,
+                readyInstances.map((monster) => monster.name)
+              )
+            ]
       }
 
       const saved = game
@@ -331,27 +365,60 @@ export function GameFormModal({ open, game, onClose, onSaved }: GameFormModalPro
             <section className="editor-section">
               <header className="editor-section__head">
                 <h3>Монстры</h3>
-                <span className="editor-section__count">
-                  {isEdit ? instances.length : totalSelections}
-                </span>
+                <span className="editor-section__count">{totalMonsters}</span>
               </header>
 
-              {bestiary.length === 0 ? (
-                <p className="notice">В бестиарии пока нет монстров.</p>
-              ) : !isEdit && availableBestiary.length === 0 ? (
-                <p className="abilities-editor__empty">Все монстры из бестиария уже добавлены.</p>
-              ) : (
-                <Select
-                  ariaLabel={isEdit ? 'Добавить монстра из бестиария' : 'Выбрать монстра из бестиария'}
-                  value=""
-                  placeholder={isEdit ? 'Добавить монстра…' : 'Выбрать монстра…'}
-                  options={(isEdit ? bestiary : availableBestiary).map((monster) => ({
-                    value: monster.id,
-                    label: `${monster.name} · КО ${formatChallengeRating(monster.challengeRating)}`
-                  }))}
-                  onChange={addMonster}
-                />
-              )}
+              <div className="monster-pickers">
+                <div className="field">
+                  <span className="field__label">Из бестиария</span>
+                  {bestiary.length === 0 ? (
+                    <p className="abilities-editor__empty">В бестиарии пока нет монстров.</p>
+                  ) : !isEdit && availableBestiary.length === 0 ? (
+                    <p className="abilities-editor__empty">Все монстры из бестиария уже добавлены.</p>
+                  ) : (
+                    <Select
+                      ariaLabel={
+                        isEdit ? 'Добавить монстра из бестиария' : 'Выбрать монстра из бестиария'
+                      }
+                      value=""
+                      placeholder={isEdit ? 'Добавить монстра…' : 'Выбрать монстра…'}
+                      options={(isEdit ? bestiary : availableBestiary).map((monster) => ({
+                        value: monster.id,
+                        label: `${monster.name} · КО ${formatChallengeRating(monster.challengeRating)}`
+                      }))}
+                      onChange={addMonster}
+                    />
+                  )}
+                </div>
+
+                {!isEdit ? (
+                  <div className="field">
+                    <span className="field__label">Сохранённые игровые монстры</span>
+                    {savedMonsters.length === 0 ? (
+                      <p className="abilities-editor__empty">
+                        Появляются здесь после удаления игры с сохранением монстров.
+                      </p>
+                    ) : availableSaved.length === 0 ? (
+                      <p className="abilities-editor__empty">
+                        Все сохранённые монстры уже добавлены.
+                      </p>
+                    ) : (
+                      <Select
+                        ariaLabel="Добавить сохранённого монстра"
+                        value=""
+                        placeholder="Добавить готового монстра…"
+                        options={availableSaved.map((monster) => ({
+                          value: monster.id,
+                          label: `${monster.name} · КО ${formatChallengeRating(
+                            monster.challengeRating
+                          )}`
+                        }))}
+                        onChange={addSavedMonster}
+                      />
+                    )}
+                  </div>
+                ) : null}
+              </div>
 
               {isEdit ? (
                 instances.length === 0 ? (
@@ -390,73 +457,112 @@ export function GameFormModal({ open, game, onClose, onSaved }: GameFormModalPro
                     ))}
                   </ul>
                 )
-              ) : selections.length === 0 ? (
-                <p className="abilities-editor__empty">Пока ни одного монстра в игре.</p>
               ) : (
-                <ul className="game-monster-list">
-                  {selections.map((selection) => (
-                    <li className="game-monster-row" key={selection.sourceId}>
-                      <span className="game-monster-row__name">{selection.name}</span>
-                      <span className="game-monster-row__meta">
-                        КО {formatChallengeRating(selection.challengeRating)} · КЗ{' '}
-                        {selection.armorClass} · ХП {selection.hitPoints}
-                      </span>
+                <>
+                  {readyMonsters.length > 0 ? (
+                    <>
+                      <p className="game-editor__group">Готовые экземпляры</p>
+                      <ul className="game-monster-list">
+                        {readyMonsters.map((monster) => (
+                          <li className="game-monster-row" key={monster.id}>
+                            <span className="game-monster-row__name">{monster.name}</span>
+                            <span className="game-monster-row__badge">готовый</span>
+                            <span className="game-monster-row__meta">
+                              КО {formatChallengeRating(monster.challengeRating)} · КЗ{' '}
+                              {monster.armorClass} · ХП {monster.hitPoints}
+                            </span>
 
-                      <div className="game-monster-row__count">
-                        <button
-                          type="button"
-                          className="count-button"
-                          aria-label={`Уменьшить количество: ${selection.name}`}
-                          disabled={selection.count <= 1}
-                          onClick={() => setCount(selection.sourceId, selection.count - 1)}
-                        >
-                          −
-                        </button>
+                            <div className="game-monster-row__actions">
+                              <button
+                                type="button"
+                                className="icon-button icon-button--danger"
+                                title="Убрать из игры"
+                                aria-label={`Убрать ${monster.name} из игры`}
+                                onClick={() => removeSavedMonster(monster.id)}
+                              >
+                                <IconTrash />
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  ) : null}
 
-                        <input
-                          className="input count-input"
-                          type="number"
-                          inputMode="numeric"
-                          min={1}
-                          max={99}
-                          value={selection.count}
-                          aria-label={`Количество: ${selection.name}`}
-                          onChange={(event) =>
-                            setCount(
-                              selection.sourceId,
-                              Number.parseInt(event.target.value, 10)
-                            )
-                          }
-                        />
+                  {selections.length > 0 ? (
+                    <>
+                      <p className="game-editor__group">Из бестиария</p>
+                      <ul className="game-monster-list">
+                        {selections.map((selection) => (
+                          <li className="game-monster-row" key={selection.sourceId}>
+                            <span className="game-monster-row__name">{selection.name}</span>
+                            <span className="game-monster-row__meta">
+                              КО {formatChallengeRating(selection.challengeRating)} · КЗ{' '}
+                              {selection.armorClass} · ХП {selection.hitPoints}
+                            </span>
 
-                        <button
-                          type="button"
-                          className="count-button"
-                          aria-label={`Увеличить количество: ${selection.name}`}
-                          onClick={() => setCount(selection.sourceId, selection.count + 1)}
-                        >
-                          +
-                        </button>
-                      </div>
+                            <div className="game-monster-row__count">
+                              <button
+                                type="button"
+                                className="count-button"
+                                aria-label={`Уменьшить количество: ${selection.name}`}
+                                disabled={selection.count <= 1}
+                                onClick={() => setCount(selection.sourceId, selection.count - 1)}
+                              >
+                                −
+                              </button>
 
-                      <button
-                        type="button"
-                        className="icon-button icon-button--danger"
-                        title="Убрать из игры"
-                        aria-label={`Убрать ${selection.name} из игры`}
-                        onClick={() => removeSelection(selection.sourceId)}
-                      >
-                        <IconTrash />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                              <input
+                                className="input count-input"
+                                type="number"
+                                inputMode="numeric"
+                                min={1}
+                                max={99}
+                                value={selection.count}
+                                aria-label={`Количество: ${selection.name}`}
+                                onChange={(event) =>
+                                  setCount(
+                                    selection.sourceId,
+                                    Number.parseInt(event.target.value, 10)
+                                  )
+                                }
+                              />
+
+                              <button
+                                type="button"
+                                className="count-button"
+                                aria-label={`Увеличить количество: ${selection.name}`}
+                                onClick={() => setCount(selection.sourceId, selection.count + 1)}
+                              >
+                                +
+                              </button>
+                            </div>
+
+                            <button
+                              type="button"
+                              className="icon-button icon-button--danger"
+                              title="Убрать из игры"
+                              aria-label={`Убрать ${selection.name} из игры`}
+                              onClick={() => removeSelection(selection.sourceId)}
+                            >
+                              <IconTrash />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  ) : null}
+
+                  {readyMonsters.length === 0 && selections.length === 0 ? (
+                    <p className="abilities-editor__empty">Пока ни одного монстра в игре.</p>
+                  ) : null}
+                </>
               )}
 
               <p className="game-editor__hint">
                 {isEdit
                   ? 'Экземпляры созданы вместе с игрой: имя и характеристики у каждого свои, бестиарий остаётся нетронутым.'
-                  : 'Экземпляры создаются только при сохранении игры: «Гоблин 1», «Гоблин 2», «Гоблин 3».'}
+                  : 'Экземпляры из бестиария создаются при сохранении. Сохранённые игровые монстры добавляются как есть — без копий и количества.'}
               </p>
             </section>
           </>

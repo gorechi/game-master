@@ -2,6 +2,7 @@ import type { Player, PlayerInput } from './player'
 import type { CharacterProfile, CharacterProfileInput } from './characterProfile'
 import type { Monster, MonsterAbility, MonsterInput } from './monster'
 import type { Game, GameInput, GameMonster } from './game'
+import type { GameMonsterEntry } from './gameMonster'
 
 /**
  * Доменный слой без зависимостей: фабрики, подписи и сводки.
@@ -206,8 +207,7 @@ export function createGame(input: GameInput, id: string = crypto.randomUUID()): 
 export function createGameMonster(
   source: Omit<Monster, 'createdAt' | 'updatedAt'>,
   existingNames: readonly string[] = []
-): GameMonster {
-  const base = source.name.trim().slice(0, 94) || 'Монстр'
+): GameMonster {  const base = source.name.trim().slice(0, 94) || 'Монстр'
   let counter = 1
   let name = `${base} ${counter}`
 
@@ -230,5 +230,24 @@ export function createGameMonster(
     armorClass: source.armorClass,
     hitPoints: source.hitPoints,
     abilities: source.abilities.map((ability) => ({ ...ability }))
+  }
+}
+
+/** Готовый игровой монстр как экземпляр игры: без служебных полей библиотеки. */
+export function gameMonsterFromEntry(entry: GameMonsterEntry): GameMonster {
+  return {
+    id: entry.id,
+    sourceMonsterId: entry.sourceMonsterId,
+    name: entry.name,
+    strength: entry.strength,
+    dexterity: entry.dexterity,
+    intelligence: entry.intelligence,
+    wisdom: entry.wisdom,
+    constitution: entry.constitution,
+    charisma: entry.charisma,
+    challengeRating: entry.challengeRating,
+    armorClass: entry.armorClass,
+    hitPoints: entry.hitPoints,
+    abilities: entry.abilities
   }
 }
