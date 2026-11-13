@@ -1,7 +1,7 @@
 import type { JSX } from 'react'
 import { isWebPreview } from '@renderer/lib/api'
 import type { Route } from '@renderer/lib/routes'
-import { IconD20, IconGear, IconPlay, IconShield, IconSkull, IconUsers } from './ui/icons'
+import { IconD20, IconGear, IconMap, IconPlay, IconShield, IconSkull, IconUsers } from './ui/icons'
 
 interface SidebarProps {
   route: Route
@@ -10,7 +10,13 @@ interface SidebarProps {
 
 export function Sidebar({ route, onNavigate }: SidebarProps): JSX.Element {
   const active =
-    route.name === 'game' ? 'games' : route.name === 'player' ? 'players' : route.name
+    route.name === 'game'
+      ? 'games'
+      : route.name === 'world'
+        ? 'worlds'
+        : route.name === 'player'
+          ? 'players'
+          : route.name
 
   return (
     <aside className="sidebar">
@@ -60,6 +66,16 @@ export function Sidebar({ route, onNavigate }: SidebarProps): JSX.Element {
         >
           <IconSkull />
           <span>Монстры</span>
+        </button>
+
+        <button
+          type="button"
+          className={`nav-item${active === 'worlds' ? ' nav-item--active' : ''}`}
+          aria-current={active === 'worlds' ? 'page' : undefined}
+          onClick={() => onNavigate({ name: 'worlds' })}
+        >
+          <IconMap />
+          <span>Сеттинги</span>
         </button>
 
         <button

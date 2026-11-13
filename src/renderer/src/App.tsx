@@ -8,6 +8,8 @@ import { PlayersPage } from './components/PlayersPage'
 import { PlayerCharactersPage } from './components/PlayerCharactersPage'
 import { CharactersPage } from './components/CharactersPage'
 import { MonstersPage } from './components/MonstersPage'
+import { WorldsPage } from './components/WorldsPage'
+import { WorldGraphPage } from './components/WorldGraphPage'
 import { SettingsPage } from './components/SettingsPage'
 import { api } from './lib/api'
 import { applyTheme } from './lib/theme'
@@ -82,6 +84,14 @@ export default function App(): JSX.Element {
         ) : null}
 
         {route.name === 'monsters' ? <MonstersPage /> : null}
+
+        {route.name === 'worlds' ? (
+          <WorldsPage onOpenWorld={(id) => setRoute({ name: 'world', id })} />
+        ) : null}
+
+        {route.name === 'world' ? (
+          <WorldGraphPage worldId={route.id} onBack={() => setRoute({ name: 'worlds' })} />
+        ) : null}
 
         {route.name === 'settings' ? (
           <SettingsPage settings={settings} onThemeChange={changeTheme} />

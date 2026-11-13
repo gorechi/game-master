@@ -3,6 +3,7 @@ import type { CharacterProfile, CharacterProfileInput } from './characterProfile
 import type { Monster, MonsterAbility, MonsterInput } from './monster'
 import type { Game, GameInput, GameMonster } from './game'
 import type { GameMonsterEntry } from './gameMonster'
+import type { World, WorldInput, WorldPlace, WorldPath } from './world'
 
 /**
  * Доменный слой без зависимостей: фабрики, подписи и сводки.
@@ -181,6 +182,117 @@ const challengeRatingFormatter = new Intl.NumberFormat('ru-RU', { maximumFractio
 /** «КО 0,125» и «КО 3» без лишних нулей. */
 export function formatChallengeRating(value: number): string {
   return challengeRatingFormatter.format(value)
+}
+
+/* ------------------------------------------------------------------ */
+/* Сеттинги (пространства с местами и путями)                         */
+/* ------------------------------------------------------------------ */
+
+export function createWorldPlace(name: string, isExit = false): WorldPlace {
+  return {
+    id: crypto.randomUUID(),
+    name: name.trim().slice(0, 100),
+    isExit
+  }
+}
+
+/** Одна и та же связь всегда хранится с меньшим id первым. */
+export function canonicalWorldPath(a: string, b: string): WorldPath {
+  return a < b ? { a, b } : { a: b, b: a }
+}
+
+export function worldPathKey(path: WorldPath): string {
+  return `${path.a}|${path.b}`
+}
+
+export type NormalizedWorldInput = {
+  name: string
+  places: WorldPlace[]
+  paths: WorldPath[]
+}
+
+export function normalizeWorldInput(input: WorldInput): NormalizedWorldInput {
+  const places = input.places.map((place) => ({
+    id: place.id,
+    name: place.name.trim().slice(0, 100),
+    isExit: place.isExit
+  }))
+
+  if (places.some((place) => !place.name)) {
+    throw new Error('У каждого места должно быть название')
+  }
+
+  const ids = new Set(places.map((place) => place.id))
+  if (ids.size !== places.length) {
+    throw new Error('Места должны иметь уникальные идентификаторы')
+  }
+
+  const seen = new Set<string>()
+  const paths: WorldPath[] = []
+
+  for (const path of input.paths) {
+    if (!ids.has(path.a) || !ids.has(path.b) || path.a === path.b) continue
+
+    const canonical = canonicalWorldPath(path.a, path.b)
+    const key = worldPathKey(canonical)
+    if (seen.has(key)) continue
+
+    seen.add(key)
+    paths.push(canonical)
+  }
+
+  return {
+    name: input.name.trim().slice(0, 120),
+    places,
+    paths
+  }
+}
+
+export function createWorld(input: WorldInput, id: string = crypto.randomUUID()): World {
+  const now = new Date().toISOString()
+
+  return {
+    id,
+    ...normalizeWorldInput(input),
+    createdAt: now,
+    updatedAt: now
+  }
+}
+
+/** Возвращает пути, в которых участвует место. */
+export function placePaths(paths: readonly WorldPath[], placeId: string): WorldPath[] {
+  return paths.filter((path) => path.a === placeId || path.b === placeId)
+}
+
+/** Список id мест, с которыми связано указанное место. */
+export function connectedPlaceIds(paths: readonly WorldPath[], placeId: string): string[] {
+  return placePaths(paths, placeId).map((path) => (path.a === placeId ? path.b : path.a))
+}
+
+/**
+ * Заменяет все пути выбранного места. Связь неориентированная, поэтому
+ * у второго места она появится автоматически.
+ */
+export function setPlaceConnections(
+  paths: readonly WorldPath[],
+  placeId: string,
+  connectedIds: readonly string[]
+): WorldPath[] {
+  const next = paths.filter((path) => path.a !== placeId && path.b !== placeId)
+  const seen = new Set(next.map(worldPathKey))
+
+  for (const connectedId of new Set(connectedIds)) {
+    if (connectedId === placeId) continue
+
+    const path = canonicalWorldPath(placeId, connectedId)
+    const key = worldPathKey(path)
+    if (seen.has(key)) continue
+
+    seen.add(key)
+    next.push(path)
+  }
+
+  return next
 }
 
 /* ------------------------------------------------------------------ */

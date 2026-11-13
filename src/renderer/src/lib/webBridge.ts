@@ -3,6 +3,7 @@ import type { Player, PlayerInput } from '@shared/player'
 import type { CharacterProfile, CharacterProfileInput } from '@shared/characterProfile'
 import type { Monster, MonsterInput } from '@shared/monster'
 import type { Game, GameInput } from '@shared/game'
+import type { World, WorldInput } from '@shared/world'
 import {
   canTransitionGame,
   isGameDeletable,
@@ -17,9 +18,11 @@ import {
   createGame,
   createMonster,
   createPlayer,
+  createWorld,
   normalizeCharacterProfileInput,
   normalizeMonsterInput,
-  normalizePlayerInput
+  normalizePlayerInput,
+  normalizeWorldInput
 } from '@shared/domain'
 import {
   DEFAULT_SETTINGS,
@@ -42,6 +45,7 @@ const GAME_MONSTERS_KEY = 'game-master.preview.gameMonsters'
 const PLAYERS_KEY = 'game-master.preview.players'
 const CHARACTERS_KEY = 'game-master.preview.characters'
 const MONSTERS_KEY = 'game-master.preview.monsters'
+const WORLDS_KEY = 'game-master.preview.worlds'
 const SETTINGS_KEY = 'game-master.preview.settings'
 
 /** Полный сброс предпросмотра (кнопка на главном экране). */
@@ -51,6 +55,7 @@ export function resetWebPreview(): void {
   window.localStorage.removeItem(PLAYERS_KEY)
   window.localStorage.removeItem(CHARACTERS_KEY)
   window.localStorage.removeItem(MONSTERS_KEY)
+  window.localStorage.removeItem(WORLDS_KEY)
   window.location.reload()
 }
 
@@ -115,6 +120,28 @@ function readMonsters(): Monster[] {
 
 function writeMonsters(monsters: Monster[]): void {
   window.localStorage.setItem(MONSTERS_KEY, JSON.stringify(monsters))
+}
+
+function readWorlds(): World[] {
+  try {
+    const raw = window.localStorage.getItem(WORLDS_KEY)
+    if (!raw) return []
+
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+
+    return (parsed as World[]).map((world) => ({
+      ...world,
+      places: Array.isArray(world.places) ? world.places : [],
+      paths: Array.isArray(world.paths) ? world.paths : []
+    }))
+  } catch {
+    return []
+  }
+}
+
+function writeWorlds(worlds: World[]): void {
+  window.localStorage.setItem(WORLDS_KEY, JSON.stringify(worlds))
 }
 
 function readGames(): Game[] {
@@ -378,6 +405,31 @@ export function createWebBridge(): GameMasterApi {
 
       remove: async (id: string): Promise<void> => {
         writeMonsters(readMonsters().filter((item) => item.id !== id))
+      }
+    },
+
+    worlds: {
+      list: async (): Promise<World[]> => readWorlds(),
+
+      create: async (input: WorldInput): Promise<World> => {
+        const world = createWorld(input)
+        writeWorlds([...readWorlds(), world])
+        return world
+      },
+
+      update: async (world: World): Promise<World> => {
+        const updated: World = {
+          ...world,
+          ...normalizeWorldInput(world),
+          updatedAt: new Date().toISOString()
+        }
+
+        writeWorlds(readWorlds().map((item) => (item.id === world.id ? updated : item)))
+        return updated
+      },
+
+      remove: async (id: string): Promise<void> => {
+        writeWorlds(readWorlds().filter((item) => item.id !== id))
       }
     },
 

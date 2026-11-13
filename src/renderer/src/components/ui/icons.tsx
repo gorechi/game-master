@@ -114,6 +114,15 @@ export function IconSkull(props: IconProps): JSX.Element {
   )
 }
 
+export function IconMap(props: IconProps): JSX.Element {
+  return (
+    <Svg {...props}>
+      <path d="M9 4.2 4.6 6.1v13.7L9 17.9l6 2 4.4-1.9V4.3L15 6.2 9 4.2Z" />
+      <path d="M9 4.2v13.7M15 6.2v13.7" />
+    </Svg>
+  )
+}
+
 export function IconPlay(props: IconProps): JSX.Element {
   return (
     <Svg {...props}>

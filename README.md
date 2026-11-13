@@ -7,7 +7,7 @@
 
 ## Что уже работает
 
-- **Боковое меню** — «Игры», «Игроки», «Персонажи», «Монстры», «Настройки»;
+- **Боковое меню** — «Игры», «Игроки», «Персонажи», «Монстры», «Сеттинги», «Настройки»;
   навигация без перезагрузки, приложение открывается на играх.
 - **Игры** — основная сущность: список партий, которые мастер готовит или проводит.
   У игры четыре статуса: **Новая → Проводится ⇄ На паузе**, из «Проводится» и «На паузе»
@@ -51,6 +51,11 @@
   (целые от -10 до 10), класс опасности, класс защиты, здоровье и любое число
   способностей с описаниями. Способности добавляются и удаляются прямо в форме; форма
   растёт вниз, а при переполнении прокручивается.
+- **Сеттинги** — пространства, в которых проходят игры. Сеттинг состоит из мест
+  (название и признак «выход из сеттинга») и путей между ними. В редакторе можно добавить
+  любое число мест, открыть место и отметить связанные места: путь двусторонний и сразу
+  появляется у второго места. Просмотр — карта графа: места изображены карточками,
+  пути — пунктирными дорожками. Выходы отмечены бейджем «Выход».
 - **Портреты** — при загрузке уменьшаются до 720 px по большей стороне и сжимаются в webp;
   если портрета нет, показывается SVG-заглушка.
 
@@ -77,6 +82,7 @@
 │                              storage/playerStore     (JSON)   │
 │                              storage/characterStore  (JSON)   │
 │                              storage/monsterStore    (JSON)   │
+│                              storage/worldStore      (JSON)   │
 │                              storage/settingsStore   (JSON)   │
 └───────────────▲───────────────────────────────┬──────────────┘
                 │ IPC (invoke/handle)           │ fs
@@ -87,6 +93,7 @@
                 │                    │  players.json        │
                 │                    │  characters.json     │
                 │                    │  monsters.json       │
+                │                    │  worlds.json         │
                 │                    │  settings.json       │
 ┌───────────────┴────────────────────┴──────────────────────┐
 │ renderer: React, без доступа к Node и файловой системе    │
@@ -136,6 +143,11 @@
 - **Бестиарий отдельным файлом.** `monsters.json` хранит монстров и их способности
   (у каждой свой id, название и описание), поэтому способности можно свободно добавлять,
   удалять и переименовывать.
+- **Сеттинги отдельным файлом.** `worlds.json` хранит места (`places`) и пути (`paths`).
+  Путь — неориентированная пара id, канонически отсортированная (`a < b`), поэтому одна
+  и та же связь не дублируется. Хранилище проверяет, что оба конца пути существуют,
+  и отбрасывает петли и повторы. Редактор места заменяет только пути этого места —
+  у соседей связь появляется автоматически.
 - **Свой UI-кит.** `components/ui/` — модалка с фокус-ловушкой и Escape, подтверждение,
   выпадающий список с клавиатурной навигацией и режимом поиска по подстроке.
 - **Темы через CSS-переменные и атрибут.** Тема — это `data-theme` на `<html>`: тёмная описана
@@ -160,15 +172,17 @@ src/
     storage/playerStore.ts     база игроков (players.json)
     storage/characterStore.ts  база персонажей (characters.json)
     storage/monsterStore.ts    бестиарий (monsters.json)
+    storage/worldStore.ts      сеттинги: места и пути (worlds.json)
     storage/settingsStore.ts   настройки (settings.json)
     storage/jsonFile.ts        атомарная запись, очередь, чтение JSON
   preload/index.ts         contextBridge → window.gameMaster
   renderer/                React-приложение
     src/components/        Sidebar, GamesPage, GameRunPage, PlayersPage, PlayerCharactersPage,
-                           CharactersPage, MonstersPage, SettingsPage
+                           CharactersPage, MonstersPage, WorldsPage, WorldGraphPage, SettingsPage
     src/components/games/      GameFormModal, GameFinishModal
     src/components/character/  CharacterCard, CharacterFormModal
     src/components/monsters/   MonsterCard, MonsterFormModal
+    src/components/worlds/     WorldFormModal, PlaceFormModal, WorldGraph
     src/components/ui/     Modal, ConfirmDialog, Select, иконки
     src/lib/               доступ к API, веб-адаптер, маршруты, тема, сжатие портретов, форматирование
     src/assets/fonts/      Underdog + Manrope (woff2, cyrillic + latin)
@@ -183,6 +197,7 @@ src/
     player.ts              zod-схема игрока
     characterProfile.ts    zod-схема персонажа-карточки
     monster.ts             zod-схема монстра и способностей
+    world.ts               zod-схема сеттинга, мест и путей
     settings.ts            типы настроек и темы
     domain.ts              фабрики, подписи, нормализация
 ```
@@ -308,7 +323,7 @@ npm run pack       # распакованное приложение без ин
 | macOS | `~/Library/Application Support/Game Master/` |
 
 Внутри — `games.json`, `gameMonsters.json`, `players.json`, `characters.json`,
-`monsters.json` и `settings.json`. Открыть папку можно на странице «Настройки».
+`monsters.json`, `worlds.json` и `settings.json`. Открыть папку можно на странице «Настройки».
 
 `games.json`:
 
@@ -432,6 +447,31 @@ npm run pack       # распакованное приложение без ин
       "abilities": [
         { "id": "a1", "name": "Мультиатака", "description": "Совершает две атаки коротким мечом." },
         { "id": "a2", "name": "Тёмное зрение", "description": "Видит в темноте до 18 метров." }
+      ],
+      "createdAt": "2026-11-12T10:00:00.000Z",
+      "updatedAt": "2026-11-12T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+`worlds.json` (пути хранятся парами id; `a` всегда меньше `b`):
+
+```json
+{
+  "schemaVersion": 1,
+  "worlds": [
+    {
+      "id": "w1",
+      "name": "Королевство пепельных дорог",
+      "places": [
+        { "id": "p1", "name": "Таверна «Пьяный гоблин»", "isExit": false },
+        { "id": "p2", "name": "Тёмный лес", "isExit": false },
+        { "id": "p3", "name": "Старый порт", "isExit": true }
+      ],
+      "paths": [
+        { "a": "p1", "b": "p2" },
+        { "a": "p2", "b": "p3" }
       ],
       "createdAt": "2026-11-12T10:00:00.000Z",
       "updatedAt": "2026-11-12T10:00:00.000Z"

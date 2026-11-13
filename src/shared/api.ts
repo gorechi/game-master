@@ -4,6 +4,7 @@ import type { Monster, MonsterInput } from './monster'
 import type { Game, GameInput } from './game'
 import type { GameStatus } from './gameStatus'
 import type { GameMonsterEntry } from './gameMonster'
+import type { World, WorldInput } from './world'
 import type { AppSettings, SettingsPatch } from './settings'
 
 /**
@@ -32,6 +33,10 @@ export const IPC = {
   monsterCreate: 'monster:create',
   monsterUpdate: 'monster:update',
   monsterRemove: 'monster:remove',
+  worldsList: 'worlds:list',
+  worldCreate: 'world:create',
+  worldUpdate: 'world:update',
+  worldRemove: 'world:remove',
   settingsGet: 'settings:get',
   settingsUpdate: 'settings:update'
 } as const
@@ -85,6 +90,13 @@ export interface GameMasterApi {
     list(): Promise<Monster[]>
     create(input: MonsterInput): Promise<Monster>
     update(monster: Monster): Promise<Monster>
+    remove(id: string): Promise<void>
+  }
+  /** Сеттинги: пространства с местами и путями между ними. */
+  worlds: {
+    list(): Promise<World[]>
+    create(input: WorldInput): Promise<World>
+    update(world: World): Promise<World>
     remove(id: string): Promise<void>
   }
   /** Настройки приложения (тема и прочее). */

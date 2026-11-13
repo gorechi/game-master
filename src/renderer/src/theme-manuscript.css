@@ -63,13 +63,17 @@
 }
 
 :root[data-theme='light'] .participant-list::-webkit-scrollbar-thumb,
-:root[data-theme='light'] .game-monster-list--scroll::-webkit-scrollbar-thumb {
+:root[data-theme='light'] .game-monster-list--scroll::-webkit-scrollbar-thumb,
+:root[data-theme='light'] .world-place-list::-webkit-scrollbar-thumb,
+:root[data-theme='light'] .world-connection-list::-webkit-scrollbar-thumb {
   background: #cdb892;
   border: none;
 }
 
 :root[data-theme='light'] .participant-list::-webkit-scrollbar-thumb:hover,
-:root[data-theme='light'] .game-monster-list--scroll::-webkit-scrollbar-thumb:hover {
+:root[data-theme='light'] .game-monster-list--scroll::-webkit-scrollbar-thumb:hover,
+:root[data-theme='light'] .world-place-list::-webkit-scrollbar-thumb:hover,
+:root[data-theme='light'] .world-connection-list::-webkit-scrollbar-thumb:hover {
   background: #b79c72;
 }
 
@@ -504,6 +508,76 @@
 :root[data-theme='light'] .finish-monster-row--on {
   background: rgba(143, 58, 44, 0.06);
   border-color: rgba(143, 58, 44, 0.22);
+}
+
+/* ------------------------------------------------------------------ */
+/* Сеттинги                                                           */
+/* ------------------------------------------------------------------ */
+
+:root[data-theme='light'] .world-card {
+  background: linear-gradient(120deg, #fbf3e2, #f4e9d3);
+}
+
+:root[data-theme='light'] .world-card:hover {
+  border-color: var(--border-strong);
+}
+
+:root[data-theme='light'] .world-card__sigil {
+  color: #7a4f12;
+  background: rgba(154, 106, 36, 0.1);
+  border-color: rgba(154, 106, 36, 0.32);
+}
+
+:root[data-theme='light'] .world-place-row {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+:root[data-theme='light'] .world-badge {
+  border-color: rgba(143, 58, 44, 0.3);
+  background: rgba(143, 58, 44, 0.08);
+  color: var(--rubric);
+}
+
+:root[data-theme='light'] .world-exit-toggle {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+:root[data-theme='light'] .world-connection-row:hover {
+  background: rgba(122, 86, 44, 0.05);
+}
+
+:root[data-theme='light'] .world-connection-row--on {
+  background: rgba(143, 58, 44, 0.06);
+  border-color: rgba(143, 58, 44, 0.22);
+}
+
+:root[data-theme='light'] .world-graph-card {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(143, 58, 44, 0.05), transparent 56%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.45), transparent 60%);
+}
+
+:root[data-theme='light'] .world-edge--bed {
+  stroke: rgba(154, 106, 36, 0.16);
+}
+
+:root[data-theme='light'] .world-edge--trail {
+  stroke: rgba(122, 86, 44, 0.55);
+}
+
+:root[data-theme='light'] .world-node {
+  background: linear-gradient(160deg, #fffaf0, #f5e9d3);
+  box-shadow: 0 12px 28px rgba(74, 52, 26, 0.18);
+}
+
+:root[data-theme='light'] .world-node--exit {
+  border-color: rgba(143, 58, 44, 0.5);
+}
+
+:root[data-theme='light'] .world-node__exit {
+  border-color: rgba(143, 58, 44, 0.3);
+  background: rgba(143, 58, 44, 0.08);
+  color: var(--rubric);
 }
 
 /* ------------------------------------------------------------------ */
