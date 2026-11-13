@@ -3,6 +3,13 @@ import type { Player, PlayerInput } from '@shared/player'
 import type { CharacterProfile, CharacterProfileInput } from '@shared/characterProfile'
 import type { Monster, MonsterInput } from '@shared/monster'
 import type { Game, GameInput } from '@shared/game'
+import {
+  canTransitionGame,
+  isGameDeletable,
+  isGameEditable,
+  isGameStatus,
+  type GameStatus
+} from '@shared/gameStatus'
 import type { GameMonsterEntry } from '@shared/gameMonster'
 import {
   clampMonsterScore,
@@ -121,7 +128,8 @@ function readGames(): Game[] {
     return (parsed as Game[]).map((game) => ({
       ...game,
       characterIds: Array.isArray(game.characterIds) ? game.characterIds : [],
-      monsters: Array.isArray(game.monsters) ? game.monsters : []
+      monsters: Array.isArray(game.monsters) ? game.monsters : [],
+      status: isGameStatus(game.status) ? game.status : 'new'
     }))
   } catch {
     return []
@@ -192,13 +200,47 @@ export function createWebBridge(): GameMasterApi {
       },
 
       update: async (game: Game): Promise<Game> => {
+        const games = readGames()
+        const existing = games.find((item) => item.id === game.id)
+
+        if (!existing) {
+          throw new Error('Игра не найдена — возможно, запись уже удалена')
+        }
+        if (!isGameEditable(existing.status)) {
+          throw new Error('Завершённую игру нельзя редактировать')
+        }
+
         const updated: Game = {
-          ...game,
+          ...existing,
           name: game.name.trim().slice(0, 120),
+          characterIds: game.characterIds,
+          monsters: game.monsters,
           updatedAt: new Date().toISOString()
         }
 
-        writeGames(readGames().map((item) => (item.id === game.id ? updated : item)))
+        writeGames(games.map((item) => (item.id === game.id ? updated : item)))
+        return updated
+      },
+
+      setStatus: async (id: string, status: GameStatus): Promise<Game> => {
+        const games = readGames()
+        const game = games.find((item) => item.id === id)
+
+        if (!game) {
+          throw new Error('Игра не найдена — возможно, запись уже удалена')
+        }
+        if (game.status === status) return game
+        if (!canTransitionGame(game.status, status)) {
+          throw new Error('Такой переход статуса недопустим')
+        }
+
+        const updated: Game = {
+          ...game,
+          status,
+          updatedAt: new Date().toISOString()
+        }
+
+        writeGames(games.map((item) => (item.id === id ? updated : item)))
         return updated
       },
 
@@ -206,6 +248,10 @@ export function createWebBridge(): GameMasterApi {
         const games = readGames()
         const game = games.find((item) => item.id === id)
         if (!game) return
+
+        if (!isGameDeletable(game.status)) {
+          throw new Error('Идущую игру нельзя удалить — сначала завершите её')
+        }
 
         if (keepMonsterIds.length > 0) {
           const keep = new Set(keepMonsterIds)

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { GAME_STATUSES } from './gameStatus'
 import { monsterAbilitySchema } from './monster'
 
 /** Версия формата файла игр. */
@@ -40,6 +41,7 @@ export const gameInputSchema = z.object(gameFields)
 export const gameSchema = z.object({
   id: z.string().min(1),
   ...gameFields,
+  status: z.enum(GAME_STATUSES).default('new'),
   createdAt: z.string().min(1),
   updatedAt: z.string().min(1)
 })

@@ -9,6 +9,12 @@ import {
   type GamesFile
 } from '@shared/game'
 import type { GameMonsterEntry } from '@shared/gameMonster'
+import {
+  canTransitionGame,
+  isGameDeletable,
+  isGameEditable,
+  type GameStatus
+} from '@shared/gameStatus'
 import { JsonFileError, readJsonFile, withFileLock, writeJsonAtomic } from './jsonFile'
 import { saveGameMonsters } from './gameMonsterStore'
 
@@ -81,8 +87,14 @@ export async function updateGame(game: Game): Promise<Game> {
       throw new Error('Игра не найдена — возможно, запись уже удалена')
     }
 
+    const existing = file.games[index]!
+
+    if (!isGameEditable(existing.status)) {
+      throw new Error('Завершённую игру нельзя редактировать')
+    }
+
     const updated: Game = {
-      ...file.games[index]!,
+      ...existing,
       name: normalized.name,
       characterIds: normalized.characterIds,
       monsters: normalized.monsters,
@@ -97,14 +109,48 @@ export async function updateGame(game: Game): Promise<Game> {
   })
 }
 
-export async function removeGame(
-  id: string,
+export async function setGameStatus(id: string, status: GameStatus): Promise<Game> {
+  return withFileLock(LOCK_KEY, async () => {
+    const file = await readGamesFile()
+    const index = file.games.findIndex((item) => item.id === id)
+
+    if (index === -1) {
+      throw new Error('Игра не найдена — возможно, запись уже удалена')
+    }
+
+    const current = file.games[index]!
+
+    if (current.status === status) return current
+
+    if (!canTransitionGame(current.status, status)) {
+      throw new Error('Такой переход статуса недопустим')
+    }
+
+    const updated: Game = {
+      ...current,
+      status,
+      updatedAt: new Date().toISOString()
+    }
+
+    const games = [...file.games]
+    games[index] = updated
+
+    await writeJsonAtomic(gamesFile(), { ...file, games })
+    return updated
+  })
+}
+
+export async function removeGame(  id: string,
   keepMonsterIds: readonly string[] = []
 ): Promise<void> {
   const games = await readGamesFile()
   const game = games.games.find((item) => item.id === id)
 
   if (!game) return
+
+  if (!isGameDeletable(game.status)) {
+    throw new Error('Идущую игру нельзя удалить — сначала завершите её')
+  }
 
   if (keepMonsterIds.length > 0) {
     const keep = new Set(keepMonsterIds)

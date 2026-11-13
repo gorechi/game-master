@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { JSX } from 'react'
 import type { Game } from '@shared/game'
+import { gameStatusLabels, isGameDeletable, isGameEditable } from '@shared/gameStatus'
 import { api, errorMessage } from '@renderer/lib/api'
 import { formatDate, pluralize } from '@renderer/lib/format'
 import { ConfirmDialog } from './ui/ConfirmDialog'
@@ -36,11 +37,28 @@ export function GamesPage({ onOpenGame }: GamesPageProps): JSX.Element {
 
   function requestDelete(game: Game): void {
     setNotice(null)
+
+    if (!isGameDeletable(game.status)) {
+      setError('Идущую игру нельзя удалить — сначала завершите её')
+      return
+    }
+
     // У игры с монстрами — экран выбора, кого сохранить; иначе простое подтверждение.
     if (game.monsters.length > 0) {
       setDeletingGame(game)
     } else {
       setConfirmingGame(game)
+    }
+  }
+
+  async function startGame(game: Game): Promise<void> {
+    try {
+      if (game.status === 'new' || game.status === 'paused') {
+        await api.games.setStatus(game.id, 'running')
+      }
+      onOpenGame(game.id)
+    } catch (caught) {
+      setError(errorMessage(caught))
     }
   }
 
@@ -121,23 +139,39 @@ export function GamesPage({ onOpenGame }: GamesPageProps): JSX.Element {
                   </span>
 
                   <div className="game-card__identity">
-                    <h3 className="game-card__name">{game.name}</h3>
+                    <div className="game-card__title-row">
+                      <h3 className="game-card__name">{game.name}</h3>
+                      <span className={`game-status game-status--${game.status}`}>
+                        {gameStatusLabels[game.status]}
+                      </span>
+                    </div>
                     <span className="game-card__meta">Создана {formatDate(game.createdAt)}</span>
                   </div>
 
                   <div className="game-card__actions">
-                    <button
-                      type="button"
-                      className="button button--tiny button--primary"
-                      onClick={() => onOpenGame(game.id)}
-                    >
-                      Провести
-                    </button>
+                    {game.status !== 'finished' ? (
+                      <button
+                        type="button"
+                        className="button button--tiny button--primary"
+                        onClick={() => void startGame(game)}
+                      >
+                        {game.status === 'new'
+                          ? 'Начать'
+                          : game.status === 'paused'
+                            ? 'Продолжить'
+                            : 'Открыть'}
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       className="icon-button"
-                      title="Редактировать"
+                      title={
+                        isGameEditable(game.status)
+                          ? 'Редактировать'
+                          : 'Завершённую игру нельзя редактировать'
+                      }
                       aria-label={`Редактировать игру ${game.name}`}
+                      disabled={!isGameEditable(game.status)}
                       onClick={() => setEditing(game)}
                     >
                       <IconPencil />
@@ -145,8 +179,13 @@ export function GamesPage({ onOpenGame }: GamesPageProps): JSX.Element {
                     <button
                       type="button"
                       className="icon-button icon-button--danger"
-                      title="Удалить"
+                      title={
+                        isGameDeletable(game.status)
+                          ? 'Удалить'
+                          : 'Идущую игру нельзя удалить — сначала завершите'
+                      }
                       aria-label={`Удалить игру ${game.name}`}
+                      disabled={!isGameDeletable(game.status)}
                       onClick={() => requestDelete(game)}
                     >
                       <IconTrash />

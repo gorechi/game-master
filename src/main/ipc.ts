@@ -3,6 +3,7 @@ import { playerSchema, type PlayerInput } from '@shared/player'
 import { characterProfileInputSchema, characterProfileSchema } from '@shared/characterProfile'
 import { monsterInputSchema, monsterSchema } from '@shared/monster'
 import { gameInputSchema, gameSchema } from '@shared/game'
+import { isGameStatus } from '@shared/gameStatus'
 import { isThemeName, type SettingsPatch } from '@shared/settings'
 import { IPC, type AppInfo } from '@shared/api'
 import { addPlayer, listPlayers, removePlayer, updatePlayer } from './storage/playerStore'
@@ -13,7 +14,7 @@ import {
   updateCharacter
 } from './storage/characterStore'
 import { addMonster, listMonsters, removeMonster, updateMonster } from './storage/monsterStore'
-import { addGame, listGames, removeGame, updateGame } from './storage/gameStore'
+import { addGame, listGames, removeGame, setGameStatus, updateGame } from './storage/gameStore'
 import { listGameMonsters } from './storage/gameMonsterStore'
 import { getSettings, updateSettings } from './storage/settingsStore'
 
@@ -92,6 +93,13 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.gameRemove, (_event, id: unknown, keepMonsterIds: unknown): Promise<void> =>
     removeGame(assertId(id), parseMonsterIds(keepMonsterIds))
   )
+
+  ipcMain.handle(IPC.gameSetStatus, (_event, id: unknown, status: unknown) => {
+    if (!isGameStatus(status)) {
+      throw new Error('Некорректный статус игры')
+    }
+    return setGameStatus(assertId(id), status)
+  })
 
   ipcMain.handle(IPC.gameMonstersList, () => listGameMonsters())
 

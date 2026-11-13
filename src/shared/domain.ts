@@ -195,6 +195,7 @@ export function createGame(input: GameInput, id: string = crypto.randomUUID()): 
     name: input.name.trim().slice(0, 120),
     characterIds: [...new Set(input.characterIds)],
     monsters: input.monsters,
+    status: 'new',
     createdAt: now,
     updatedAt: now
   }

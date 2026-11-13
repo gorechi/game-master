@@ -178,6 +178,17 @@ p {
   border-color: rgba(209, 88, 79, 0.45);
 }
 
+.icon-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.icon-button:disabled:hover {
+  color: var(--ink-muted);
+  background: transparent;
+  border-color: var(--border);
+}
+
 .input {
   width: 100%;
   padding: 9px 12px;
@@ -1324,6 +1335,55 @@ input[type='number'] {
 .game-card__meta {
   font-size: 12px;
   color: var(--ink-faint);
+}
+
+.game-card__title-row,
+.run-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.game-status {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--ink-muted);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.game-status--new {
+  color: var(--gold-strong);
+  border-color: rgba(216, 178, 92, 0.4);
+  background: rgba(216, 178, 92, 0.1);
+}
+
+.game-status--running {
+  color: #9fd8b4;
+  border-color: rgba(116, 196, 147, 0.4);
+  background: rgba(116, 196, 147, 0.1);
+}
+
+.game-status--paused {
+  color: #f0c98a;
+  border-color: rgba(216, 178, 92, 0.45);
+  background: rgba(216, 178, 92, 0.14);
+}
+
+.game-status--finished {
+  color: var(--ink-faint);
+}
+
+.run-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .game-card__actions {
