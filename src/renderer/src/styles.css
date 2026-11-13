@@ -1490,6 +1490,13 @@ input[type='number'] {
   font-variant-numeric: tabular-nums;
 }
 
+.game-monster-row__count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
 .game-monster-row__actions {
   display: flex;
   gap: 6px;
@@ -1499,6 +1506,41 @@ input[type='number'] {
 .game-monster-row__actions .icon-button {
   width: 28px;
   height: 28px;
+}
+
+.count-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.count-button:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: var(--border-strong);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.count-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.count-input {
+  width: 56px;
+  padding: 4px 6px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
 .game-editor__hint {

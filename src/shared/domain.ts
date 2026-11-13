@@ -204,16 +204,16 @@ export function createGame(input: GameInput, id: string = crypto.randomUUID()): 
  * Повторяющиеся имена получают номер: «Гоблин», «Гоблин 2», «Гоблин 3».
  */
 export function createGameMonster(
-  source: Monster,
+  source: Omit<Monster, 'createdAt' | 'updatedAt'>,
   existingNames: readonly string[] = []
 ): GameMonster {
-  const base = source.name.trim().slice(0, 100) || 'Монстр'
-  let name = base
-  let counter = 2
+  const base = source.name.trim().slice(0, 94) || 'Монстр'
+  let counter = 1
+  let name = `${base} ${counter}`
 
   while (existingNames.includes(name)) {
-    name = `${base.slice(0, 94)} ${counter}`
     counter += 1
+    name = `${base} ${counter}`
   }
 
   return {
