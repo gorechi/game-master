@@ -223,6 +223,19 @@ p {
   padding-right: 6px;
 }
 
+.input--readonly {
+  cursor: default;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--ink-muted);
+}
+
+.input--readonly:hover,
+.input--readonly:focus {
+  border-color: var(--border);
+  box-shadow: none;
+  background: rgba(255, 255, 255, 0.03);
+}
+
 input[type='number']::-webkit-inner-spin-button,
 input[type='number']::-webkit-outer-spin-button {
   -webkit-appearance: none;
@@ -1390,6 +1403,7 @@ input[type='number'] {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
   margin-left: auto;
 }
 
@@ -1455,6 +1469,18 @@ input[type='number'] {
 .participant-row--on {
   background: rgba(216, 178, 92, 0.08);
   border-color: rgba(216, 178, 92, 0.25);
+}
+
+.participant-row--readonly {
+  cursor: default;
+}
+
+.participant-row--readonly:hover {
+  background: transparent;
+}
+
+.participant-row--readonly.participant-row--on:hover {
+  background: rgba(216, 178, 92, 0.08);
 }
 
 .participant-row__avatar {

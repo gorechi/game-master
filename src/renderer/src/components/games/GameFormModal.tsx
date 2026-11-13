@@ -15,6 +15,10 @@ import { MonsterFormModal } from '../monsters/MonsterFormModal'
 interface GameFormModalProps {
   open: boolean
   game: Game | null
+  /** Для создания продолжения: участники, уже отмеченные в форме. */
+  initialCharacterIds?: string[]
+  /** Только просмотр: все поля недоступны, кнопки сохранения нет. */
+  readOnly?: boolean
   onClose: () => void
   onSaved: (game: Game) => void
 }
@@ -59,7 +63,14 @@ function expandSelections(
   return result
 }
 
-export function GameFormModal({ open, game, onClose, onSaved }: GameFormModalProps): JSX.Element {
+export function GameFormModal({
+  open,
+  game,
+  initialCharacterIds,
+  readOnly = false,
+  onClose,
+  onSaved
+}: GameFormModalProps): JSX.Element {
   const isEdit = game !== null
 
   const [name, setName] = useState('')
@@ -84,7 +95,7 @@ export function GameFormModal({ open, game, onClose, onSaved }: GameFormModalPro
     if (!open) return
 
     setName(game?.name ?? '')
-    setCharacterIds(game?.characterIds ?? [])
+    setCharacterIds(game?.characterIds ?? initialCharacterIds ?? [])
     setSelections([])
     setInstances(game?.monsters ?? [])
     setReadyIds([])
@@ -119,7 +130,7 @@ export function GameFormModal({ open, game, onClose, onSaved }: GameFormModalPro
     return () => {
       cancelled = true
     }
-  }, [open, game])
+  }, [open, game, initialCharacterIds])
 
   function playerName(playerId: string | null): string {
     const player = playerId ? players.find((item) => item.id === playerId) : undefined
@@ -215,7 +226,7 @@ export function GameFormModal({ open, game, onClose, onSaved }: GameFormModalPro
 
   async function submit(event: FormEvent): Promise<void> {
     event.preventDefault()
-    if (saving || loadingData) return
+    if (saving || loadingData || readOnly) return
 
     const trimmedName = name.trim()
     if (!trimmedName) {
@@ -269,29 +280,37 @@ export function GameFormModal({ open, game, onClose, onSaved }: GameFormModalPro
   return (
     <Modal
       open={open}
-      title={isEdit ? 'Редактировать игру' : 'Новая игра'}
+      title={readOnly ? 'Просмотр игры' : isEdit ? 'Редактировать игру' : 'Новая игра'}
       description={
-        isEdit
-          ? 'Участники и уже созданные монстры. Экземпляры можно открывать и редактировать — бестиарий не меняется.'
-          : 'Название, участники и монстры. Копии монстров создаются при сохранении игры.'
+        readOnly
+          ? 'Завершённая игра — только просмотр. Изменения недоступны.'
+          : isEdit
+            ? 'Участники и уже созданные монстры. Экземпляры можно открывать и редактировать — бестиарий не меняется.'
+            : 'Название, участники и монстры. Копии монстров создаются при сохранении игры.'
       }
       size="lg"
       onClose={onClose}
       initialFocusRef={nameRef}
       footer={
-        <>
-          <button type="button" className="button" onClick={onClose} disabled={saving}>
-            Отмена
+        readOnly ? (
+          <button type="button" className="button" onClick={onClose}>
+            Закрыть
           </button>
-          <button
-            type="submit"
-            form={formId}
-            className="button button--primary"
-            disabled={saving || loadingData || Boolean(dataError)}
-          >
-            {saving ? 'Сохраняем…' : 'Сохранить'}
-          </button>
-        </>
+        ) : (
+          <>
+            <button type="button" className="button" onClick={onClose} disabled={saving}>
+              Отмена
+            </button>
+            <button
+              type="submit"
+              form={formId}
+              className="button button--primary"
+              disabled={saving || loadingData || Boolean(dataError)}
+            >
+              {saving ? 'Сохраняем…' : 'Сохранить'}
+            </button>
+          </>
+        )
       }
     >
       <form id={formId} className="game-editor" noValidate onSubmit={(event) => void submit(event)}>
@@ -299,11 +318,12 @@ export function GameFormModal({ open, game, onClose, onSaved }: GameFormModalPro
           <span className="field__label">Название игры</span>
           <input
             ref={nameRef}
-            className="input"
+            className={`input${readOnly ? ' input--readonly' : ''}`}
             value={name}
             maxLength={120}
             placeholder="Проклятие Страда"
             autoComplete="off"
+            readOnly={readOnly}
             onChange={(event) => setName(event.target.value)}
           />
         </label>
@@ -332,12 +352,19 @@ export function GameFormModal({ open, game, onClose, onSaved }: GameFormModalPro
                     return (
                       <label
                         key={character.id}
-                        className={`participant-row${checked ? ' participant-row--on' : ''}`}
+                        className={[
+                          'participant-row',
+                          checked ? 'participant-row--on' : '',
+                          readOnly ? 'participant-row--readonly' : ''
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
                       >
                         <input
                           type="checkbox"
                           className="checkbox"
                           checked={checked}
+                          disabled={readOnly}
                           onChange={() => toggleCharacter(character.id)}
                         />
 
@@ -368,57 +395,63 @@ export function GameFormModal({ open, game, onClose, onSaved }: GameFormModalPro
                 <span className="editor-section__count">{totalMonsters}</span>
               </header>
 
-              <div className="monster-pickers">
-                <div className="field">
-                  <span className="field__label">Из бестиария</span>
-                  {bestiary.length === 0 ? (
-                    <p className="abilities-editor__empty">В бестиарии пока нет монстров.</p>
-                  ) : !isEdit && availableBestiary.length === 0 ? (
-                    <p className="abilities-editor__empty">Все монстры из бестиария уже добавлены.</p>
-                  ) : (
-                    <Select
-                      ariaLabel={
-                        isEdit ? 'Добавить монстра из бестиария' : 'Выбрать монстра из бестиария'
-                      }
-                      value=""
-                      placeholder={isEdit ? 'Добавить монстра…' : 'Выбрать монстра…'}
-                      options={(isEdit ? bestiary : availableBestiary).map((monster) => ({
-                        value: monster.id,
-                        label: `${monster.name} · КО ${formatChallengeRating(monster.challengeRating)}`
-                      }))}
-                      onChange={addMonster}
-                    />
-                  )}
-                </div>
-
-                {!isEdit ? (
+              {!readOnly ? (
+                <div className="monster-pickers">
                   <div className="field">
-                    <span className="field__label">Сохранённые игровые монстры</span>
-                    {savedMonsters.length === 0 ? (
+                    <span className="field__label">Из бестиария</span>
+                    {bestiary.length === 0 ? (
+                      <p className="abilities-editor__empty">В бестиарии пока нет монстров.</p>
+                    ) : !isEdit && availableBestiary.length === 0 ? (
                       <p className="abilities-editor__empty">
-                        Появляются здесь после удаления игры с сохранением монстров.
-                      </p>
-                    ) : availableSaved.length === 0 ? (
-                      <p className="abilities-editor__empty">
-                        Все сохранённые монстры уже добавлены.
+                        Все монстры из бестиария уже добавлены.
                       </p>
                     ) : (
                       <Select
-                        ariaLabel="Добавить сохранённого монстра"
+                        ariaLabel={
+                          isEdit ? 'Добавить монстра из бестиария' : 'Выбрать монстра из бестиария'
+                        }
                         value=""
-                        placeholder="Добавить готового монстра…"
-                        options={availableSaved.map((monster) => ({
+                        placeholder={isEdit ? 'Добавить монстра…' : 'Выбрать монстра…'}
+                        options={(isEdit ? bestiary : availableBestiary).map((monster) => ({
                           value: monster.id,
                           label: `${monster.name} · КО ${formatChallengeRating(
                             monster.challengeRating
                           )}`
                         }))}
-                        onChange={addSavedMonster}
+                        onChange={addMonster}
                       />
                     )}
                   </div>
-                ) : null}
-              </div>
+
+                  {!isEdit ? (
+                    <div className="field">
+                      <span className="field__label">Сохранённые игровые монстры</span>
+                      {savedMonsters.length === 0 ? (
+                        <p className="abilities-editor__empty">
+                          Появляются здесь после удаления игры с сохранением монстров.
+                        </p>
+                      ) : availableSaved.length === 0 ? (
+                        <p className="abilities-editor__empty">
+                          Все сохранённые монстры уже добавлены.
+                        </p>
+                      ) : (
+                        <Select
+                          ariaLabel="Добавить сохранённого монстра"
+                          value=""
+                          placeholder="Добавить готового монстра…"
+                          options={availableSaved.map((monster) => ({
+                            value: monster.id,
+                            label: `${monster.name} · КО ${formatChallengeRating(
+                              monster.challengeRating
+                            )}`
+                          }))}
+                          onChange={addSavedMonster}
+                        />
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
 
               {isEdit ? (
                 instances.length === 0 ? (
@@ -433,26 +466,28 @@ export function GameFormModal({ open, game, onClose, onSaved }: GameFormModalPro
                           {monster.armorClass} · ХП {monster.hitPoints}
                         </span>
 
-                        <div className="game-monster-row__actions">
-                          <button
-                            type="button"
-                            className="icon-button"
-                            title="Редактировать экземпляр"
-                            aria-label={`Редактировать ${monster.name}`}
-                            onClick={() => setEditingMonsterId(monster.id)}
-                          >
-                            <IconPencil />
-                          </button>
-                          <button
-                            type="button"
-                            className="icon-button icon-button--danger"
-                            title="Убрать из игры"
-                            aria-label={`Убрать ${monster.name} из игры`}
-                            onClick={() => removeInstance(monster.id)}
-                          >
-                            <IconTrash />
-                          </button>
-                        </div>
+                        {!readOnly ? (
+                          <div className="game-monster-row__actions">
+                            <button
+                              type="button"
+                              className="icon-button"
+                              title="Редактировать экземпляр"
+                              aria-label={`Редактировать ${monster.name}`}
+                              onClick={() => setEditingMonsterId(monster.id)}
+                            >
+                              <IconPencil />
+                            </button>
+                            <button
+                              type="button"
+                              className="icon-button icon-button--danger"
+                              title="Убрать из игры"
+                              aria-label={`Убрать ${monster.name} из игры`}
+                              onClick={() => removeInstance(monster.id)}
+                            >
+                              <IconTrash />
+                            </button>
+                          </div>
+                        ) : null}
                       </li>
                     ))}
                   </ul>
@@ -560,9 +595,11 @@ export function GameFormModal({ open, game, onClose, onSaved }: GameFormModalPro
               )}
 
               <p className="game-editor__hint">
-                {isEdit
-                  ? 'Экземпляры созданы вместе с игрой: имя и характеристики у каждого свои, бестиарий остаётся нетронутым.'
-                  : 'Экземпляры из бестиария создаются при сохранении. Сохранённые игровые монстры добавляются как есть — без копий и количества.'}
+                {readOnly
+                  ? 'Только просмотр: завершённую игру нельзя редактировать.'
+                  : isEdit
+                    ? 'Экземпляры созданы вместе с игрой: имя и характеристики у каждого свои, бестиарий остаётся нетронутым.'
+                    : 'Экземпляры из бестиария создаются при сохранении. Сохранённые игровые монстры добавляются как есть — без копий и количества.'}
               </p>
             </section>
           </>

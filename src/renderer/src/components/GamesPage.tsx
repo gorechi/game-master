@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { JSX } from 'react'
 import type { Game } from '@shared/game'
-import { gameStatusLabels, isGameDeletable, isGameEditable } from '@shared/gameStatus'
+import { gameStatusLabels, isGameDeletable } from '@shared/gameStatus'
 import { api, errorMessage } from '@renderer/lib/api'
 import { formatDate, pluralize } from '@renderer/lib/format'
 import { ConfirmDialog } from './ui/ConfirmDialog'
@@ -12,11 +12,16 @@ interface GamesPageProps {
   onOpenGame: (gameId: string) => void
 }
 
+type GameFormState =
+  | { mode: 'create'; initialCharacterIds?: string[] }
+  | { mode: 'edit'; game: Game }
+  | { mode: 'view'; game: Game }
+
 /** Основной раздел: игры, которые мастер готовит или проводит. */
 export function GamesPage({ onOpenGame }: GamesPageProps): JSX.Element {
   const [games, setGames] = useState<Game[] | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [editing, setEditing] = useState<Game | 'new' | null>(null)
+  const [form, setForm] = useState<GameFormState | null>(null)
   const [confirmingGame, setConfirmingGame] = useState<Game | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
@@ -90,7 +95,10 @@ export function GamesPage({ onOpenGame }: GamesPageProps): JSX.Element {
               Партии, которые вы готовите или проводите. Это основная сущность приложения.
             </p>
           </div>
-          <button className="button button--primary" onClick={() => setEditing('new')}>
+          <button
+            className="button button--primary"
+            onClick={() => setForm({ mode: 'create' })}
+          >
             <IconPlus width={16} height={16} />
             Создать игру
           </button>
@@ -104,7 +112,7 @@ export function GamesPage({ onOpenGame }: GamesPageProps): JSX.Element {
         ) : games.length === 0 ? (
           <div className="empty empty--action">
             <p>Пока ни одной игры. Создайте первую — с неё начинается подготовка к партии.</p>
-            <button className="button" onClick={() => setEditing('new')}>
+            <button className="button" onClick={() => setForm({ mode: 'create' })}>
               Создать игру
             </button>
           </div>
@@ -132,33 +140,52 @@ export function GamesPage({ onOpenGame }: GamesPageProps): JSX.Element {
                   </div>
 
                   <div className="game-card__actions">
-                    {game.status !== 'finished' ? (
-                      <button
-                        type="button"
-                        className="button button--tiny button--primary"
-                        onClick={() => void startGame(game)}
-                      >
-                        {game.status === 'new'
-                          ? 'Начать'
-                          : game.status === 'paused'
-                            ? 'Продолжить'
-                            : 'Открыть'}
-                      </button>
-                    ) : null}
-                    <button
-                      type="button"
-                      className="icon-button"
-                      title={
-                        isGameEditable(game.status)
-                          ? 'Редактировать'
-                          : 'Завершённую игру нельзя редактировать'
-                      }
-                      aria-label={`Редактировать игру ${game.name}`}
-                      disabled={!isGameEditable(game.status)}
-                      onClick={() => setEditing(game)}
-                    >
-                      <IconPencil />
-                    </button>
+                    {game.status === 'finished' ? (
+                      <>
+                        <button
+                          type="button"
+                          className="button button--tiny"
+                          onClick={() => setForm({ mode: 'view', game })}
+                        >
+                          Просмотр
+                        </button>
+                        <button
+                          type="button"
+                          className="button button--tiny button--primary"
+                          onClick={() =>
+                            setForm({
+                              mode: 'create',
+                              initialCharacterIds: game.characterIds
+                            })
+                          }
+                        >
+                          Продолжение
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          className="button button--tiny button--primary"
+                          onClick={() => void startGame(game)}
+                        >
+                          {game.status === 'new'
+                            ? 'Начать'
+                            : game.status === 'paused'
+                              ? 'Продолжить'
+                              : 'Открыть'}
+                        </button>
+                        <button
+                          type="button"
+                          className="icon-button"
+                          title="Редактировать"
+                          aria-label={`Редактировать игру ${game.name}`}
+                          onClick={() => setForm({ mode: 'edit', game })}
+                        >
+                          <IconPencil />
+                        </button>
+                      </>
+                    )}
                     <button
                       type="button"
                       className="icon-button icon-button--danger"
@@ -182,11 +209,13 @@ export function GamesPage({ onOpenGame }: GamesPageProps): JSX.Element {
       </div>
 
       <GameFormModal
-        open={editing !== null}
-        game={editing === 'new' ? null : editing}
-        onClose={() => setEditing(null)}
+        open={form !== null}
+        game={form && form.mode !== 'create' ? form.game : null}
+        initialCharacterIds={form?.mode === 'create' ? form.initialCharacterIds : undefined}
+        readOnly={form?.mode === 'view'}
+        onClose={() => setForm(null)}
         onSaved={() => {
-          setEditing(null)
+          setForm(null)
           void refresh()
         }}
       />
