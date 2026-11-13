@@ -1,7 +1,7 @@
 import type { Player, PlayerInput } from './player'
 import type { CharacterProfile, CharacterProfileInput } from './characterProfile'
 import type { Monster, MonsterAbility, MonsterInput } from './monster'
-import type { Game, GameInput } from './game'
+import type { Game, GameInput, GameMonster } from './game'
 
 /**
  * Доменный слой без зависимостей: фабрики, подписи и сводки.
@@ -192,7 +192,43 @@ export function createGame(input: GameInput, id: string = crypto.randomUUID()): 
   return {
     id,
     name: input.name.trim().slice(0, 120),
+    characterIds: [...new Set(input.characterIds)],
+    monsters: input.monsters,
     createdAt: now,
     updatedAt: now
+  }
+}
+
+/**
+ * Копирует монстра из бестиария в независимый экземпляр игры.
+ * Повторяющиеся имена получают номер: «Гоблин», «Гоблин 2», «Гоблин 3».
+ */
+export function createGameMonster(
+  source: Monster,
+  existingNames: readonly string[] = []
+): GameMonster {
+  const base = source.name.trim().slice(0, 100) || 'Монстр'
+  let name = base
+  let counter = 2
+
+  while (existingNames.includes(name)) {
+    name = `${base.slice(0, 94)} ${counter}`
+    counter += 1
+  }
+
+  return {
+    id: crypto.randomUUID(),
+    sourceMonsterId: source.id,
+    name,
+    strength: source.strength,
+    dexterity: source.dexterity,
+    intelligence: source.intelligence,
+    wisdom: source.wisdom,
+    constitution: source.constitution,
+    charisma: source.charisma,
+    challengeRating: source.challengeRating,
+    armorClass: source.armorClass,
+    hitPoints: source.hitPoints,
+    abilities: source.abilities.map((ability) => ({ ...ability }))
   }
 }

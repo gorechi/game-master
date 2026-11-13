@@ -40,12 +40,16 @@ async function readGamesFile(): Promise<GamesFile> {
   return parsed.data
 }
 
-function assertName(input: GameInput): GameInput {
+function assertGame(input: GameInput): GameInput {
   const name = input.name.trim()
   if (!name) {
     throw new Error('Название игры не может быть пустым')
   }
-  return { name }
+  return {
+    name,
+    characterIds: [...new Set(input.characterIds)],
+    monsters: input.monsters
+  }
 }
 
 export async function listGames(): Promise<Game[]> {
@@ -53,7 +57,7 @@ export async function listGames(): Promise<Game[]> {
 }
 
 export async function addGame(input: GameInput): Promise<Game> {
-  const normalized = assertName(input)
+  const normalized = assertGame(input)
 
   return withFileLock(LOCK_KEY, async () => {
     const file = await readGamesFile()
@@ -65,7 +69,7 @@ export async function addGame(input: GameInput): Promise<Game> {
 }
 
 export async function updateGame(game: Game): Promise<Game> {
-  const normalized = assertName(game)
+  const normalized = assertGame(game)
 
   return withFileLock(LOCK_KEY, async () => {
     const file = await readGamesFile()
@@ -78,6 +82,8 @@ export async function updateGame(game: Game): Promise<Game> {
     const updated: Game = {
       ...file.games[index]!,
       name: normalized.name,
+      characterIds: normalized.characterIds,
+      monsters: normalized.monsters,
       updatedAt: new Date().toISOString()
     }
 

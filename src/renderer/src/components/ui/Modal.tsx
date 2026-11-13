@@ -25,6 +25,9 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])'
 ].join(', ')
 
+/** Стек открытых модалок: Escape и Tab обрабатывает только верхняя. */
+const modalStack: symbol[] = []
+
 /**
  * Кастомное модальное окно: свой оверлей, панель и поведение.
  * Системные диалоги (window.confirm/alert) в приложении не используются.
@@ -43,9 +46,13 @@ export function Modal({
   const panelRef = useRef<HTMLDivElement>(null)
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
+  const modalIdRef = useRef(Symbol('modal'))
 
   useEffect(() => {
     if (!open) return
+
+    const modalId = modalIdRef.current
+    modalStack.push(modalId)
 
     const previouslyFocused =
       document.activeElement instanceof HTMLElement ? document.activeElement : null
@@ -62,6 +69,8 @@ export function Modal({
     target?.focus()
 
     const onKeyDown = (event: KeyboardEvent): void => {
+      if (modalStack[modalStack.length - 1] !== modalId) return
+
       if (event.key === 'Escape') {
         event.preventDefault()
         onCloseRef.current()
@@ -91,6 +100,9 @@ export function Modal({
     document.addEventListener('keydown', onKeyDown)
 
     return () => {
+      const index = modalStack.indexOf(modalId)
+      if (index !== -1) modalStack.splice(index, 1)
+
       document.removeEventListener('keydown', onKeyDown)
       document.body.style.overflow = previousOverflow
       previouslyFocused?.focus()

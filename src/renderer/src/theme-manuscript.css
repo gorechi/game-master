@@ -379,6 +379,39 @@
   border-color: rgba(143, 58, 44, 0.28);
 }
 
+:root[data-theme='light'] .participant-row:hover {
+  background: rgba(122, 86, 44, 0.05);
+}
+
+:root[data-theme='light'] .participant-row--on {
+  background: rgba(143, 58, 44, 0.06);
+  border-color: rgba(143, 58, 44, 0.22);
+}
+
+:root[data-theme='light'] .participant-row__avatar {
+  color: #7a4f12;
+  background: rgba(154, 106, 36, 0.1);
+  border-color: rgba(154, 106, 36, 0.3);
+}
+
+:root[data-theme='light'] .checkbox {
+  background: rgba(255, 255, 255, 0.5);
+  border-color: var(--border-strong);
+}
+
+:root[data-theme='light'] .checkbox:checked {
+  background: linear-gradient(180deg, #b34f37, #8c3423);
+  border-color: #7d2e1e;
+}
+
+:root[data-theme='light'] .checkbox:checked::after {
+  border-color: #fdf3e0;
+}
+
+:root[data-theme='light'] .game-monster-row {
+  background: rgba(255, 255, 255, 0.4);
+}
+
 /* ------------------------------------------------------------------ */
 /* Модальные окна                                                     */
 /* ------------------------------------------------------------------ */

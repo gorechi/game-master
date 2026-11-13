@@ -90,11 +90,19 @@ export function MonstersPage(): JSX.Element {
 
       <MonsterFormModal
         open={editing !== null}
-        monster={editing === 'new' ? null : editing}
+        title={editing === 'new' ? 'Новый монстр' : 'Редактировать монстра'}
+        description="Характеристики, классы и способности. Способности можно добавлять и удалять."
+        initial={editing === 'new' ? null : editing}
         onClose={() => setEditing(null)}
-        onSaved={() => {
+        onSubmit={async (input) => {
+          if (editing === 'new') {
+            await api.monsters.create(input)
+          } else if (editing) {
+            await api.monsters.update({ ...editing, ...input })
+          }
+
           setEditing(null)
-          void refresh()
+          await refresh()
         }}
       />
 

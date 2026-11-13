@@ -113,7 +113,13 @@ function readGames(): Game[] {
     if (!raw) return []
 
     const parsed: unknown = JSON.parse(raw)
-    return Array.isArray(parsed) ? (parsed as Game[]) : []
+    if (!Array.isArray(parsed)) return []
+
+    return (parsed as Game[]).map((game) => ({
+      ...game,
+      characterIds: Array.isArray(game.characterIds) ? game.characterIds : [],
+      monsters: Array.isArray(game.monsters) ? game.monsters : []
+    }))
   } catch {
     return []
   }

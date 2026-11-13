@@ -1,8 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { FormEvent, JSX } from 'react'
-import type { Monster, MonsterInput } from '@shared/monster'
+import type { MonsterAbility, MonsterInput } from '@shared/monster'
 import { createMonsterAbility } from '@shared/domain'
-import { api, errorMessage } from '@renderer/lib/api'
+import { errorMessage } from '@renderer/lib/api'
 import { Modal } from '../ui/Modal'
 import { IconPlus, IconTrash } from '../ui/icons'
 
@@ -48,18 +48,36 @@ function parseFloatOr(value: string, fallback: number): number {
   return Number.isFinite(parsed) ? parsed : fallback
 }
 
+export interface MonsterFormValues {
+  name: string
+  strength: number
+  dexterity: number
+  intelligence: number
+  wisdom: number
+  constitution: number
+  charisma: number
+  challengeRating: number
+  armorClass: number
+  hitPoints: number
+  abilities: MonsterAbility[]
+}
+
 interface MonsterFormModalProps {
   open: boolean
-  monster: Monster | null
+  title: string
+  description?: string
+  initial: MonsterFormValues | null
   onClose: () => void
-  onSaved: (monster: Monster) => void
+  onSubmit: (input: MonsterInput) => Promise<void> | void
 }
 
 export function MonsterFormModal({
   open,
-  monster,
+  title,
+  description,
+  initial,
   onClose,
-  onSaved
+  onSubmit
 }: MonsterFormModalProps): JSX.Element {
   const [name, setName] = useState('')
   const [scores, setScores] = useState<ScoreDraft>(EMPTY_SCORES)
@@ -77,31 +95,31 @@ export function MonsterFormModal({
   useEffect(() => {
     if (!open) return
 
-    setName(monster?.name ?? '')
+    setName(initial?.name ?? '')
     setScores(
-      monster
+      initial
         ? {
-            strength: String(monster.strength),
-            dexterity: String(monster.dexterity),
-            intelligence: String(monster.intelligence),
-            wisdom: String(monster.wisdom),
-            constitution: String(monster.constitution),
-            charisma: String(monster.charisma)
+            strength: String(initial.strength),
+            dexterity: String(initial.dexterity),
+            intelligence: String(initial.intelligence),
+            wisdom: String(initial.wisdom),
+            constitution: String(initial.constitution),
+            charisma: String(initial.charisma)
           }
         : EMPTY_SCORES
     )
-    setChallengeRating(monster ? String(monster.challengeRating) : '1')
-    setArmorClass(monster ? String(monster.armorClass) : '10')
-    setHitPoints(monster ? String(monster.hitPoints) : '10')
+    setChallengeRating(initial ? String(initial.challengeRating) : '1')
+    setArmorClass(initial ? String(initial.armorClass) : '10')
+    setHitPoints(initial ? String(initial.hitPoints) : '10')
     setAbilities(
-      monster
-        ? monster.abilities.map((ability) => ({ ...ability }))
+      initial
+        ? initial.abilities.map((ability) => ({ ...ability }))
         : [createMonsterAbility()]
     )
     setJustAddedId(null)
     setError(null)
     setSaving(false)
-  }, [open, monster])
+  }, [open, initial])
 
   function setScore(key: ScoreKey, value: string): void {
     setScores((current) => ({ ...current, [key]: value }))
@@ -166,10 +184,7 @@ export function MonsterFormModal({
     setError(null)
 
     try {
-      const saved = monster
-        ? await api.monsters.update({ ...monster, ...input })
-        : await api.monsters.create(input)
-      onSaved(saved)
+      await onSubmit(input)
     } catch (caught) {
       setError(errorMessage(caught))
     } finally {
@@ -180,8 +195,8 @@ export function MonsterFormModal({
   return (
     <Modal
       open={open}
-      title={monster ? 'Редактировать монстра' : 'Новый монстр'}
-      description="Характеристики, классы и способности. Способности можно добавлять и удалять."
+      title={title}
+      description={description}
       size="lg"
       onClose={onClose}
       initialFocusRef={nameRef}
