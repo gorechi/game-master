@@ -2203,6 +2203,35 @@ input[type='number'] {
   opacity: 0.6;
 }
 
+.picker__chevron--floating {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.picker__input,
+.picker--field .picker__input {
+  display: block;
+  padding-right: 34px;
+  cursor: text;
+}
+
+.picker__input::placeholder {
+  color: var(--ink-faint);
+}
+
+.picker__input:focus {
+  outline: none;
+}
+
+.picker__empty {
+  padding: 10px 12px;
+  color: var(--ink-faint);
+  font-size: 13px;
+}
+
 .picker__menu {
   position: absolute;
   left: 0;

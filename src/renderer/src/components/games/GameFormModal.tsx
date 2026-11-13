@@ -411,7 +411,8 @@ export function GameFormModal({
                           isEdit ? 'Добавить монстра из бестиария' : 'Выбрать монстра из бестиария'
                         }
                         value=""
-                        placeholder={isEdit ? 'Добавить монстра…' : 'Выбрать монстра…'}
+                        searchable
+                        placeholder="Найти монстра…"
                         options={(isEdit ? bestiary : availableBestiary).map((monster) => ({
                           value: monster.id,
                           label: `${monster.name} · КО ${formatChallengeRating(
@@ -438,7 +439,8 @@ export function GameFormModal({
                         <Select
                           ariaLabel="Добавить сохранённого монстра"
                           value=""
-                          placeholder="Добавить готового монстра…"
+                          searchable
+                          placeholder="Найти сохранённого монстра…"
                           options={availableSaved.map((monster) => ({
                             value: monster.id,
                             label: `${monster.name} · КО ${formatChallengeRating(
