@@ -18,6 +18,7 @@ import { addMonster, listMonsters, removeMonster, updateMonster } from './storag
 import { addMap, listMaps, removeMap, updateMap } from './storage/mapStore'
 import {
   addGame,
+  clearMapReferences,
   finishGame,
   listGames,
   removeGame,
@@ -167,9 +168,11 @@ export function registerIpcHandlers(): void {
     updateMap(gameMapSchema.parse(input))
   )
 
-  ipcMain.handle(IPC.mapRemove, (_event, id: unknown): Promise<void> =>
-    removeMap(assertId(id))
-  )
+  ipcMain.handle(IPC.mapRemove, async (_event, id: unknown): Promise<void> => {
+    const mapId = assertId(id)
+    await removeMap(mapId)
+    await clearMapReferences(mapId)
+  })
 
   ipcMain.handle(IPC.settingsGet, () => getSettings())
 

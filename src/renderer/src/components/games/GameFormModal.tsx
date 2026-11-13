@@ -5,6 +5,7 @@ import type { GameMonsterEntry } from '@shared/gameMonster'
 import type { CharacterProfile } from '@shared/characterProfile'
 import type { Monster } from '@shared/monster'
 import type { Player } from '@shared/player'
+import type { GameMap } from '@shared/map'
 import { createGameMonster, formatChallengeRating, gameMonsterFromEntry, playerFullName } from '@shared/domain'
 import { api, errorMessage } from '@renderer/lib/api'
 import { Modal } from '../ui/Modal'
@@ -17,6 +18,8 @@ interface GameFormModalProps {
   game: Game | null
   /** Для создания продолжения: участники, уже отмеченные в форме. */
   initialCharacterIds?: string[]
+  /** Для создания продолжения: карта исходной игры. */
+  initialMapId?: string | null
   /** Только просмотр: все поля недоступны, кнопки сохранения нет. */
   readOnly?: boolean
   onClose: () => void
@@ -67,6 +70,7 @@ export function GameFormModal({
   open,
   game,
   initialCharacterIds,
+  initialMapId,
   readOnly = false,
   onClose,
   onSaved
@@ -74,6 +78,7 @@ export function GameFormModal({
   const isEdit = game !== null
 
   const [name, setName] = useState('')
+  const [mapId, setMapId] = useState('')
   const [characterIds, setCharacterIds] = useState<string[]>([])
   const [playerFilter, setPlayerFilter] = useState('all')
   const [activeTab, setActiveTab] = useState<'participants' | 'monsters'>('participants')
@@ -85,6 +90,7 @@ export function GameFormModal({
   const [characters, setCharacters] = useState<CharacterProfile[]>([])
   const [players, setPlayers] = useState<Player[]>([])
   const [bestiary, setBestiary] = useState<Monster[]>([])
+  const [maps, setMaps] = useState<GameMap[]>([])
   const [loadingData, setLoadingData] = useState(false)
   const [dataError, setDataError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -97,6 +103,7 @@ export function GameFormModal({
     if (!open) return
 
     setName(game?.name ?? '')
+    setMapId(game?.mapId ?? initialMapId ?? '')
     setCharacterIds(game?.characterIds ?? initialCharacterIds ?? [])
     setPlayerFilter('all')
     setActiveTab('participants')
@@ -115,14 +122,16 @@ export function GameFormModal({
       api.characters.list(),
       api.players.list(),
       api.monsters.list(),
-      api.gameMonsters.list()
+      api.gameMonsters.list(),
+      api.maps.list()
     ])
-      .then(([nextCharacters, nextPlayers, nextBestiary, nextSavedMonsters]) => {
+      .then(([nextCharacters, nextPlayers, nextBestiary, nextSavedMonsters, nextMaps]) => {
         if (cancelled) return
         setCharacters(nextCharacters)
         setPlayers(nextPlayers)
         setBestiary(nextBestiary)
         setSavedMonsters(nextSavedMonsters)
+        setMaps(nextMaps)
       })
       .catch((caught: unknown) => {
         if (!cancelled) setDataError(errorMessage(caught))
@@ -134,7 +143,7 @@ export function GameFormModal({
     return () => {
       cancelled = true
     }
-  }, [open, game, initialCharacterIds])
+  }, [open, game, initialCharacterIds, initialMapId])
 
   function playerName(playerId: string | null): string {
     const player = playerId ? players.find((item) => item.id === playerId) : undefined
@@ -408,6 +417,7 @@ export function GameFormModal({
 
       const input = {
         name: trimmedName,
+        mapId: mapId || null,
         characterIds: validCharacterIds,
         monsters: isEdit
           ? instances
@@ -471,24 +481,41 @@ export function GameFormModal({
       }
     >
       <form id={formId} className="game-editor" noValidate onSubmit={(event) => void submit(event)}>
-        <label className="field">
-          <span className="field__label">Название игры</span>
-          <input
-            ref={nameRef}
-            className={`input${readOnly ? ' input--readonly' : ''}`}
-            value={name}
-            maxLength={120}
-            placeholder="Проклятие Страда"
-            autoComplete="off"
-            readOnly={readOnly}
-            onChange={(event) => setName(event.target.value)}
-          />
-        </label>
+        <div className="game-editor__top">
+          <label className="field">
+            <span className="field__label">Название игры</span>
+            <input
+              ref={nameRef}
+              className={`input${readOnly ? ' input--readonly' : ''}`}
+              value={name}
+              maxLength={120}
+              placeholder="Проклятие Страда"
+              autoComplete="off"
+              readOnly={readOnly}
+              onChange={(event) => setName(event.target.value)}
+            />
+          </label>
+
+          <div className="field">
+            <span className="field__label">Карта</span>
+            <Select
+              ariaLabel="Карта игры"
+              value={mapId}
+              placeholder="Без карты"
+              options={[
+                { value: '', label: 'Без карты' },
+                ...maps.map((map) => ({ value: map.id, label: map.name }))
+              ]}
+              disabled={readOnly}
+              onChange={(value) => setMapId(value)}
+            />
+          </div>
+        </div>
 
         {dataError ? <p className="notice notice--error">{dataError}</p> : null}
 
         {loadingData ? (
-          <p className="muted">Загружаем персонажей и бестиарий…</p>
+          <p className="muted">Загружаем персонажей, карты и бестиарий…</p>
         ) : (
           <>
             <div className="form-tabs" role="tablist" aria-label="Разделы формы игры">

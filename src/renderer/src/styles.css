@@ -1413,6 +1413,13 @@ input[type='number'] {
   gap: 18px;
 }
 
+.game-editor__top {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
 .form-tabs {
   display: flex;
   gap: 4px;
@@ -2784,6 +2791,11 @@ input[type='number'] {
   font: inherit;
   cursor: pointer;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.picker__trigger:disabled {
+  cursor: default;
+  opacity: 0.68;
 }
 
 .picker--field .picker__trigger {

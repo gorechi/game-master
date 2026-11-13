@@ -13,7 +13,7 @@ interface GamesPageProps {
 }
 
 type GameFormState =
-  | { mode: 'create'; initialCharacterIds?: string[] }
+  | { mode: 'create'; initialCharacterIds?: string[]; initialMapId?: string | null }
   | { mode: 'edit'; game: Game }
   | { mode: 'view'; game: Game }
 
@@ -155,7 +155,8 @@ export function GamesPage({ onOpenGame }: GamesPageProps): JSX.Element {
                           onClick={() =>
                             setForm({
                               mode: 'create',
-                              initialCharacterIds: game.characterIds
+                              initialCharacterIds: game.characterIds,
+                              initialMapId: game.mapId
                             })
                           }
                         >
@@ -212,6 +213,7 @@ export function GamesPage({ onOpenGame }: GamesPageProps): JSX.Element {
         open={form !== null}
         game={form && form.mode !== 'create' ? form.game : null}
         initialCharacterIds={form?.mode === 'create' ? form.initialCharacterIds : undefined}
+        initialMapId={form?.mode === 'create' ? form.initialMapId : undefined}
         readOnly={form?.mode === 'view'}
         onClose={() => setForm(null)}
         onSaved={() => {

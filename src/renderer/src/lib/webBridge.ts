@@ -167,6 +167,7 @@ function readGames(): Game[] {
 
     return (parsed as Game[]).map((game) => ({
       ...game,
+      mapId: typeof game.mapId === 'string' ? game.mapId : null,
       characterIds: Array.isArray(game.characterIds) ? game.characterIds : [],
       monsters: Array.isArray(game.monsters) ? game.monsters : [],
       status: isGameStatus(game.status) ? game.status : 'new'
@@ -253,6 +254,7 @@ export function createWebBridge(): GameMasterApi {
         const updated: Game = {
           ...existing,
           name: game.name.trim().slice(0, 120),
+          mapId: game.mapId ?? null,
           characterIds: game.characterIds,
           monsters: game.monsters,
           updatedAt: new Date().toISOString()
@@ -461,6 +463,17 @@ export function createWebBridge(): GameMasterApi {
           )
 
         writeMaps(maps)
+
+        const games = readGames()
+        if (games.some((game) => game.mapId === id)) {
+          writeGames(
+            games.map((game) =>
+              game.mapId === id
+                ? { ...game, mapId: null, updatedAt: new Date().toISOString() }
+                : game
+            )
+          )
+        }
       }
     },
 

@@ -55,6 +55,7 @@ function assertGame(input: GameInput): GameInput {
   }
   return {
     name,
+    mapId: input.mapId ?? null,
     characterIds: [...new Set(input.characterIds)],
     monsters: input.monsters
   }
@@ -96,6 +97,7 @@ export async function updateGame(game: Game): Promise<Game> {
     const updated: Game = {
       ...existing,
       name: normalized.name,
+      mapId: normalized.mapId,
       characterIds: normalized.characterIds,
       monsters: normalized.monsters,
       updatedAt: new Date().toISOString()
@@ -225,5 +227,28 @@ export async function removeGame(id: string): Promise<void> {
       ...file,
       games: file.games.filter((item) => item.id !== id)
     })
+  })
+}
+
+/** Убирает ссылку на удалённую карту у всех игр. */
+export async function clearMapReferences(mapId: string): Promise<void> {
+  await withFileLock(LOCK_KEY, async () => {
+    const file = await readGamesFile()
+    let changed = false
+
+    const games = file.games.map((game) => {
+      if (game.mapId !== mapId) return game
+
+      changed = true
+      return {
+        ...game,
+        mapId: null,
+        updatedAt: new Date().toISOString()
+      }
+    })
+
+    if (!changed) return
+
+    await writeJsonAtomic(gamesFile(), { ...file, games })
   })
 }
