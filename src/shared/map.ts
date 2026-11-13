@@ -12,7 +12,10 @@ export const mapPlaceSchema = z.object({
   name: z.string().min(1).max(100),
   isExit: z.boolean(),
   /** Карта, на которую ведёт выход. Заполняется только при isExit. */
-  linkedMapId: z.string().min(1).nullable().default(null)
+  linkedMapId: z.string().min(1).nullable().default(null),
+  /** Ручная позиция на карте; null — автоматическая раскладка. */
+  x: z.number().min(0).max(100000).nullable().default(null),
+  y: z.number().min(0).max(100000).nullable().default(null)
 })
 
 /**

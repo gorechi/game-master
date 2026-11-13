@@ -138,7 +138,9 @@ function readMaps(): GameMap[] {
       places: Array.isArray(map.places)
         ? map.places.map((place) => ({
             ...place,
-            linkedMapId: typeof place.linkedMapId === 'string' ? place.linkedMapId : null
+            linkedMapId: typeof place.linkedMapId === 'string' ? place.linkedMapId : null,
+            x: typeof place.x === 'number' ? place.x : null,
+            y: typeof place.y === 'number' ? place.y : null
           }))
         : [],
       paths: Array.isArray(map.paths) ? map.paths : []

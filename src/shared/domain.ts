@@ -197,8 +197,16 @@ export function createMapPlace(
     id: crypto.randomUUID(),
     name: name.trim().slice(0, 100),
     isExit,
-    linkedMapId: isExit ? linkedMapId : null
+    linkedMapId: isExit ? linkedMapId : null,
+    x: null,
+    y: null
   }
+}
+
+/** Координата карты: неотрицательное число или null для авто-раскладки. */
+function normalizeCoordinate(value: number | null | undefined): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null
+  return Math.max(0, Math.min(100000, Math.round(value)))
 }
 
 /** Одна и та же связь всегда хранится с меньшим id первым. */
@@ -221,7 +229,9 @@ export function normalizeMapInput(input: GameMapInput): NormalizedMapInput {
     id: place.id,
     name: place.name.trim().slice(0, 100),
     isExit: place.isExit,
-    linkedMapId: place.isExit ? (place.linkedMapId ?? null) : null
+    linkedMapId: place.isExit ? (place.linkedMapId ?? null) : null,
+    x: normalizeCoordinate(place.x),
+    y: normalizeCoordinate(place.y)
   }))
 
   if (places.some((place) => !place.name)) {

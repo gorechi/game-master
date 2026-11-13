@@ -1,74 +1,25 @@
-import type { JSX } from 'react'
-import type { GameMap, MapPath } from '@shared/map'
+import { useRef, useState } from 'react'
+import type { JSX, KeyboardEvent, PointerEvent } from 'react'
+import type { MapPath } from '@shared/map'
 import { mapPathKey } from '@shared/domain'
+import {
+  MAP_GRAPH_PADDING,
+  MAP_NODE_HEIGHT,
+  MAP_NODE_WIDTH,
+  type MapLayout,
+  type MapNodePosition
+} from '@renderer/lib/mapLayout'
 
-const NODE_WIDTH = 190
-const NODE_HEIGHT = 64
-const GRAPH_PADDING = 70
+const DRAG_THRESHOLD = 4
 
-interface GraphNode {
+interface DragState {
   id: string
-  name: string
-  isExit: boolean
-  linkedMapId: string | null
-  x: number
-  y: number
-}
-
-interface GraphLayout {
-  width: number
-  height: number
-  nodes: GraphNode[]
-}
-
-function layoutMap(map: GameMap): GraphLayout {
-  const count = map.places.length
-
-  if (count === 0) {
-    return { width: 0, height: 0, nodes: [] }
-  }
-
-  if (count === 1) {
-    return {
-      width: 440,
-      height: 280,
-      nodes: [{ ...map.places[0]!, x: 220, y: 140 }]
-    }
-  }
-
-  if (count === 2) {
-    const width = 760
-    const height = 320
-
-    return {
-      width,
-      height,
-      nodes: [
-        { ...map.places[0]!, x: 180, y: height / 2 },
-        { ...map.places[1]!, x: width - 180, y: height / 2 }
-      ]
-    }
-  }
-
-  const radius = Math.max(200, count * 38)
-  const width = Math.round(2 * (radius + NODE_WIDTH / 2 + GRAPH_PADDING))
-  const height = Math.round(2 * (radius + NODE_HEIGHT / 2 + GRAPH_PADDING))
-  const centerX = width / 2
-  const centerY = height / 2
-
-  return {
-    width,
-    height,
-    nodes: map.places.map((place, index) => {
-      const angle = -Math.PI / 2 + (index * Math.PI * 2) / count
-
-      return {
-        ...place,
-        x: centerX + Math.cos(angle) * radius,
-        y: centerY + Math.sin(angle) * radius
-      }
-    })
-  }
+  pointerId: number
+  startClientX: number
+  startClientY: number
+  originX: number
+  originY: number
+  moved: boolean
 }
 
 function hashPair(path: MapPath): number {
@@ -83,11 +34,11 @@ function hashPair(path: MapPath): number {
 }
 
 /** Точка на границе прямоугольника места в сторону соседа. */
-function anchorPoint(from: GraphNode, to: GraphNode): { x: number; y: number } {
+function anchorPoint(from: MapNodePosition, to: MapNodePosition): { x: number; y: number } {
   const dx = to.x - from.x
   const dy = to.y - from.y
-  const halfWidth = NODE_WIDTH / 2 + 4
-  const halfHeight = NODE_HEIGHT / 2 + 4
+  const halfWidth = MAP_NODE_WIDTH / 2 + 4
+  const halfHeight = MAP_NODE_HEIGHT / 2 + 4
 
   const scale = Math.min(
     Math.abs(dx) < 0.001 ? Number.POSITIVE_INFINITY : halfWidth / Math.abs(dx),
@@ -104,7 +55,7 @@ function anchorPoint(from: GraphNode, to: GraphNode): { x: number; y: number } {
   }
 }
 
-function edgePath(from: GraphNode, to: GraphNode): string {
+function edgePath(from: MapNodePosition, to: MapNodePosition): string {
   const start = anchorPoint(from, to)
   const end = anchorPoint(to, from)
   const dx = end.x - start.x
@@ -120,29 +71,28 @@ function edgePath(from: GraphNode, to: GraphNode): string {
 }
 
 interface MapGraphProps {
-  map: GameMap
+  mapName: string
+  paths: readonly MapPath[]
+  layout: MapLayout
   /** Названия других карт по id — для подписи выхода. */
   linkedMapNames: Record<string, string>
   onOpenMap: (mapId: string) => void
+  onMoveNode: (placeId: string, x: number, y: number) => void
 }
 
 /** Графическое представление карты: места-прямоугольники и пути-дорожки. */
-export function MapGraph({ map, linkedMapNames, onOpenMap }: MapGraphProps): JSX.Element {
-  const layout = layoutMap(map)
-  const nodesById = new Map(layout.nodes.map((node) => [node.id, node]))
+export function MapGraph({
+  mapName,
+  paths,
+  layout,
+  linkedMapNames,
+  onOpenMap,
+  onMoveNode
+}: MapGraphProps): JSX.Element {
+  const dragRef = useRef<DragState | null>(null)
+  const [draggingId, setDraggingId] = useState<string | null>(null)
 
-  const edges: { key: string; from: GraphNode; to: GraphNode }[] = []
-
-  for (const path of map.paths) {
-    const from = nodesById.get(path.a)
-    const to = nodesById.get(path.b)
-
-    if (!from || !to) continue
-
-    edges.push({ key: mapPathKey(path), from, to })
-  }
-
-  if (map.places.length === 0) {
+  if (layout.nodes.length === 0) {
     return (
       <div className="map-graph-empty">
         <p>На карте пока нет мест.</p>
@@ -151,16 +101,97 @@ export function MapGraph({ map, linkedMapNames, onOpenMap }: MapGraphProps): JSX
     )
   }
 
-  function renderNodeContent(node: GraphNode): JSX.Element {
-    const linkedName = node.linkedMapId ? linkedMapNames[node.linkedMapId] : undefined
+  const nodesById = new Map(layout.nodes.map((node) => [node.id, node]))
+  const edges: { key: string; from: MapNodePosition; to: MapNodePosition }[] = []
 
-    return (
-      <>
-        <span className="map-node__name">{node.name}</span>
-        {node.isExit ? <span className="map-node__exit">Выход</span> : null}
-        {linkedName ? <span className="map-node__link">→ {linkedName}</span> : null}
-      </>
-    )
+  for (const path of paths) {
+    const from = nodesById.get(path.a)
+    const to = nodesById.get(path.b)
+
+    if (!from || !to) continue
+
+    edges.push({ key: mapPathKey(path), from, to })
+  }
+
+  const minX = MAP_NODE_WIDTH / 2 + MAP_GRAPH_PADDING
+  const maxX = Math.max(minX, layout.width - minX)
+  const minY = MAP_NODE_HEIGHT / 2 + MAP_GRAPH_PADDING
+  const maxY = Math.max(minY, layout.height - minY)
+
+  function onPointerDown(event: PointerEvent<HTMLDivElement>, node: MapNodePosition): void {
+    if (event.button !== 0) return
+
+    event.preventDefault()
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId)
+    } catch {
+      // Синтетические события в тестах могут не иметь активного pointer id.
+    }
+    dragRef.current = {
+      id: node.id,
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      originX: node.x,
+      originY: node.y,
+      moved: false
+    }
+    setDraggingId(node.id)
+  }
+
+  function onPointerMove(event: PointerEvent<HTMLDivElement>): void {
+    const drag = dragRef.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+
+    const dx = event.clientX - drag.startClientX
+    const dy = event.clientY - drag.startClientY
+
+    if (!drag.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return
+    drag.moved = true
+
+    const x = Math.min(maxX, Math.max(minX, drag.originX + dx))
+    const y = Math.min(maxY, Math.max(minY, drag.originY + dy))
+    onMoveNode(drag.id, Math.round(x), Math.round(y))
+  }
+
+  function finishDrag(event: PointerEvent<HTMLDivElement>, node: MapNodePosition): void {
+    const drag = dragRef.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+
+    const moved = drag.moved
+    dragRef.current = null
+    setDraggingId(null)
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+
+    if (!moved && node.isExit && node.linkedMapId) {
+      onOpenMap(node.linkedMapId)
+    }
+  }
+
+  function cancelDrag(event: PointerEvent<HTMLDivElement>): void {
+    const drag = dragRef.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+
+    dragRef.current = null
+    setDraggingId(null)
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+  }
+
+  function onNodeKeyDown(
+    event: KeyboardEvent<HTMLDivElement>,
+    node: MapNodePosition
+  ): void {
+    if (!node.isExit || !node.linkedMapId) return
+    if (event.key !== 'Enter' && event.key !== ' ') return
+
+    event.preventDefault()
+    onOpenMap(node.linkedMapId)
   }
 
   return (
@@ -168,7 +199,7 @@ export function MapGraph({ map, linkedMapNames, onOpenMap }: MapGraphProps): JSX
       className="map-graph"
       style={{ width: layout.width, height: layout.height }}
       role="group"
-      aria-label={`Карта «${map.name}»`}
+      aria-label={`Карта «${mapName}»`}
     >
       <svg
         className="map-graph__edges"
@@ -194,35 +225,38 @@ export function MapGraph({ map, linkedMapNames, onOpenMap }: MapGraphProps): JSX
         const className = [
           'map-node',
           node.isExit ? 'map-node--exit' : '',
-          linkedName ? 'map-node--linked' : ''
+          linkedName ? 'map-node--linked' : '',
+          draggingId === node.id ? 'map-node--dragging' : ''
         ]
           .filter(Boolean)
           .join(' ')
-
-        if (linkedName) {
-          return (
-            <button
-              key={node.id}
-              type="button"
-              className={className}
-              style={{ left: node.x, top: node.y }}
-              title={`Перейти на карту «${linkedName}»`}
-              aria-label={`${node.name}: перейти на карту «${linkedName}»`}
-              onClick={() => onOpenMap(node.linkedMapId!)}
-            >
-              {renderNodeContent(node)}
-            </button>
-          )
-        }
 
         return (
           <div
             key={node.id}
             className={className}
             style={{ left: node.x, top: node.y }}
-            title={node.name}
+            role={linkedName ? 'button' : undefined}
+            tabIndex={linkedName ? 0 : undefined}
+            aria-label={
+              linkedName
+                ? `${node.name}: перейти на карту «${linkedName}»`
+                : undefined
+            }
+            title={
+              linkedName
+                ? `Перетащите, чтобы сдвинуть. Нажмите, чтобы перейти на «${linkedName}»`
+                : 'Перетащите, чтобы сдвинуть'
+            }
+            onPointerDown={(event) => onPointerDown(event, node)}
+            onPointerMove={onPointerMove}
+            onPointerUp={(event) => finishDrag(event, node)}
+            onPointerCancel={cancelDrag}
+            onKeyDown={(event) => onNodeKeyDown(event, node)}
           >
-            {renderNodeContent(node)}
+            <span className="map-node__name">{node.name}</span>
+            {node.isExit ? <span className="map-node__exit">Выход</span> : null}
+            {linkedName ? <span className="map-node__link">→ {linkedName}</span> : null}
           </div>
         )
       })}

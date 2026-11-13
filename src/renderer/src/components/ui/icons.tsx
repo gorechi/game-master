@@ -85,6 +85,25 @@ export function IconCheck(props: IconProps): JSX.Element {
   )
 }
 
+export function IconSave(props: IconProps): JSX.Element {
+  return (
+    <Svg {...props}>
+      <path d="M5 4h10.5L19 7.5V20H5V4Z" />
+      <path d="M8.5 4v5h6V4" />
+      <path d="M8.5 13h7v7h-7v-7Z" />
+    </Svg>
+  )
+}
+
+export function IconUndo(props: IconProps): JSX.Element {
+  return (
+    <Svg {...props}>
+      <path d="M9 7 4 12l5 5" />
+      <path d="M4 12h9.5a5.5 5.5 0 0 1 5.5 5.5V19" />
+    </Svg>
+  )
+}
+
 export function IconGear(props: IconProps): JSX.Element {
   return (
     <Svg {...props}>
