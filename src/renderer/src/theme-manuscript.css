@@ -177,6 +177,29 @@
   color: var(--ink-muted);
 }
 
+:root[data-theme='light'] .form-tabs {
+  background: rgba(122, 86, 44, 0.04);
+}
+
+:root[data-theme='light'] .form-tab:hover {
+  background: rgba(143, 58, 44, 0.05);
+}
+
+:root[data-theme='light'] .form-tab--active {
+  color: var(--rubric);
+  background: rgba(143, 58, 44, 0.08);
+  border-color: rgba(143, 58, 44, 0.24);
+}
+
+:root[data-theme='light'] .form-tab__count {
+  background: rgba(122, 86, 44, 0.08);
+}
+
+:root[data-theme='light'] .form-tab--active .form-tab__count {
+  background: rgba(143, 58, 44, 0.12);
+  color: var(--rubric);
+}
+
 :root[data-theme='light'] .picker__menu {
   background: #fdf6e6;
   border-color: var(--border-strong);

@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import type { FormEvent, JSX } from 'react'
+import type { FormEvent, JSX, KeyboardEvent } from 'react'
 import type { Game, GameMonster } from '@shared/game'
 import type { GameMonsterEntry } from '@shared/gameMonster'
 import type { CharacterProfile } from '@shared/characterProfile'
@@ -76,6 +76,7 @@ export function GameFormModal({
   const [name, setName] = useState('')
   const [characterIds, setCharacterIds] = useState<string[]>([])
   const [playerFilter, setPlayerFilter] = useState('all')
+  const [activeTab, setActiveTab] = useState<'participants' | 'monsters'>('participants')
   const [selections, setSelections] = useState<MonsterSelection[]>([])
   const [instances, setInstances] = useState<GameMonster[]>([])
   const [savedMonsters, setSavedMonsters] = useState<GameMonsterEntry[]>([])
@@ -98,6 +99,7 @@ export function GameFormModal({
     setName(game?.name ?? '')
     setCharacterIds(game?.characterIds ?? initialCharacterIds ?? [])
     setPlayerFilter('all')
+    setActiveTab('participants')
     setSelections([])
     setInstances(game?.monsters ?? [])
     setReadyIds([])
@@ -235,6 +237,148 @@ export function GameFormModal({
     ...players.map((player) => ({ value: player.id, label: playerFullName(player) }))
   ]
 
+  const participantsTabId = `${formId}-participants-tab`
+  const monstersTabId = `${formId}-monsters-tab`
+  const participantsPanelId = `${formId}-participants-panel`
+  const monstersPanelId = `${formId}-monsters-panel`
+
+  function onTabKeyDown(event: KeyboardEvent<HTMLButtonElement>): void {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+
+    event.preventDefault()
+    const next = activeTab === 'participants' ? 'monsters' : 'participants'
+    setActiveTab(next)
+    document.getElementById(next === 'participants' ? participantsTabId : monstersTabId)?.focus()
+  }
+
+  function renderInstanceRow(monster: GameMonster): JSX.Element {
+    return (
+      <li className="game-monster-row" key={monster.id}>
+        <span className="game-monster-row__title">
+          <span className="game-monster-row__name">{monster.name}</span>
+        </span>
+        <span className="game-monster-row__meta">
+          КО {formatChallengeRating(monster.challengeRating)} · КЗ {monster.armorClass} · ХП{' '}
+          {monster.hitPoints}
+        </span>
+
+        {!readOnly ? (
+          <div className="game-monster-row__side">
+            <div className="game-monster-row__actions">
+              <button
+                type="button"
+                className="icon-button"
+                title="Редактировать экземпляр"
+                aria-label={`Редактировать ${monster.name}`}
+                onClick={() => setEditingMonsterId(monster.id)}
+              >
+                <IconPencil />
+              </button>
+              <button
+                type="button"
+                className="icon-button icon-button--danger"
+                title="Убрать из игры"
+                aria-label={`Убрать ${monster.name} из игры`}
+                onClick={() => removeInstance(monster.id)}
+              >
+                <IconTrash />
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </li>
+    )
+  }
+
+  function renderReadyRow(monster: GameMonsterEntry): JSX.Element {
+    return (
+      <li className="game-monster-row" key={monster.id}>
+        <span className="game-monster-row__title">
+          <span className="game-monster-row__name">{monster.name}</span>
+          <span className="game-monster-row__badge">готовый</span>
+        </span>
+        <span className="game-monster-row__meta">
+          КО {formatChallengeRating(monster.challengeRating)} · КЗ {monster.armorClass} · ХП{' '}
+          {monster.hitPoints}
+        </span>
+
+        <div className="game-monster-row__side">
+          <div className="game-monster-row__actions">
+            <button
+              type="button"
+              className="icon-button icon-button--danger"
+              title="Убрать из игры"
+              aria-label={`Убрать ${monster.name} из игры`}
+              onClick={() => removeSavedMonster(monster.id)}
+            >
+              <IconTrash />
+            </button>
+          </div>
+        </div>
+      </li>
+    )
+  }
+
+  function renderSelectionRow(selection: MonsterSelection): JSX.Element {
+    return (
+      <li className="game-monster-row" key={selection.sourceId}>
+        <span className="game-monster-row__title">
+          <span className="game-monster-row__name">{selection.name}</span>
+        </span>
+        <span className="game-monster-row__meta">
+          КО {formatChallengeRating(selection.challengeRating)} · КЗ {selection.armorClass} · ХП{' '}
+          {selection.hitPoints}
+        </span>
+
+        <div className="game-monster-row__side">
+          <div className="game-monster-row__count">
+            <button
+              type="button"
+              className="count-button"
+              aria-label={`Уменьшить количество: ${selection.name}`}
+              disabled={selection.count <= 1}
+              onClick={() => setCount(selection.sourceId, selection.count - 1)}
+            >
+              −
+            </button>
+
+            <input
+              className="input count-input"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={99}
+              value={selection.count}
+              aria-label={`Количество: ${selection.name}`}
+              onChange={(event) =>
+                setCount(selection.sourceId, Number.parseInt(event.target.value, 10))
+              }
+            />
+
+            <button
+              type="button"
+              className="count-button"
+              aria-label={`Увеличить количество: ${selection.name}`}
+              onClick={() => setCount(selection.sourceId, selection.count + 1)}
+            >
+              +
+            </button>
+          </div>
+
+          <button
+            type="button"
+            className="icon-button icon-button--danger"
+            title="Убрать из игры"
+            aria-label={`Убрать ${selection.name} из игры`}
+            onClick={() => removeSelection(selection.sourceId)}
+          >
+            <IconTrash />
+          </button>
+        </div>
+      </li>
+    )
+  }
+
   async function submit(event: FormEvent): Promise<void> {
     event.preventDefault()
     if (saving || loadingData || readOnly) return
@@ -252,6 +396,7 @@ export function GameFormModal({
 
     if (validCharacterIds.length === 0) {
       setError('Выберите хотя бы одного участника')
+      setActiveTab('participants')
       return
     }
 
@@ -346,11 +491,46 @@ export function GameFormModal({
           <p className="muted">Загружаем персонажей и бестиарий…</p>
         ) : (
           <>
-            <section className="editor-section">
-              <header className="editor-section__head">
-                <h3>Участники</h3>
+            <div className="form-tabs" role="tablist" aria-label="Разделы формы игры">
+              <button
+                id={participantsTabId}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'participants'}
+                aria-controls={participantsPanelId}
+                tabIndex={activeTab === 'participants' ? 0 : -1}
+                className={`form-tab${activeTab === 'participants' ? ' form-tab--active' : ''}`}
+                onClick={() => setActiveTab('participants')}
+                onKeyDown={onTabKeyDown}
+              >
+                Участники
+                <span className="form-tab__count">{characterIds.length}</span>
+              </button>
 
-                <div className="participant-filter">
+              <button
+                id={monstersTabId}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'monsters'}
+                aria-controls={monstersPanelId}
+                tabIndex={activeTab === 'monsters' ? 0 : -1}
+                className={`form-tab${activeTab === 'monsters' ? ' form-tab--active' : ''}`}
+                onClick={() => setActiveTab('monsters')}
+                onKeyDown={onTabKeyDown}
+              >
+                Монстры
+                <span className="form-tab__count">{totalMonsters}</span>
+              </button>
+            </div>
+
+            {activeTab === 'participants' ? (
+              <section
+                className="editor-section"
+                id={participantsPanelId}
+                role="tabpanel"
+                aria-labelledby={participantsTabId}
+              >
+                <div className="editor-section__toolbar">
                   <span className="editor-section__count">выбрано {characterIds.length}</span>
                   <div className="participant-filter__select">
                     <Select
@@ -362,278 +542,192 @@ export function GameFormModal({
                     />
                   </div>
                 </div>
-              </header>
 
-              {characters.length === 0 ? (
-                <div className="participant-list participant-list--empty">
-                  <p className="notice">
-                    В базе нет персонажей — сначала добавьте их в разделе «Персонажи».
-                  </p>
-                </div>
-              ) : filteredCharacters.length === 0 ? (
-                <div className="participant-list participant-list--empty">
-                  <p className="notice">У этого игрока пока нет персонажей.</p>
-                </div>
-              ) : (
-                <div className="participant-list">
-                  {filteredCharacters.map((character) => {
-                    const checked = characterIds.includes(character.id)
-
-                    return (
-                      <label
-                        key={character.id}
-                        className={[
-                          'participant-row',
-                          checked ? 'participant-row--on' : '',
-                          readOnly ? 'participant-row--readonly' : ''
-                        ]
-                          .filter(Boolean)
-                          .join(' ')}
-                      >
-                        <input
-                          type="checkbox"
-                          className="checkbox"
-                          checked={checked}
-                          disabled={readOnly}
-                          onChange={() => toggleCharacter(character.id)}
-                        />
-
-                        <span className="participant-row__avatar" aria-hidden="true">
-                          {characterInitial(character)}
-                        </span>
-
-                        <span className="participant-row__body">
-                          <span className="participant-row__name">{character.name}</span>
-                          <span className="participant-row__meta">
-                            {[
-                              character.className || 'без класса',
-                              `ур. ${character.level}`,
-                              playerName(character.playerId)
-                            ].join(' · ')}
-                          </span>
-                        </span>
-                      </label>
-                    )
-                  })}
-                </div>
-              )}
-            </section>
-
-            <section className="editor-section">
-              <header className="editor-section__head">
-                <h3>Монстры</h3>
-                <span className="editor-section__count">{totalMonsters}</span>
-              </header>
-
-              {!readOnly ? (
-                <div className="monster-pickers">
-                  <div className="field">
-                    <span className="field__label">Из бестиария</span>
-                    {bestiary.length === 0 ? (
-                      <p className="abilities-editor__empty">В бестиарии пока нет монстров.</p>
-                    ) : !isEdit && availableBestiary.length === 0 ? (
-                      <p className="abilities-editor__empty">
-                        Все монстры из бестиария уже добавлены.
-                      </p>
-                    ) : (
-                      <Select
-                        ariaLabel={
-                          isEdit ? 'Добавить монстра из бестиария' : 'Выбрать монстра из бестиария'
-                        }
-                        value=""
-                        searchable
-                        placeholder="Найти монстра…"
-                        options={(isEdit ? bestiary : availableBestiary).map((monster) => ({
-                          value: monster.id,
-                          label: `${monster.name} · КО ${formatChallengeRating(
-                            monster.challengeRating
-                          )}`
-                        }))}
-                        onChange={addMonster}
-                      />
-                    )}
+                {characters.length === 0 ? (
+                  <div className="participant-list participant-list--empty">
+                    <p className="notice">
+                      В базе нет персонажей — сначала добавьте их в разделе «Персонажи».
+                    </p>
                   </div>
-
-                  {!isEdit ? (
-                    <div className="field">
-                      <span className="field__label">Сохранённые игровые монстры</span>
-                      {savedMonsters.length === 0 ? (
-                        <p className="abilities-editor__empty">
-                          Появляются здесь после удаления игры с сохранением монстров.
-                        </p>
-                      ) : availableSaved.length === 0 ? (
-                        <p className="abilities-editor__empty">
-                          Все сохранённые монстры уже добавлены.
-                        </p>
-                      ) : (
-                        <Select
-                          ariaLabel="Добавить сохранённого монстра"
-                          value=""
-                          searchable
-                          placeholder="Найти сохранённого монстра…"
-                          options={availableSaved.map((monster) => ({
-                            value: monster.id,
-                            label: `${monster.name} · КО ${formatChallengeRating(
-                              monster.challengeRating
-                            )}`
-                          }))}
-                          onChange={addSavedMonster}
-                        />
-                      )}
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-
-              {isEdit ? (
-                instances.length === 0 ? (
-                  <p className="abilities-editor__empty">Пока ни одного монстра в игре.</p>
+                ) : filteredCharacters.length === 0 ? (
+                  <div className="participant-list participant-list--empty">
+                    <p className="notice">У этого игрока пока нет персонажей.</p>
+                  </div>
                 ) : (
-                  <ul className="game-monster-list">
-                    {instances.map((monster) => (
-                      <li className="game-monster-row" key={monster.id}>
-                        <span className="game-monster-row__name">{monster.name}</span>
-                        <span className="game-monster-row__meta">
-                          КО {formatChallengeRating(monster.challengeRating)} · КЗ{' '}
-                          {monster.armorClass} · ХП {monster.hitPoints}
-                        </span>
+                  <div className="participant-list">
+                    {filteredCharacters.map((character) => {
+                      const checked = characterIds.includes(character.id)
 
-                        {!readOnly ? (
-                          <div className="game-monster-row__actions">
-                            <button
-                              type="button"
-                              className="icon-button"
-                              title="Редактировать экземпляр"
-                              aria-label={`Редактировать ${monster.name}`}
-                              onClick={() => setEditingMonsterId(monster.id)}
-                            >
-                              <IconPencil />
-                            </button>
-                            <button
-                              type="button"
-                              className="icon-button icon-button--danger"
-                              title="Убрать из игры"
-                              aria-label={`Убрать ${monster.name} из игры`}
-                              onClick={() => removeInstance(monster.id)}
-                            >
-                              <IconTrash />
-                            </button>
-                          </div>
-                        ) : null}
+                      return (
+                        <label
+                          key={character.id}
+                          className={[
+                            'participant-row',
+                            checked ? 'participant-row--on' : '',
+                            readOnly ? 'participant-row--readonly' : ''
+                          ]
+                            .filter(Boolean)
+                            .join(' ')}
+                        >
+                          <input
+                            type="checkbox"
+                            className="checkbox"
+                            checked={checked}
+                            disabled={readOnly}
+                            onChange={() => toggleCharacter(character.id)}
+                          />
+
+                          <span className="participant-row__avatar" aria-hidden="true">
+                            {characterInitial(character)}
+                          </span>
+
+                          <span className="participant-row__body">
+                            <span className="participant-row__name">{character.name}</span>
+                            <span className="participant-row__meta">
+                              {[
+                                character.className || 'без класса',
+                                `ур. ${character.level}`,
+                                playerName(character.playerId)
+                              ].join(' · ')}
+                            </span>
+                          </span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                )}
+              </section>
+            ) : (
+              <section
+                className="editor-section"
+                id={monstersPanelId}
+                role="tabpanel"
+                aria-labelledby={monstersTabId}
+              >
+                {!readOnly ? (
+                  <div className={`monster-pickers${isEdit ? ' monster-pickers--single' : ''}`}>
+                    <div className="monster-column">
+                      <div className="field">
+                        <span className="field__label">Из бестиария</span>
+                        {bestiary.length === 0 ? (
+                          <p className="abilities-editor__empty">
+                            В бестиарии пока нет монстров.
+                          </p>
+                        ) : !isEdit && availableBestiary.length === 0 ? (
+                          <p className="abilities-editor__empty">
+                            Все монстры из бестиария уже добавлены.
+                          </p>
+                        ) : (
+                          <Select
+                            ariaLabel={
+                              isEdit
+                                ? 'Добавить монстра из бестиария'
+                                : 'Выбрать монстра из бестиария'
+                            }
+                            value=""
+                            searchable
+                            placeholder="Найти монстра…"
+                            options={(isEdit ? bestiary : availableBestiary).map((monster) => ({
+                              value: monster.id,
+                              label: `${monster.name} · КО ${formatChallengeRating(
+                                monster.challengeRating
+                              )}`
+                            }))}
+                            onChange={addMonster}
+                          />
+                        )}
+                      </div>
+
+                      <ul
+                        className="game-monster-list game-monster-list--scroll"
+                        aria-label={isEdit ? 'Монстры в игре' : 'Монстры из бестиария'}
+                      >
+                        {isEdit
+                          ? instances.length === 0
+                            ? (
+                                <li className="game-monster-list__empty">
+                                  Пока ни одного монстра в игре.
+                                </li>
+                              )
+                            : instances.map(renderInstanceRow)
+                          : selections.length === 0
+                            ? (
+                                <li className="game-monster-list__empty">
+                                  Добавленные из бестиария появятся здесь.
+                                </li>
+                              )
+                            : selections.map(renderSelectionRow)}
+                      </ul>
+                    </div>
+
+                    {!isEdit ? (
+                      <div className="monster-column">
+                        <div className="field">
+                          <span className="field__label">Сохранённые игровые монстры</span>
+                          {savedMonsters.length === 0 ? (
+                            <p className="abilities-editor__empty">
+                              Появляются после завершения игры с сохранением монстров.
+                            </p>
+                          ) : availableSaved.length === 0 ? (
+                            <p className="abilities-editor__empty">
+                              Все сохранённые монстры уже добавлены.
+                            </p>
+                          ) : (
+                            <Select
+                              ariaLabel="Добавить сохранённого монстра"
+                              value=""
+                              searchable
+                              placeholder="Найти сохранённого монстра…"
+                              options={availableSaved.map((monster) => ({
+                                value: monster.id,
+                                label: `${monster.name} · КО ${formatChallengeRating(
+                                  monster.challengeRating
+                                )}`
+                              }))}
+                              onChange={addSavedMonster}
+                            />
+                          )}
+                        </div>
+
+                        <ul
+                          className="game-monster-list game-monster-list--scroll"
+                          aria-label="Готовые экземпляры"
+                        >
+                          {readyMonsters.length === 0 ? (
+                            <li className="game-monster-list__empty">
+                              Добавленные готовые монстры появятся здесь.
+                            </li>
+                          ) : (
+                            readyMonsters.map(renderReadyRow)
+                          )}
+                        </ul>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <ul
+                    className="game-monster-list game-monster-list--scroll"
+                    aria-label="Монстры в игре"
+                  >
+                    {instances.length === 0 ? (
+                      <li className="game-monster-list__empty">
+                        Пока ни одного монстра в игре.
                       </li>
-                    ))}
+                    ) : (
+                      instances.map(renderInstanceRow)
+                    )}
                   </ul>
-                )
-              ) : (
-                <>
-                  {readyMonsters.length > 0 ? (
-                    <>
-                      <p className="game-editor__group">Готовые экземпляры</p>
-                      <ul className="game-monster-list">
-                        {readyMonsters.map((monster) => (
-                          <li className="game-monster-row" key={monster.id}>
-                            <span className="game-monster-row__name">{monster.name}</span>
-                            <span className="game-monster-row__badge">готовый</span>
-                            <span className="game-monster-row__meta">
-                              КО {formatChallengeRating(monster.challengeRating)} · КЗ{' '}
-                              {monster.armorClass} · ХП {monster.hitPoints}
-                            </span>
+                )}
 
-                            <div className="game-monster-row__actions">
-                              <button
-                                type="button"
-                                className="icon-button icon-button--danger"
-                                title="Убрать из игры"
-                                aria-label={`Убрать ${monster.name} из игры`}
-                                onClick={() => removeSavedMonster(monster.id)}
-                              >
-                                <IconTrash />
-                              </button>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  ) : null}
-
-                  {selections.length > 0 ? (
-                    <>
-                      <p className="game-editor__group">Из бестиария</p>
-                      <ul className="game-monster-list">
-                        {selections.map((selection) => (
-                          <li className="game-monster-row" key={selection.sourceId}>
-                            <span className="game-monster-row__name">{selection.name}</span>
-                            <span className="game-monster-row__meta">
-                              КО {formatChallengeRating(selection.challengeRating)} · КЗ{' '}
-                              {selection.armorClass} · ХП {selection.hitPoints}
-                            </span>
-
-                            <div className="game-monster-row__count">
-                              <button
-                                type="button"
-                                className="count-button"
-                                aria-label={`Уменьшить количество: ${selection.name}`}
-                                disabled={selection.count <= 1}
-                                onClick={() => setCount(selection.sourceId, selection.count - 1)}
-                              >
-                                −
-                              </button>
-
-                              <input
-                                className="input count-input"
-                                type="number"
-                                inputMode="numeric"
-                                min={1}
-                                max={99}
-                                value={selection.count}
-                                aria-label={`Количество: ${selection.name}`}
-                                onChange={(event) =>
-                                  setCount(
-                                    selection.sourceId,
-                                    Number.parseInt(event.target.value, 10)
-                                  )
-                                }
-                              />
-
-                              <button
-                                type="button"
-                                className="count-button"
-                                aria-label={`Увеличить количество: ${selection.name}`}
-                                onClick={() => setCount(selection.sourceId, selection.count + 1)}
-                              >
-                                +
-                              </button>
-                            </div>
-
-                            <button
-                              type="button"
-                              className="icon-button icon-button--danger"
-                              title="Убрать из игры"
-                              aria-label={`Убрать ${selection.name} из игры`}
-                              onClick={() => removeSelection(selection.sourceId)}
-                            >
-                              <IconTrash />
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  ) : null}
-
-                  {readyMonsters.length === 0 && selections.length === 0 ? (
-                    <p className="abilities-editor__empty">Пока ни одного монстра в игре.</p>
-                  ) : null}
-                </>
-              )}
-
-              <p className="game-editor__hint">
-                {readOnly
-                  ? 'Только просмотр: завершённую игру нельзя редактировать.'
-                  : isEdit
-                    ? 'Экземпляры созданы вместе с игрой: имя и характеристики у каждого свои, бестиарий остаётся нетронутым.'
-                    : 'Экземпляры из бестиария создаются при сохранении. Сохранённые игровые монстры добавляются как есть — без копий и количества.'}
-              </p>
-            </section>
+                <p className="game-editor__hint">
+                  {readOnly
+                    ? 'Только просмотр: завершённую игру нельзя редактировать.'
+                    : isEdit
+                      ? 'Экземпляры созданы вместе с игрой: имя и характеристики у каждого свои, бестиарий остаётся нетронутым.'
+                      : 'Экземпляры из бестиария создаются при сохранении. Сохранённые игровые монстры добавляются как есть — без копий и количества.'}
+                </p>
+              </section>
+            )}
           </>
         )}
 
