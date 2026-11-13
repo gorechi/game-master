@@ -123,6 +123,15 @@ export function IconPlay(props: IconProps): JSX.Element {
   )
 }
 
+export function IconLock(props: IconProps): JSX.Element {
+  return (
+    <Svg {...props}>
+      <rect x="4.8" y="10" width="14.4" height="10" rx="2.6" />
+      <path d="M8.6 10V7.4a3.4 3.4 0 0 1 6.8 0V10" />
+    </Svg>
+  )
+}
+
 /** d20 — силуэт гексагона с вписанной гранью. */
 export function IconD20(props: IconProps): JSX.Element {
   return (

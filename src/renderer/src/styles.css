@@ -1685,6 +1685,9 @@ input[type='number'] {
 }
 
 .delete-monster-row__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   margin-left: auto;
   font-size: 10px;
   letter-spacing: 0.06em;
@@ -1695,6 +1698,15 @@ input[type='number'] {
 
 .delete-monster-row--on .delete-monster-row__state {
   color: var(--gold-strong);
+}
+
+.delete-monster-row--locked {
+  cursor: default;
+}
+
+.checkbox:disabled {
+  cursor: default;
+  opacity: 1;
 }
 
 /* ------------------------------------------------------------------ */
