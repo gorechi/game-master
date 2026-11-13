@@ -3,6 +3,7 @@ import type { Player, PlayerInput } from '@shared/player'
 import type { CharacterProfile, CharacterProfileInput } from '@shared/characterProfile'
 import type { Monster, MonsterInput } from '@shared/monster'
 import type { Game, GameInput } from '@shared/game'
+import type { GameMonsterEntry } from '@shared/gameMonster'
 import {
   clampMonsterScore,
   createCharacterProfile,
@@ -30,6 +31,7 @@ import {
  */
 
 const GAMES_KEY = 'game-master.preview.games'
+const GAME_MONSTERS_KEY = 'game-master.preview.gameMonsters'
 const PLAYERS_KEY = 'game-master.preview.players'
 const CHARACTERS_KEY = 'game-master.preview.characters'
 const MONSTERS_KEY = 'game-master.preview.monsters'
@@ -38,6 +40,7 @@ const SETTINGS_KEY = 'game-master.preview.settings'
 /** Полный сброс предпросмотра (кнопка на главном экране). */
 export function resetWebPreview(): void {
   window.localStorage.removeItem(GAMES_KEY)
+  window.localStorage.removeItem(GAME_MONSTERS_KEY)
   window.localStorage.removeItem(PLAYERS_KEY)
   window.localStorage.removeItem(CHARACTERS_KEY)
   window.localStorage.removeItem(MONSTERS_KEY)
@@ -129,6 +132,22 @@ function writeGames(games: Game[]): void {
   window.localStorage.setItem(GAMES_KEY, JSON.stringify(games))
 }
 
+function readGameMonsters(): GameMonsterEntry[] {
+  try {
+    const raw = window.localStorage.getItem(GAME_MONSTERS_KEY)
+    if (!raw) return []
+
+    const parsed: unknown = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as GameMonsterEntry[]) : []
+  } catch {
+    return []
+  }
+}
+
+function writeGameMonsters(monsters: GameMonsterEntry[]): void {
+  window.localStorage.setItem(GAME_MONSTERS_KEY, JSON.stringify(monsters))
+}
+
 function readSettings(): AppSettings {
   try {
     const raw = window.localStorage.getItem(SETTINGS_KEY)
@@ -183,8 +202,31 @@ export function createWebBridge(): GameMasterApi {
         return updated
       },
 
-      remove: async (id: string): Promise<void> => {
-        writeGames(readGames().filter((item) => item.id !== id))
+      remove: async (id: string, keepMonsterIds: string[] = []): Promise<void> => {
+        const games = readGames()
+        const game = games.find((item) => item.id === id)
+        if (!game) return
+
+        if (keepMonsterIds.length > 0) {
+          const keep = new Set(keepMonsterIds)
+          const existing = readGameMonsters()
+          const existingIds = new Set(existing.map((monster) => monster.id))
+          const savedAt = new Date().toISOString()
+
+          const additions: GameMonsterEntry[] = game.monsters
+            .filter((monster) => keep.has(monster.id) && !existingIds.has(monster.id))
+            .map((monster) => ({
+              ...monster,
+              savedFromGameId: game.id,
+              savedAt
+            }))
+
+          if (additions.length > 0) {
+            writeGameMonsters([...existing, ...additions])
+          }
+        }
+
+        writeGames(games.filter((item) => item.id !== id))
       }
     },
 

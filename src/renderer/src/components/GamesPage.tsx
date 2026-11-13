@@ -6,6 +6,7 @@ import { formatDate, pluralize } from '@renderer/lib/format'
 import { ConfirmDialog } from './ui/ConfirmDialog'
 import { IconPencil, IconPlay, IconPlus, IconTrash } from './ui/icons'
 import { GameFormModal } from './games/GameFormModal'
+import { GameDeleteModal } from './games/GameDeleteModal'
 
 interface GamesPageProps {
   onOpenGame: (gameId: string) => void
@@ -16,7 +17,9 @@ export function GamesPage({ onOpenGame }: GamesPageProps): JSX.Element {
   const [games, setGames] = useState<Game[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState<Game | 'new' | null>(null)
-  const [deleting, setDeleting] = useState<Game | null>(null)
+  const [deletingGame, setDeletingGame] = useState<Game | null>(null)
+  const [confirmingGame, setConfirmingGame] = useState<Game | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
 
   const refresh = useCallback(async (): Promise<void> => {
     try {
@@ -31,17 +34,49 @@ export function GamesPage({ onOpenGame }: GamesPageProps): JSX.Element {
     void refresh()
   }, [refresh])
 
-  async function confirmDelete(): Promise<void> {
-    if (!deleting) return
+  function requestDelete(game: Game): void {
+    setNotice(null)
+    // У игры с монстрами — экран выбора, кого сохранить; иначе простое подтверждение.
+    if (game.monsters.length > 0) {
+      setDeletingGame(game)
+    } else {
+      setConfirmingGame(game)
+    }
+  }
+
+  async function confirmSimpleDelete(): Promise<void> {
+    if (!confirmingGame) return
 
     try {
-      await api.games.remove(deleting.id)
-      setDeleting(null)
+      await api.games.remove(confirmingGame.id)
+      setNotice(`Игра «${confirmingGame.name}» удалена.`)
+      setConfirmingGame(null)
       await refresh()
     } catch (caught) {
       setError(errorMessage(caught))
-      setDeleting(null)
+      setConfirmingGame(null)
     }
+  }
+
+  async function deleteWithKeptMonsters(keepMonsterIds: string[]): Promise<void> {
+    if (!deletingGame) return
+
+    // Ошибка пробрасывается в модалку, чтобы она осталась открытой.
+    await api.games.remove(deletingGame.id, keepMonsterIds)
+
+    const kept = keepMonsterIds.length
+    setNotice(
+      kept > 0
+        ? `Игра «${deletingGame.name}» удалена. Сохранено ${kept} ${pluralize(
+            kept,
+            'монстр',
+            'монстра',
+            'монстров'
+          )} для следующих игр.`
+        : `Игра «${deletingGame.name}» удалена вместе со всеми монстрами.`
+    )
+    setDeletingGame(null)
+    await refresh()
   }
 
   return (
@@ -61,6 +96,7 @@ export function GamesPage({ onOpenGame }: GamesPageProps): JSX.Element {
         </header>
 
         {error ? <p className="notice notice--error">{error}</p> : null}
+        {notice ? <p className="notice notice--success">{notice}</p> : null}
 
         {games === null ? (
           <p className="muted">Загружаем игры…</p>
@@ -111,7 +147,7 @@ export function GamesPage({ onOpenGame }: GamesPageProps): JSX.Element {
                       className="icon-button icon-button--danger"
                       title="Удалить"
                       aria-label={`Удалить игру ${game.name}`}
-                      onClick={() => setDeleting(game)}
+                      onClick={() => requestDelete(game)}
                     >
                       <IconTrash />
                     </button>
@@ -133,16 +169,23 @@ export function GamesPage({ onOpenGame }: GamesPageProps): JSX.Element {
         }}
       />
 
+      <GameDeleteModal
+        open={deletingGame !== null}
+        game={deletingGame}
+        onClose={() => setDeletingGame(null)}
+        onConfirm={deleteWithKeptMonsters}
+      />
+
       <ConfirmDialog
-        open={deleting !== null}
+        open={confirmingGame !== null}
         title="Удалить игру?"
         description={
-          deleting
-            ? `«${deleting.name}» будет удалена. Это действие нельзя отменить.`
+          confirmingGame
+            ? `«${confirmingGame.name}» будет удалена. Монстров в ней нет — сохранить нечего. Это действие нельзя отменить.`
             : undefined
         }
-        onCancel={() => setDeleting(null)}
-        onConfirm={() => void confirmDelete()}
+        onCancel={() => setConfirmingGame(null)}
+        onConfirm={() => void confirmSimpleDelete()}
       />
     </main>
   )

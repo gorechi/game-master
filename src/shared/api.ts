@@ -50,7 +50,8 @@ export interface GameMasterApi {
     list(): Promise<Game[]>
     create(input: GameInput): Promise<Game>
     update(game: Game): Promise<Game>
-    remove(id: string): Promise<void>
+    /** Удаляет игру; отмеченные экземпляры сохраняются в список игровых монстров. */
+    remove(id: string, keepMonsterIds?: string[]): Promise<void>
   }
   /** Общая база игроков-людей. */
   players: {

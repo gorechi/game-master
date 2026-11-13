@@ -15,6 +15,8 @@
   с количеством — экземпляры появляются только при сохранении («Гоблин 1», «Гоблин 2»).
   На редактировании показываются уже созданные экземпляры: каждый можно открыть
   и изменить, не затрагивая бестиарий.
+- **Удаление игры** — экран со всеми монстрами партии: отмеченные сохраняются
+  в отдельный список игровых монстров (не в бестиарий), остальные удаляются вместе с игрой.
 - **База игроков** — люди за столом (не персонажи): добавление, редактирование, удаление
   с подтверждением.
 - **Персонажи** — карточки героев в стиле коллекционных: портрет (загружается, сжимается
@@ -52,7 +54,8 @@
 ```
 ┌──────────────────────── main (Node) ─────────────────────────┐
 │  окно, жизненный цикл        storage/gameStore       (JSON)   │
-│  ipc.ts — валидация входа    storage/playerStore     (JSON)   │
+│  ipc.ts — валидация входа    storage/gameMonsterStore (JSON)   │
+│                              storage/playerStore     (JSON)   │
 │                              storage/characterStore  (JSON)   │
 │                              storage/monsterStore    (JSON)   │
 │                              storage/settingsStore   (JSON)   │
@@ -61,7 +64,8 @@
 ┌───────────────┴───────────┐        ┌──────────▼───────────┐
 │ preload: мост contextBridge│        │ <userData>/          │
 │ window.gameMaster         │        │  games.json          │
-└───────────────▲───────────┘        │  players.json        │
+└───────────────▲───────────┘        │  gameMonsters.json   │
+                │                    │  players.json        │
                 │                    │  characters.json     │
                 │                    │  monsters.json       │
                 │                    │  settings.json       │
@@ -92,6 +96,10 @@
   На редактировании игры показываются сами экземпляры — у каждого свой id, имя и
   характеристики, поэтому трёх гоблинов можно настроить по-разному, не трогая базового.
   Схема допускает пустые списки, чтобы старые записи читались без миграции.
+- **Игровые монстры — отдельный список.** При удалении игры мастер отмечает экземпляры,
+  которые хочет сохранить: они пишутся в `gameMonsters.json` со ссылкой на игру
+  (`savedFromGameId`) и датой сохранения. В бестиарий они не попадают. Неотмеченные
+  экземпляры удаляются вместе с игрой без возможности восстановления.
 - **Бестиарий отдельным файлом.** `monsters.json` хранит монстров и их способности
   (у каждой свой id, название и описание), поэтому способности можно свободно добавлять,
   удалять и переименовывать.
@@ -115,6 +123,7 @@ src/
     window.ts              создание окна
     ipc.ts                 обработчики IPC (валидируют вход)
     storage/gameStore.ts       игры (games.json)
+    storage/gameMonsterStore.ts  сохранённые игровые монстры (gameMonsters.json)
     storage/playerStore.ts     база игроков (players.json)
     storage/characterStore.ts  база персонажей (characters.json)
     storage/monsterStore.ts    бестиарий (monsters.json)
@@ -124,7 +133,7 @@ src/
   renderer/                React-приложение
     src/components/        Sidebar, GamesPage, GameRunPage, PlayersPage, PlayerCharactersPage,
                            CharactersPage, MonstersPage, SettingsPage
-    src/components/games/      GameFormModal
+    src/components/games/      GameFormModal, GameDeleteModal
     src/components/character/  CharacterCard, CharacterFormModal
     src/components/monsters/   MonsterCard, MonsterFormModal
     src/components/ui/     Modal, ConfirmDialog, Select, иконки
@@ -135,7 +144,8 @@ src/
     src/theme-manuscript.css  светлая тема «Рукопись»
   shared/                  код, общий для main и renderer
     api.ts                 контракт IPC
-    game.ts                zod-схема игры
+    game.ts                zod-схема игры и экземпляров монстров
+    gameMonster.ts         zod-схема сохранённых игровых монстров
     player.ts              zod-схема игрока
     characterProfile.ts    zod-схема персонажа-карточки
     monster.ts             zod-схема монстра и способностей
@@ -246,8 +256,8 @@ npm run pack       # распакованное приложение без ин
 | Windows | `%APPDATA%\Game Master\` |
 | macOS | `~/Library/Application Support/Game Master/` |
 
-Внутри — `games.json`, `players.json`, `characters.json`, `monsters.json` и `settings.json`.
-Открыть папку можно на странице «Настройки».
+Внутри — `games.json`, `gameMonsters.json`, `players.json`, `characters.json`,
+`monsters.json` и `settings.json`. Открыть папку можно на странице «Настройки».
 
 `games.json`:
 
@@ -278,6 +288,33 @@ npm run pack       # распакованное приложение без ин
       ],
       "createdAt": "2026-11-12T10:00:00.000Z",
       "updatedAt": "2026-11-12T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+`gameMonsters.json` — экземпляры, сохранённые при удалении игр:
+
+```json
+{
+  "schemaVersion": 1,
+  "monsters": [
+    {
+      "id": "6fa1…",
+      "sourceMonsterId": "b59c…",
+      "name": "Гоблин-стрелок 1",
+      "strength": -1,
+      "dexterity": 2,
+      "intelligence": 0,
+      "wisdom": -1,
+      "constitution": 0,
+      "charisma": -1,
+      "challengeRating": 0.125,
+      "armorClass": 15,
+      "hitPoints": 7,
+      "abilities": [],
+      "savedFromGameId": "5d2a…",
+      "savedAt": "2026-11-13T12:00:00.000Z"
     }
   ]
 }
@@ -367,6 +404,7 @@ npm run pack       # распакованное приложение без ин
 ## Дальше по плану
 
 - режим проведения игры (сцены, заметки, инициатива) и экран подготовки;
+- раздел игровых монстров: просмотр сохранённых экземпляров и повторное использование;
 - печать и экспорт карточек персонажей и статблоков монстров (PDF/PNG);
 - импорт и экспорт баз игроков, персонажей и бестиария одним файлом;
 - поиск и фильтры по персонажам, классам, монстрам и статусам;

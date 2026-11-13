@@ -11,7 +11,7 @@ const api: GameMasterApi = {
     list: () => ipcRenderer.invoke(IPC.gamesList),
     create: (input) => ipcRenderer.invoke(IPC.gameCreate, input),
     update: (game) => ipcRenderer.invoke(IPC.gameUpdate, game),
-    remove: (id) => ipcRenderer.invoke(IPC.gameRemove, id)
+    remove: (id, keepMonsterIds) => ipcRenderer.invoke(IPC.gameRemove, id, keepMonsterIds)
   },
   players: {
     list: () => ipcRenderer.invoke(IPC.playersList),

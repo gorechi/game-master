@@ -8,7 +8,9 @@ import {
   type GameInput,
   type GamesFile
 } from '@shared/game'
+import type { GameMonsterEntry } from '@shared/gameMonster'
 import { JsonFileError, readJsonFile, withFileLock, writeJsonAtomic } from './jsonFile'
+import { saveGameMonsters } from './gameMonsterStore'
 
 const LOCK_KEY = 'games.json'
 
@@ -95,13 +97,36 @@ export async function updateGame(game: Game): Promise<Game> {
   })
 }
 
-export async function removeGame(id: string): Promise<void> {
+export async function removeGame(
+  id: string,
+  keepMonsterIds: readonly string[] = []
+): Promise<void> {
+  const games = await readGamesFile()
+  const game = games.games.find((item) => item.id === id)
+
+  if (!game) return
+
+  if (keepMonsterIds.length > 0) {
+    const keep = new Set(keepMonsterIds)
+    const savedAt = new Date().toISOString()
+
+    const kept: GameMonsterEntry[] = game.monsters
+      .filter((monster) => keep.has(monster.id))
+      .map((monster) => ({
+        ...monster,
+        savedFromGameId: game.id,
+        savedAt
+      }))
+
+    await saveGameMonsters(kept)
+  }
+
   await withFileLock(LOCK_KEY, async () => {
     const file = await readGamesFile()
-    const games = file.games.filter((item) => item.id !== id)
+    const remaining = file.games.filter((item) => item.id !== id)
 
-    if (games.length === file.games.length) return
+    if (remaining.length === file.games.length) return
 
-    await writeJsonAtomic(gamesFile(), { ...file, games })
+    await writeJsonAtomic(gamesFile(), { ...file, games: remaining })
   })
 }

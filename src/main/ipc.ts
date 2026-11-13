@@ -49,6 +49,17 @@ function parseSettingsPatch(value: unknown): SettingsPatch {
   return { theme }
 }
 
+function parseMonsterIds(value: unknown): string[] {
+  if (value === undefined) return []
+  if (!Array.isArray(value)) {
+    throw new Error('Некорректный список монстров')
+  }
+
+  return value.filter(
+    (id): id is string => typeof id === 'string' && id.length > 0 && id.length <= 64
+  )
+}
+
 export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.appInfo, (): AppInfo => {
     const platform =
@@ -77,8 +88,8 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(IPC.gameUpdate, (_event, input: unknown) => updateGame(gameSchema.parse(input)))
 
-  ipcMain.handle(IPC.gameRemove, (_event, id: unknown): Promise<void> =>
-    removeGame(assertId(id))
+  ipcMain.handle(IPC.gameRemove, (_event, id: unknown, keepMonsterIds: unknown): Promise<void> =>
+    removeGame(assertId(id), parseMonsterIds(keepMonsterIds))
   )
 
   ipcMain.handle(IPC.playersList, () => listPlayers())

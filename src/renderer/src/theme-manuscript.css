@@ -198,6 +198,12 @@
   background: var(--danger-soft);
 }
 
+:root[data-theme='light'] .notice--success {
+  color: #3f6b41;
+  border-color: rgba(63, 107, 65, 0.35);
+  background: rgba(79, 125, 81, 0.1);
+}
+
 /* ------------------------------------------------------------------ */
 /* Пустые состояния и панели                                          */
 /* ------------------------------------------------------------------ */
@@ -410,6 +416,15 @@
 
 :root[data-theme='light'] .game-monster-row {
   background: rgba(255, 255, 255, 0.4);
+}
+
+:root[data-theme='light'] .delete-monster-row:hover {
+  background: rgba(122, 86, 44, 0.05);
+}
+
+:root[data-theme='light'] .delete-monster-row--on {
+  background: rgba(143, 58, 44, 0.06);
+  border-color: rgba(143, 58, 44, 0.22);
 }
 
 /* ------------------------------------------------------------------ */
