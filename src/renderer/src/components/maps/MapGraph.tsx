@@ -9,6 +9,7 @@ import {
   type MapLayout,
   type MapNodePosition
 } from '@renderer/lib/mapLayout'
+import { IconStoneArch } from '../ui/icons'
 
 const DRAG_THRESHOLD = 4
 
@@ -255,7 +256,11 @@ export function MapGraph({
             onKeyDown={(event) => onNodeKeyDown(event, node)}
           >
             <span className="map-node__name">{node.name}</span>
-            {node.isExit ? <span className="map-node__exit">Выход</span> : null}
+            {node.isExit ? (
+              <span className="map-exit-mark" title="Выход на другую карту">
+                <IconStoneArch width={13} height={13} />
+              </span>
+            ) : null}
             {linkedName ? <span className="map-node__link">→ {linkedName}</span> : null}
           </div>
         )

@@ -4,7 +4,7 @@ import type { GameMap } from '@shared/map'
 import { api, errorMessage } from '@renderer/lib/api'
 import { pluralize } from '@renderer/lib/format'
 import { layoutMap, type MapPoint } from '@renderer/lib/mapLayout'
-import { IconPencil, IconSave, IconUndo } from './ui/icons'
+import { IconPencil, IconSave, IconStoneArch, IconUndo } from './ui/icons'
 import { MapFormModal } from './maps/MapFormModal'
 import { MapGraph } from './maps/MapGraph'
 
@@ -152,7 +152,9 @@ export function MapGraphPage({ mapId, onBack, onOpenMap }: MapGraphPageProps): J
                   Путь между местами
                 </span>
                 <span>
-                  <span className="map-badge">Выход</span>
+                  <span className="map-exit-mark" aria-hidden="true">
+                    <IconStoneArch width={13} height={13} />
+                  </span>
                   Выход на другую карту
                 </span>
               </div>

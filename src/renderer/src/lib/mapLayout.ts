@@ -46,15 +46,15 @@ function autoLayout(map: GameMap): AutoLayout {
   }
 
   if (count === 2) {
-    const width = 1000
+    const width = 860
     const height = 360
 
     return {
       width,
       height,
       nodes: [
-        { ...map.places[0]!, x: 250, y: height / 2 },
-        { ...map.places[1]!, x: width - 250, y: height / 2 }
+        { ...map.places[0]!, x: 220, y: height / 2 },
+        { ...map.places[1]!, x: width - 220, y: height / 2 }
       ]
     }
   }
