@@ -62,6 +62,17 @@
   background: #b79c72;
 }
 
+:root[data-theme='light'] .participant-list::-webkit-scrollbar-thumb,
+:root[data-theme='light'] .game-monster-list--scroll::-webkit-scrollbar-thumb {
+  background: #cdb892;
+  border: none;
+}
+
+:root[data-theme='light'] .participant-list::-webkit-scrollbar-thumb:hover,
+:root[data-theme='light'] .game-monster-list--scroll::-webkit-scrollbar-thumb:hover {
+  background: #b79c72;
+}
+
 /* ------------------------------------------------------------------ */
 /* Типографика и декор                                               */
 /* ------------------------------------------------------------------ */

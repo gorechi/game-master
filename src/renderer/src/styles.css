@@ -1521,34 +1521,36 @@ input[type='number'] {
 }
 
 .participant-list {
-  height: 171px;
+  height: 346px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 3px;
-  padding-right: 6px;
+  padding-right: 14px;
 }
 
 .participant-list::-webkit-scrollbar,
 .game-monster-list--scroll::-webkit-scrollbar {
   width: 6px;
+  background: transparent;
 }
 
 .participant-list::-webkit-scrollbar-track,
 .game-monster-list--scroll::-webkit-scrollbar-track {
   background: transparent;
+  border-radius: 999px;
 }
 
 .participant-list::-webkit-scrollbar-thumb,
 .game-monster-list--scroll::-webkit-scrollbar-thumb {
-  background: #342d44;
+  background: #4a3f5f;
   border: none;
   border-radius: 999px;
 }
 
 .participant-list::-webkit-scrollbar-thumb:hover,
 .game-monster-list--scroll::-webkit-scrollbar-thumb:hover {
-  background: #4a3f5f;
+  background: #64557f;
 }
 
 .participant-list--empty {
@@ -2198,7 +2200,7 @@ input[type='number'] {
 
 /* Форма игры закреплена в одном размере: список участников не растягивает окно. */
 .modal--game {
-  height: 708px;
+  height: 746px;
 }
 
 .modal--game .modal__body {
@@ -2207,7 +2209,7 @@ input[type='number'] {
 }
 
 /* На очень низких окнах три списка физически не помещаются — разрешаем прокрутку. */
-@media (max-height: 760px) {
+@media (max-height: 820px) {
   .modal--game .modal__body {
     overflow-y: auto;
   }
