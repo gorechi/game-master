@@ -1421,7 +1421,7 @@ input[type='number'] {
 
 .editor-section__head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
   padding-bottom: 6px;
@@ -1442,13 +1442,42 @@ input[type='number'] {
   color: var(--ink-faint);
 }
 
+.participant-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.participant-filter__select {
+  width: 190px;
+}
+
 .participant-list {
-  max-height: 230px;
+  max-height: 346px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 3px;
-  padding-right: 4px;
+  padding-right: 6px;
+}
+
+.participant-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.participant-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.participant-list::-webkit-scrollbar-thumb {
+  background: #342d44;
+  border: none;
+  border-radius: 999px;
+}
+
+.participant-list::-webkit-scrollbar-thumb:hover {
+  background: #4a3f5f;
 }
 
 .participant-row {

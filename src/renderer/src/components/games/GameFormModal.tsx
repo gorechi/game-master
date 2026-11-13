@@ -75,6 +75,7 @@ export function GameFormModal({
 
   const [name, setName] = useState('')
   const [characterIds, setCharacterIds] = useState<string[]>([])
+  const [playerFilter, setPlayerFilter] = useState('all')
   const [selections, setSelections] = useState<MonsterSelection[]>([])
   const [instances, setInstances] = useState<GameMonster[]>([])
   const [savedMonsters, setSavedMonsters] = useState<GameMonsterEntry[]>([])
@@ -96,6 +97,7 @@ export function GameFormModal({
 
     setName(game?.name ?? '')
     setCharacterIds(game?.characterIds ?? initialCharacterIds ?? [])
+    setPlayerFilter('all')
     setSelections([])
     setInstances(game?.monsters ?? [])
     setReadyIds([])
@@ -224,6 +226,15 @@ export function GameFormModal({
   const availableSaved = savedMonsters.filter((monster) => !readyIds.includes(monster.id))
   const totalMonsters = isEdit ? instances.length : totalSelections + readyMonsters.length
 
+  const filteredCharacters =
+    playerFilter === 'all'
+      ? characters
+      : characters.filter((character) => character.playerId === playerFilter)
+  const playerFilterOptions = [
+    { value: 'all', label: 'Все' },
+    ...players.map((player) => ({ value: player.id, label: playerFullName(player) }))
+  ]
+
   async function submit(event: FormEvent): Promise<void> {
     event.preventDefault()
     if (saving || loadingData || readOnly) return
@@ -337,16 +348,30 @@ export function GameFormModal({
             <section className="editor-section">
               <header className="editor-section__head">
                 <h3>Участники</h3>
-                <span className="editor-section__count">выбрано {characterIds.length}</span>
+
+                <div className="participant-filter">
+                  <span className="editor-section__count">выбрано {characterIds.length}</span>
+                  <div className="participant-filter__select">
+                    <Select
+                      ariaLabel="Фильтр участников по игроку"
+                      value={playerFilter}
+                      options={playerFilterOptions}
+                      placeholder="Все"
+                      onChange={(value) => setPlayerFilter(value)}
+                    />
+                  </div>
+                </div>
               </header>
 
               {characters.length === 0 ? (
                 <p className="notice">
                   В базе нет персонажей — сначала добавьте их в разделе «Персонажи».
                 </p>
+              ) : filteredCharacters.length === 0 ? (
+                <p className="notice">У этого игрока пока нет персонажей.</p>
               ) : (
                 <div className="participant-list">
-                  {characters.map((character) => {
+                  {filteredCharacters.map((character) => {
                     const checked = characterIds.includes(character.id)
 
                     return (
