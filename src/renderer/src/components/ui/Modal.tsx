@@ -11,6 +11,8 @@ interface ModalProps {
   footer: ReactNode
   tone?: 'default' | 'danger'
   size?: 'md' | 'lg'
+  /** Дополнительный класс панели — для форм с фиксированными размерами. */
+  panelClassName?: string
   onClose: () => void
   /** Куда поставить фокус при открытии. По умолчанию — первый интерактивный элемент. */
   initialFocusRef?: RefObject<HTMLElement | null>
@@ -40,6 +42,7 @@ export function Modal({
   footer,
   tone = 'default',
   size = 'md',
+  panelClassName,
   onClose,
   initialFocusRef
 }: ModalProps): JSX.Element | null {
@@ -121,7 +124,9 @@ export function Modal({
     >
       <div
         ref={panelRef}
-        className={`modal${tone === 'danger' ? ' modal--danger' : ''}${size === 'lg' ? ' modal--wide' : ''}`}
+        className={`modal${tone === 'danger' ? ' modal--danger' : ''}${
+          size === 'lg' ? ' modal--wide' : ''
+        }${panelClassName ? ` ${panelClassName}` : ''}`}
         role="dialog"
         aria-modal="true"
         aria-label={title}

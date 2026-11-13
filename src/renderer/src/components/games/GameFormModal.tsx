@@ -300,6 +300,7 @@ export function GameFormModal({
             : 'Название, участники и монстры. Копии монстров создаются при сохранении игры.'
       }
       size="lg"
+      panelClassName="modal--game"
       onClose={onClose}
       initialFocusRef={nameRef}
       footer={
@@ -364,11 +365,15 @@ export function GameFormModal({
               </header>
 
               {characters.length === 0 ? (
-                <p className="notice">
-                  В базе нет персонажей — сначала добавьте их в разделе «Персонажи».
-                </p>
+                <div className="participant-list participant-list--empty">
+                  <p className="notice">
+                    В базе нет персонажей — сначала добавьте их в разделе «Персонажи».
+                  </p>
+                </div>
               ) : filteredCharacters.length === 0 ? (
-                <p className="notice">У этого игрока пока нет персонажей.</p>
+                <div className="participant-list participant-list--empty">
+                  <p className="notice">У этого игрока пока нет персонажей.</p>
+                </div>
               ) : (
                 <div className="participant-list">
                   {filteredCharacters.map((character) => {

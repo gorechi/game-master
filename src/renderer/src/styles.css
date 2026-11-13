@@ -1454,7 +1454,7 @@ input[type='number'] {
 }
 
 .participant-list {
-  max-height: 346px;
+  height: 171px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -1478,6 +1478,11 @@ input[type='number'] {
 
 .participant-list::-webkit-scrollbar-thumb:hover {
   background: #4a3f5f;
+}
+
+.participant-list--empty {
+  justify-content: center;
+  overflow: hidden;
 }
 
 .participant-row {
@@ -2065,6 +2070,15 @@ input[type='number'] {
 
 .modal--wide {
   max-width: 760px;
+}
+
+/* Форма игры закреплена в одном размере: список участников не растягивает окно. */
+.modal--game {
+  height: 702px;
+}
+
+.modal--game .modal__body {
+  flex: 1 1 auto;
 }
 
 .modal__head {
