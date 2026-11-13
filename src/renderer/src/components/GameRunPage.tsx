@@ -4,7 +4,7 @@ import type { Game } from '@shared/game'
 import { gameStatusLabels, type GameStatus } from '@shared/gameStatus'
 import { api, errorMessage } from '@renderer/lib/api'
 import { formatDate } from '@renderer/lib/format'
-import { ConfirmDialog } from './ui/ConfirmDialog'
+import { GameFinishModal } from './games/GameFinishModal'
 import { IconPlay } from './ui/icons'
 
 interface GameRunPageProps {
@@ -54,9 +54,18 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
     }
   }
 
-  async function finishGame(): Promise<void> {
-    await changeStatus('finished')
-    setConfirmFinish(false)
+  async function finishGame(keepMonsterIds: string[]): Promise<void> {
+    if (!game) return
+
+    setUpdating(true)
+
+    try {
+      const updated = await api.games.finish(game.id, keepMonsterIds)
+      setGame(updated)
+      setConfirmFinish(false)
+    } finally {
+      setUpdating(false)
+    }
   }
 
   return (
@@ -159,13 +168,11 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
         )}
       </div>
 
-      <ConfirmDialog
+      <GameFinishModal
         open={confirmFinish}
-        title="Закончить игру?"
-        description="Статус изменится на «Закончена». Редактировать игру будет нельзя, но её можно будет удалить."
-        confirmLabel="Закончить"
-        onCancel={() => setConfirmFinish(false)}
-        onConfirm={() => void finishGame()}
+        game={game ?? null}
+        onClose={() => setConfirmFinish(false)}
+        onFinish={finishGame}
       />
     </main>
   )

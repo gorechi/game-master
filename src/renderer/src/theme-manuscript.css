@@ -446,11 +446,11 @@
   color: var(--rubric);
 }
 
-:root[data-theme='light'] .delete-monster-row:hover {
+:root[data-theme='light'] .finish-monster-row:hover {
   background: rgba(122, 86, 44, 0.05);
 }
 
-:root[data-theme='light'] .delete-monster-row--on {
+:root[data-theme='light'] .finish-monster-row--on {
   background: rgba(143, 58, 44, 0.06);
   border-color: rgba(143, 58, 44, 0.22);
 }

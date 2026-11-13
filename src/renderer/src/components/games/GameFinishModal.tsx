@@ -7,29 +7,30 @@ import { pluralize } from '@renderer/lib/format'
 import { Modal } from '../ui/Modal'
 import { IconLock } from '../ui/icons'
 
-interface GameDeleteModalProps {
+interface GameFinishModalProps {
   open: boolean
   game: Game | null
   onClose: () => void
   /** Ошибки пробрасываются в модалку, чтобы она осталась открытой. */
-  onConfirm: (keepMonsterIds: string[]) => Promise<void>
+  onFinish: (keepMonsterIds: string[]) => Promise<void>
 }
 
 /**
- * Удаление игры с выбором монстров, которых нужно сохранить.
- * Отмеченные уходят в список игровых монстров, остальные удаляются вместе с игрой.
+ * Завершение игры с выбором монстров, которых нужно сохранить.
+ * Отмеченные уходят в список игровых монстров, остальные остаются в игре
+ * и исчезнут вместе с ней при удалении.
  */
-export function GameDeleteModal({
+export function GameFinishModal({
   open,
   game,
   onClose,
-  onConfirm
-}: GameDeleteModalProps): JSX.Element {
+  onFinish
+}: GameFinishModalProps): JSX.Element {
   const [keepIds, setKeepIds] = useState<string[]>([])
   const [savedIds, setSavedIds] = useState<string[]>([])
   const [loadingSaved, setLoadingSaved] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [deleting, setDeleting] = useState(false)
+  const [finishing, setFinishing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const cancelRef = useRef<HTMLButtonElement>(null)
 
@@ -38,7 +39,7 @@ export function GameDeleteModal({
 
     setKeepIds([])
     setSavedIds([])
-    setDeleting(false)
+    setFinishing(false)
     setError(null)
     setLoadError(null)
     setLoadingSaved(true)
@@ -80,16 +81,16 @@ export function GameDeleteModal({
   }
 
   async function confirm(): Promise<void> {
-    if (deleting) return
+    if (finishing) return
 
-    setDeleting(true)
+    setFinishing(true)
     setError(null)
 
     try {
-      await onConfirm(keepIds)
+      await onFinish(keepIds)
     } catch (caught) {
       setError(errorMessage(caught))
-      setDeleting(false)
+      setFinishing(false)
     }
   }
 
@@ -99,33 +100,32 @@ export function GameDeleteModal({
   return (
     <Modal
       open={open}
-      title="Удаление игры"
+      title="Завершение игры"
       description={
         game
-          ? `«${game.name}» будет удалена. Отметьте монстров, которых хотите сохранить для следующих игр.`
+          ? `«${game.name}» будет переведена в статус «Закончена». Отметьте монстров, которых хотите сохранить для следующих игр.`
           : undefined
       }
-      tone="danger"
       size="lg"
       onClose={onClose}
       initialFocusRef={cancelRef}
       footer={
         <>
-          <button ref={cancelRef} type="button" className="button" onClick={onClose} disabled={deleting}>
+          <button ref={cancelRef} type="button" className="button" onClick={onClose} disabled={finishing}>
             Отмена
           </button>
           <button
             type="button"
-            className="button button--danger-solid"
+            className="button button--primary"
             onClick={() => void confirm()}
-            disabled={deleting || loadingSaved || Boolean(loadError)}
+            disabled={finishing || loadingSaved || Boolean(loadError)}
           >
-            {deleting ? 'Удаляем…' : 'Удалить игру'}
+            {finishing ? 'Завершаем…' : 'Закончить игру'}
           </button>
         </>
       }
     >
-      <div className="delete-game">
+      <div className="finish-game">
         {error ? <p className="notice notice--error">{error}</p> : null}
         {loadError ? (
           <p className="notice notice--error">
@@ -134,9 +134,9 @@ export function GameDeleteModal({
         ) : null}
 
         <p className="notice">
-          Монстры без отметки будут удалены вместе с игрой безвозвратно. Отмеченные попадут
-          в список игровых монстров — в бестиарий они не добавляются. Монстры, которые уже есть
-          в списке сохранённых, отмечены всегда: снять отметку нельзя, удалить их можно только
+          Отмеченные монстры попадут в список игровых монстров — в бестиарий они не добавляются.
+          Неотмеченные останутся в завершённой игре и исчезнут вместе с ней. Монстры, которые уже
+          есть в списке сохранённых, отмечены всегда: снять отметку нельзя, удалить их можно только
           на экране сохранённых монстров.
         </p>
 
@@ -146,18 +146,14 @@ export function GameDeleteModal({
 
         {total > 0 ? (
           <>
-            <div className="delete-game__summary">
+            <div className="finish-game__summary">
               <span>
                 {total} {pluralize(total, 'монстр', 'монстра', 'монстров')} в игре
               </span>
-              <span>
-                {kept > 0
-                  ? `сохраняем ${kept}`
-                  : 'не сохраняем ни одного'}
-              </span>
+              <span>{kept > 0 ? `сохраняем ${kept}` : 'не сохраняем ни одного'}</span>
             </div>
 
-            <div className="delete-monster-list">
+            <div className="finish-monster-list">
               {game?.monsters.map((monster) => {
                 const locked = isSaved(monster.id)
                 const checked = locked || keepIds.includes(monster.id)
@@ -166,9 +162,9 @@ export function GameDeleteModal({
                   <label
                     key={monster.id}
                     className={[
-                      'delete-monster-row',
-                      checked ? 'delete-monster-row--on' : '',
-                      locked ? 'delete-monster-row--locked' : ''
+                      'finish-monster-row',
+                      checked ? 'finish-monster-row--on' : '',
+                      locked ? 'finish-monster-row--locked' : ''
                     ]
                       .filter(Boolean)
                       .join(' ')}
@@ -186,15 +182,15 @@ export function GameDeleteModal({
                       onChange={() => toggleMonster(monster.id)}
                     />
 
-                    <span className="delete-monster-row__main">
-                      <span className="delete-monster-row__name">{monster.name}</span>
-                      <span className="delete-monster-row__meta">
+                    <span className="finish-monster-row__main">
+                      <span className="finish-monster-row__name">{monster.name}</span>
+                      <span className="finish-monster-row__meta">
                         КО {formatChallengeRating(monster.challengeRating)} · КЗ{' '}
                         {monster.armorClass} · ХП {monster.hitPoints}
                       </span>
                     </span>
 
-                    <span className="delete-monster-row__state">
+                    <span className="finish-monster-row__state">
                       {locked ? (
                         <>
                           <IconLock width={11} height={11} />
@@ -203,7 +199,7 @@ export function GameDeleteModal({
                       ) : checked ? (
                         'остаётся'
                       ) : (
-                        'удалится'
+                        'не сохранится'
                       )}
                     </span>
                   </label>

@@ -14,7 +14,14 @@ import {
   updateCharacter
 } from './storage/characterStore'
 import { addMonster, listMonsters, removeMonster, updateMonster } from './storage/monsterStore'
-import { addGame, listGames, removeGame, setGameStatus, updateGame } from './storage/gameStore'
+import {
+  addGame,
+  finishGame,
+  listGames,
+  removeGame,
+  setGameStatus,
+  updateGame
+} from './storage/gameStore'
 import { listGameMonsters } from './storage/gameMonsterStore'
 import { getSettings, updateSettings } from './storage/settingsStore'
 
@@ -90,8 +97,12 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(IPC.gameUpdate, (_event, input: unknown) => updateGame(gameSchema.parse(input)))
 
-  ipcMain.handle(IPC.gameRemove, (_event, id: unknown, keepMonsterIds: unknown): Promise<void> =>
-    removeGame(assertId(id), parseMonsterIds(keepMonsterIds))
+  ipcMain.handle(IPC.gameRemove, (_event, id: unknown): Promise<void> =>
+    removeGame(assertId(id))
+  )
+
+  ipcMain.handle(IPC.gameFinish, (_event, id: unknown, keepMonsterIds: unknown) =>
+    finishGame(assertId(id), parseMonsterIds(keepMonsterIds))
   )
 
   ipcMain.handle(IPC.gameSetStatus, (_event, id: unknown, status: unknown) => {

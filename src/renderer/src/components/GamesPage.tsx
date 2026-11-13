@@ -7,7 +7,6 @@ import { formatDate, pluralize } from '@renderer/lib/format'
 import { ConfirmDialog } from './ui/ConfirmDialog'
 import { IconPencil, IconPlay, IconPlus, IconTrash } from './ui/icons'
 import { GameFormModal } from './games/GameFormModal'
-import { GameDeleteModal } from './games/GameDeleteModal'
 
 interface GamesPageProps {
   onOpenGame: (gameId: string) => void
@@ -18,7 +17,6 @@ export function GamesPage({ onOpenGame }: GamesPageProps): JSX.Element {
   const [games, setGames] = useState<Game[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState<Game | 'new' | null>(null)
-  const [deletingGame, setDeletingGame] = useState<Game | null>(null)
   const [confirmingGame, setConfirmingGame] = useState<Game | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
@@ -43,12 +41,8 @@ export function GamesPage({ onOpenGame }: GamesPageProps): JSX.Element {
       return
     }
 
-    // У игры с монстрами — экран выбора, кого сохранить; иначе простое подтверждение.
-    if (game.monsters.length > 0) {
-      setDeletingGame(game)
-    } else {
-      setConfirmingGame(game)
-    }
+    // Монстры сохраняются при завершении игры, поэтому удаление — простое подтверждение.
+    setConfirmingGame(game)
   }
 
   async function startGame(game: Game): Promise<void> {
@@ -67,34 +61,23 @@ export function GamesPage({ onOpenGame }: GamesPageProps): JSX.Element {
 
     try {
       await api.games.remove(confirmingGame.id)
-      setNotice(`Игра «${confirmingGame.name}» удалена.`)
+      const monsters = confirmingGame.monsters.length
+      setNotice(
+        monsters > 0
+          ? `Игра «${confirmingGame.name}» удалена. Вместе с ней удалено ${monsters} ${pluralize(
+              monsters,
+              'монстр',
+              'монстра',
+              'монстров'
+            )}.`
+          : `Игра «${confirmingGame.name}» удалена.`
+      )
       setConfirmingGame(null)
       await refresh()
     } catch (caught) {
       setError(errorMessage(caught))
       setConfirmingGame(null)
     }
-  }
-
-  async function deleteWithKeptMonsters(keepMonsterIds: string[]): Promise<void> {
-    if (!deletingGame) return
-
-    // Ошибка пробрасывается в модалку, чтобы она осталась открытой.
-    await api.games.remove(deletingGame.id, keepMonsterIds)
-
-    const kept = keepMonsterIds.length
-    setNotice(
-      kept > 0
-        ? `Игра «${deletingGame.name}» удалена. Сохранено ${kept} ${pluralize(
-            kept,
-            'монстр',
-            'монстра',
-            'монстров'
-          )} для следующих игр.`
-        : `Игра «${deletingGame.name}» удалена вместе со всеми монстрами.`
-    )
-    setDeletingGame(null)
-    await refresh()
   }
 
   return (
@@ -208,19 +191,25 @@ export function GamesPage({ onOpenGame }: GamesPageProps): JSX.Element {
         }}
       />
 
-      <GameDeleteModal
-        open={deletingGame !== null}
-        game={deletingGame}
-        onClose={() => setDeletingGame(null)}
-        onConfirm={deleteWithKeptMonsters}
-      />
-
       <ConfirmDialog
         open={confirmingGame !== null}
         title="Удалить игру?"
         description={
           confirmingGame
-            ? `«${confirmingGame.name}» будет удалена. Монстров в ней нет — сохранить нечего. Это действие нельзя отменить.`
+            ? [
+                `«${confirmingGame.name}» будет удалена.`,
+                confirmingGame.monsters.length > 0
+                  ? `Вместе с ней будут удалены ${confirmingGame.monsters.length} ${pluralize(
+                      confirmingGame.monsters.length,
+                      'монстр',
+                      'монстра',
+                      'монстров'
+                    )} — сохранение доступно при завершении игры.`
+                  : null,
+                'Это действие нельзя отменить.'
+              ]
+                .filter(Boolean)
+                .join(' ')
             : undefined
         }
         onCancel={() => setConfirmingGame(null)}

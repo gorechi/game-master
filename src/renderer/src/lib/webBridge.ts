@@ -230,6 +230,9 @@ export function createWebBridge(): GameMasterApi {
           throw new Error('Игра не найдена — возможно, запись уже удалена')
         }
         if (game.status === status) return game
+        if (status === 'finished') {
+          throw new Error('Завершайте игру через экран завершения')
+        }
         if (!canTransitionGame(game.status, status)) {
           throw new Error('Такой переход статуса недопустим')
         }
@@ -244,32 +247,55 @@ export function createWebBridge(): GameMasterApi {
         return updated
       },
 
-      remove: async (id: string, keepMonsterIds: string[] = []): Promise<void> => {
+      finish: async (id: string, keepMonsterIds: string[] = []): Promise<Game> => {
+        const games = readGames()
+        const game = games.find((item) => item.id === id)
+
+        if (!game) {
+          throw new Error('Игра не найдена — возможно, запись уже удалена')
+        }
+        if (!canTransitionGame(game.status, 'finished')) {
+          throw new Error('Завершить можно только идущую или приостановленную игру')
+        }
+
+        const existing = readGameMonsters()
+        const existingIds = new Set(existing.map((monster) => monster.id))
+        const keep = new Set(keepMonsterIds)
+
+        for (const monster of game.monsters) {
+          if (existingIds.has(monster.id)) keep.add(monster.id)
+        }
+
+        const savedAt = new Date().toISOString()
+        const additions: GameMonsterEntry[] = game.monsters
+          .filter((monster) => keep.has(monster.id) && !existingIds.has(monster.id))
+          .map((monster) => ({
+            ...monster,
+            savedFromGameId: game.id,
+            savedAt
+          }))
+
+        if (additions.length > 0) {
+          writeGameMonsters([...existing, ...additions])
+        }
+
+        const updated: Game = {
+          ...game,
+          status: 'finished',
+          updatedAt: new Date().toISOString()
+        }
+
+        writeGames(games.map((item) => (item.id === id ? updated : item)))
+        return updated
+      },
+
+      remove: async (id: string): Promise<void> => {
         const games = readGames()
         const game = games.find((item) => item.id === id)
         if (!game) return
 
         if (!isGameDeletable(game.status)) {
           throw new Error('Идущую игру нельзя удалить — сначала завершите её')
-        }
-
-        if (keepMonsterIds.length > 0) {
-          const keep = new Set(keepMonsterIds)
-          const existing = readGameMonsters()
-          const existingIds = new Set(existing.map((monster) => monster.id))
-          const savedAt = new Date().toISOString()
-
-          const additions: GameMonsterEntry[] = game.monsters
-            .filter((monster) => keep.has(monster.id) && !existingIds.has(monster.id))
-            .map((monster) => ({
-              ...monster,
-              savedFromGameId: game.id,
-              savedAt
-            }))
-
-          if (additions.length > 0) {
-            writeGameMonsters([...existing, ...additions])
-          }
         }
 
         writeGames(games.filter((item) => item.id !== id))

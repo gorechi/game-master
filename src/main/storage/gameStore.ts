@@ -16,7 +16,7 @@ import {
   type GameStatus
 } from '@shared/gameStatus'
 import { JsonFileError, readJsonFile, withFileLock, writeJsonAtomic } from './jsonFile'
-import { saveGameMonsters } from './gameMonsterStore'
+import { saveGameMonsters, listGameMonsters } from './gameMonsterStore'
 
 const LOCK_KEY = 'games.json'
 
@@ -122,6 +122,10 @@ export async function setGameStatus(id: string, status: GameStatus): Promise<Gam
 
     if (current.status === status) return current
 
+    if (status === 'finished') {
+      throw new Error('Завершайте игру через экран завершения')
+    }
+
     if (!canTransitionGame(current.status, status)) {
       throw new Error('Такой переход статуса недопустим')
     }
@@ -140,39 +144,86 @@ export async function setGameStatus(id: string, status: GameStatus): Promise<Gam
   })
 }
 
-export async function removeGame(  id: string,
+/**
+ * Завершает игру, сохраняя выбранных монстров в игровую библиотеку.
+ * Уже сохранённые экземпляры сохраняются принудительно.
+ */
+export async function finishGame(
+  id: string,
   keepMonsterIds: readonly string[] = []
-): Promise<void> {
+): Promise<Game> {
   const games = await readGamesFile()
   const game = games.games.find((item) => item.id === id)
 
-  if (!game) return
-
-  if (!isGameDeletable(game.status)) {
-    throw new Error('Идущую игру нельзя удалить — сначала завершите её')
+  if (!game) {
+    throw new Error('Игра не найдена — возможно, запись уже удалена')
   }
 
-  if (keepMonsterIds.length > 0) {
-    const keep = new Set(keepMonsterIds)
-    const savedAt = new Date().toISOString()
-
-    const kept: GameMonsterEntry[] = game.monsters
-      .filter((monster) => keep.has(monster.id))
-      .map((monster) => ({
-        ...monster,
-        savedFromGameId: game.id,
-        savedAt
-      }))
-
-    await saveGameMonsters(kept)
+  if (!canTransitionGame(game.status, 'finished')) {
+    throw new Error('Завершить можно только идущую или приостановленную игру')
   }
 
+  const saved = await listGameMonsters()
+  const savedIds = new Set(saved.map((monster) => monster.id))
+  const keep = new Set(keepMonsterIds)
+
+  for (const monster of game.monsters) {
+    if (savedIds.has(monster.id)) keep.add(monster.id)
+  }
+
+  const savedAt = new Date().toISOString()
+  const kept: GameMonsterEntry[] = game.monsters
+    .filter((monster) => keep.has(monster.id))
+    .map((monster) => ({
+      ...monster,
+      savedFromGameId: game.id,
+      savedAt
+    }))
+
+  await saveGameMonsters(kept)
+
+  return withFileLock(LOCK_KEY, async () => {
+    const file = await readGamesFile()
+    const index = file.games.findIndex((item) => item.id === id)
+
+    if (index === -1) {
+      throw new Error('Игра не найдена — возможно, запись уже удалена')
+    }
+
+    const current = file.games[index]!
+
+    if (!canTransitionGame(current.status, 'finished')) {
+      throw new Error('Завершить можно только идущую или приостановленную игру')
+    }
+
+    const updated: Game = {
+      ...current,
+      status: 'finished',
+      updatedAt: new Date().toISOString()
+    }
+
+    const next = [...file.games]
+    next[index] = updated
+
+    await writeJsonAtomic(gamesFile(), { ...file, games: next })
+    return updated
+  })
+}
+
+export async function removeGame(id: string): Promise<void> {
   await withFileLock(LOCK_KEY, async () => {
     const file = await readGamesFile()
-    const remaining = file.games.filter((item) => item.id !== id)
+    const game = file.games.find((item) => item.id === id)
 
-    if (remaining.length === file.games.length) return
+    if (!game) return
 
-    await writeJsonAtomic(gamesFile(), { ...file, games: remaining })
+    if (!isGameDeletable(game.status)) {
+      throw new Error('Идущую игру нельзя удалить — сначала завершите её')
+    }
+
+    await writeJsonAtomic(gamesFile(), {
+      ...file,
+      games: file.games.filter((item) => item.id !== id)
+    })
   })
 }

@@ -17,6 +17,7 @@ export const IPC = {
   gameCreate: 'game:create',
   gameUpdate: 'game:update',
   gameRemove: 'game:remove',
+  gameFinish: 'game:finish',
   gameSetStatus: 'game:set-status',
   gameMonstersList: 'game-monsters:list',
   playersList: 'players:list',
@@ -54,8 +55,10 @@ export interface GameMasterApi {
     list(): Promise<Game[]>
     create(input: GameInput): Promise<Game>
     update(game: Game): Promise<Game>
-    /** Удаляет игру; отмеченные экземпляры сохраняются в список игровых монстров. */
-    remove(id: string, keepMonsterIds?: string[]): Promise<void>
+    /** Удаляет игру. Монстры не сохраняются: выбор делается при завершении игры. */
+    remove(id: string): Promise<void>
+    /** Завершает игру, сохраняя выбранных монстров в игровую библиотеку. */
+    finish(id: string, keepMonsterIds?: string[]): Promise<Game>
     /** Меняет статус игры с проверкой допустимого перехода. */
     setStatus(id: string, status: GameStatus): Promise<Game>
   }
