@@ -717,7 +717,7 @@ export function GameFormModal({
 
                     {!isEdit ? (
                       <div className="field">
-                        <span className="field__label">Сохранённые игровые монстры</span>
+                        <span className="field__label">Уникальные существа</span>
                         {realmSavedMonsters.length === 0 ? (
                           <p className="abilities-editor__empty">
                             Появляются после завершения игры с сохранением монстров.
@@ -791,6 +791,7 @@ export function GameFormModal({
         description="Экземпляр этой игры. Изменения не затрагивают запись в бестиарии."
         initial={editingMonster}
         allowZeroHitPoints
+        showStatuses
         onClose={() => setEditingMonsterId(null)}
         onSubmit={(input) => {
           setInstances((current) =>

@@ -26,7 +26,9 @@ export const gameMonsterSchema = z.object({
   challengeRating: z.number().min(0).max(30),
   armorClass: z.number().int().min(0).max(99),
   hitPoints: z.number().int().min(0).max(100_000),
-  abilities: z.array(monsterAbilitySchema).max(50)
+  abilities: z.array(monsterAbilitySchema).max(50),
+  /** Статусы вроде «Ранен», «Отравлен», «Проклят». */
+  statuses: z.array(z.string().min(1).max(40)).max(16).default([])
 })
 
 export type GameMonster = z.infer<typeof gameMonsterSchema>

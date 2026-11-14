@@ -186,7 +186,12 @@ function readGames(): Game[] {
       mapId: typeof game.mapId === 'string' ? game.mapId : null,
       notes: typeof game.notes === 'string' ? game.notes : '',
       characterIds: Array.isArray(game.characterIds) ? game.characterIds : [],
-      monsters: Array.isArray(game.monsters) ? game.monsters : [],
+      monsters: Array.isArray(game.monsters)
+        ? game.monsters.map((monster) => ({
+            ...monster,
+            statuses: Array.isArray(monster.statuses) ? monster.statuses : []
+          }))
+        : [],
       status: isGameStatus(game.status) ? game.status : 'new'
     }))
   } catch {
@@ -207,7 +212,8 @@ function readGameMonsters(): GameMonsterEntry[] {
     if (!Array.isArray(parsed)) return []
     return (parsed as GameMonsterEntry[]).map((monster) => ({
       ...monster,
-      realmId: typeof monster.realmId === 'string' ? monster.realmId : DEFAULT_REALM_ID
+      realmId: typeof monster.realmId === 'string' ? monster.realmId : DEFAULT_REALM_ID,
+      statuses: Array.isArray(monster.statuses) ? monster.statuses : []
     }))
   } catch {
     return []

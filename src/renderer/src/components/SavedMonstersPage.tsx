@@ -92,7 +92,7 @@ export function SavedMonstersPage({ realms }: { realms: readonly Realm[] }): JSX
       <div className="page__inner">
         <header className="page-head">
           <div>
-            <h1>Сохранённые монстры</h1>
+            <h1>Уникальные существа</h1>
             <p className="muted">
               Уникальные экземпляры для будущих игр. Это отдельная библиотека — бестиарий она
               не меняет.
@@ -132,6 +132,7 @@ export function SavedMonstersPage({ realms }: { realms: readonly Realm[] }): JSX
                   monster={monster}
                   realmName={realmNames.get(monster.realmId) ?? 'Без сеттинга'}
                   badge="Уникальный"
+                  statuses={monster.statuses}
                   onEdit={() => setEditing(monster)}
                   onDelete={() => setDeleting(monster)}
                 />
@@ -157,6 +158,7 @@ export function SavedMonstersPage({ realms }: { realms: readonly Realm[] }): JSX
         realms={realms}
         lockRealm
         allowZeroHitPoints
+        showStatuses
         onClose={() => {
           setBaseMonster(null)
           setEditing(null)

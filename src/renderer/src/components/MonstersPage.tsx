@@ -49,7 +49,7 @@ export function MonstersPage({ realms }: { realms: readonly Realm[] }): JSX.Elem
       <div className="page__inner">
         <header className="page-head">
           <div>
-            <h1>Монстры</h1>
+            <h1>Бестиарий</h1>
             <p className="muted">
               Бестиарий: характеристики, классы и способности. Все записи можно использовать в игре.
             </p>

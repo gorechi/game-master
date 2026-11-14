@@ -434,7 +434,8 @@ export function createGameMonster(
     challengeRating: source.challengeRating,
     armorClass: source.armorClass,
     hitPoints: source.hitPoints,
-    abilities: source.abilities.map((ability) => ({ ...ability }))
+    abilities: source.abilities.map((ability) => ({ ...ability })),
+    statuses: []
   }
 }
 
@@ -453,7 +454,8 @@ export function gameMonsterFromEntry(entry: GameMonsterEntry): GameMonster {
     challengeRating: entry.challengeRating,
     armorClass: entry.armorClass,
     hitPoints: entry.hitPoints,
-    abilities: entry.abilities
+    abilities: entry.abilities,
+    statuses: [...entry.statuses]
   }
 }
 
@@ -478,6 +480,11 @@ export function createGameMonsterEntry(
     armorClass: input.armorClass,
     hitPoints: input.hitPoints,
     abilities: input.abilities.map((ability) => ({ ...ability })),
+    statuses: [
+      ...new Set(
+        (input.statuses ?? []).map((status) => status.trim()).filter(Boolean)
+      )
+    ].slice(0, 16),
     savedFromGameId,
     savedAt: new Date().toISOString()
   }

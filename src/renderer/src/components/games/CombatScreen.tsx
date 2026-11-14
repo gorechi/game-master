@@ -488,6 +488,16 @@ function CombatFocusCard({ entry }: { entry: CombatResultEntry }): JSX.Element {
           </div>
         ) : null}
 
+        {monster && monster.statuses.length > 0 ? (
+          <div className="combat-focus-card__statuses">
+            {monster.statuses.map((status) => (
+              <span key={status} className="status-tag">
+                {status}
+              </span>
+            ))}
+          </div>
+        ) : null}
+
         {monster && monster.abilities.length > 0 ? (
           <ul className="combat-focus-card__abilities">
             {monster.abilities.map((ability) => (

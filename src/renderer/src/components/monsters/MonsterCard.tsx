@@ -30,6 +30,8 @@ interface MonsterCardProps {
   badge?: string
   /** Сеттинг монстра — показывается, чтобы записи разных миров не путались. */
   realmName?: string
+  /** Статусы уникального существа. */
+  statuses?: readonly string[]
   onEdit: () => void
   onDelete: () => void
 }
@@ -39,6 +41,7 @@ export function MonsterCard({
   monster,
   badge,
   realmName,
+  statuses,
   onEdit,
   onDelete
 }: MonsterCardProps): JSX.Element {
@@ -60,6 +63,16 @@ export function MonsterCard({
             <span className="monster-chip">КЗ {monster.armorClass}</span>
             <span className="monster-chip">ХП {monster.hitPoints}</span>
           </div>
+
+          {statuses && statuses.length > 0 ? (
+            <div className="monster-card__statuses">
+              {statuses.map((status) => (
+                <span key={status} className="status-tag">
+                  {status}
+                </span>
+              ))}
+            </div>
+          ) : null}
         </div>
       </div>
 

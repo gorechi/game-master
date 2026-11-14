@@ -1122,6 +1122,13 @@ input[type='number'] {
   gap: 6px;
 }
 
+.monster-card__statuses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
 .monster-chip {
   padding: 2px 8px;
   border-radius: 999px;

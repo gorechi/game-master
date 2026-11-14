@@ -77,7 +77,7 @@ export function Sidebar({ route, onNavigate }: SidebarProps): JSX.Element {
           onClick={() => onNavigate({ name: 'monsters' })}
         >
           <IconSkull />
-          <span>Монстры</span>
+          <span>Бестиарий</span>
         </button>
 
         <button
@@ -87,7 +87,7 @@ export function Sidebar({ route, onNavigate }: SidebarProps): JSX.Element {
           onClick={() => onNavigate({ name: 'savedMonsters' })}
         >
           <IconBookmark />
-          <span>Игровые монстры</span>
+          <span>Уникальные существа</span>
         </button>
 
         <button

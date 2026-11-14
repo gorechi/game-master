@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import type { DragEvent, FormEvent, JSX, KeyboardEvent } from 'react'
+import type { DragEvent, FormEvent, JSX } from 'react'
 import type { Player } from '@shared/player'
 import type { CharacterProfile, CharacterProfileInput } from '@shared/characterProfile'
 import type { Realm } from '@shared/realm'
@@ -8,20 +8,8 @@ import { api, errorMessage } from '@renderer/lib/api'
 import { prepareCharacterImage } from '@renderer/lib/image'
 import { Modal } from '../ui/Modal'
 import { Select } from '../ui/Select'
+import { StatusField } from '../ui/StatusField'
 import { HeroPlaceholder } from './CharacterCard'
-
-const STATUS_SUGGESTIONS = [
-  'Ранен',
-  'Отравлен',
-  'Проклят',
-  'В розыске',
-  'Скрывается',
-  'Благословлён',
-  'Истощён',
-  'Мёртв'
-]
-
-const MAX_STATUSES = 12
 
 interface CharacterFormModalProps {
   open: boolean
@@ -54,7 +42,6 @@ export function CharacterFormModal({
   const [race, setRace] = useState('')
   const [playerId, setPlayerId] = useState('')
   const [statuses, setStatuses] = useState<string[]>([])
-  const [statusDraft, setStatusDraft] = useState('')
   const [image, setImage] = useState<string | null>(null)
   const [imageError, setImageError] = useState<string | null>(null)
   const [processingImage, setProcessingImage] = useState(false)
@@ -76,7 +63,6 @@ export function CharacterFormModal({
     setRace(profile?.race ?? '')
     setPlayerId(profile?.playerId ?? defaultPlayerId ?? '')
     setStatuses(profile?.statuses ?? [])
-    setStatusDraft('')
     setImage(profile?.image ?? null)
     setImageError(null)
     setError(null)
@@ -94,34 +80,6 @@ export function CharacterFormModal({
       setImageError(errorMessage(caught))
     } finally {
       setProcessingImage(false)
-    }
-  }
-
-  function addStatus(raw: string): void {
-    const value = raw.trim().replace(/,$/, '')
-    if (!value) return
-    if (statuses.includes(value)) {
-      setStatusDraft('')
-      return
-    }
-    setStatuses((current) =>
-      current.length >= MAX_STATUSES ? current : [...current, value.slice(0, 40)]
-    )
-    setStatusDraft('')
-  }
-
-  function removeStatus(value: string): void {
-    setStatuses((current) => current.filter((status) => status !== value))
-  }
-
-  function onStatusKeyDown(event: KeyboardEvent<HTMLInputElement>): void {
-    if (event.key === 'Enter' || event.key === ',') {
-      event.preventDefault()
-      addStatus(statusDraft)
-      return
-    }
-    if (event.key === 'Backspace' && statusDraft === '' && statuses.length > 0) {
-      setStatuses((current) => current.slice(0, -1))
     }
   }
 
@@ -371,60 +329,7 @@ export function CharacterFormModal({
             ) : null}
           </div>
 
-          <div className="field">
-            <span className="field__label">Статусы</span>
-
-            <div className="tags-field">
-              {statuses.length > 0 ? (
-                <div className="tags-field__chips">
-                  {statuses.map((status) => (
-                    <span key={status} className="tags-field__chip">
-                      {status}
-                      <button
-                        type="button"
-                        onClick={() => removeStatus(status)}
-                        aria-label={`Убрать статус ${status}`}
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              ) : null}
-
-              <input
-                className="input"
-                value={statusDraft}
-                maxLength={40}
-                placeholder={
-                  statuses.length >= MAX_STATUSES
-                    ? `Достигнут лимит: ${MAX_STATUSES}`
-                    : 'Введите статус и нажмите Enter'
-                }
-                disabled={statuses.length >= MAX_STATUSES}
-                onChange={(event) => setStatusDraft(event.target.value)}
-                onKeyDown={onStatusKeyDown}
-                onBlur={() => {
-                  if (statusDraft.trim()) addStatus(statusDraft)
-                }}
-              />
-            </div>
-
-            <div className="tags-field__suggestions">
-              {STATUS_SUGGESTIONS.filter((status) => !statuses.includes(status)).map(
-                (status) => (
-                  <button
-                    key={status}
-                    type="button"
-                    className="tags-field__suggestion"
-                    onClick={() => addStatus(status)}
-                  >
-                    + {status}
-                  </button>
-                )
-              )}
-            </div>
-          </div>
+          <StatusField value={statuses} onChange={setStatuses} />
 
           {error ? <p className="notice notice--error form-grid__full">{error}</p> : null}
         </div>

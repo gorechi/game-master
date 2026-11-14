@@ -6,6 +6,7 @@ import { createMonsterAbility } from '@shared/domain'
 import { errorMessage } from '@renderer/lib/api'
 import { Modal } from '../ui/Modal'
 import { Select } from '../ui/Select'
+import { StatusField } from '../ui/StatusField'
 import { IconPlus, IconTrash } from '../ui/icons'
 
 const SCORE_FIELDS = [
@@ -63,7 +64,10 @@ export interface MonsterFormValues {
   armorClass: number
   hitPoints: number
   abilities: MonsterAbility[]
+  statuses?: string[]
 }
+
+export type MonsterFormSubmission = MonsterInput & { statuses?: string[] }
 
 interface MonsterFormModalProps {
   open: boolean
@@ -76,8 +80,10 @@ interface MonsterFormModalProps {
   lockRealm?: boolean
   /** Для игровых экземпляров: HP может опуститься до нуля. */
   allowZeroHitPoints?: boolean
+  /** Показывать редактор статусов (уникальные существа и экземпляры в игре). */
+  showStatuses?: boolean
   onClose: () => void
-  onSubmit: (input: MonsterInput, realmId: string | null) => Promise<void> | void
+  onSubmit: (input: MonsterFormSubmission, realmId: string | null) => Promise<void> | void
 }
 
 export function MonsterFormModal({
@@ -88,6 +94,7 @@ export function MonsterFormModal({
   realms,
   lockRealm = false,
   allowZeroHitPoints = false,
+  showStatuses = false,
   onClose,
   onSubmit
 }: MonsterFormModalProps): JSX.Element {
@@ -99,6 +106,7 @@ export function MonsterFormModal({
   const [armorClass, setArmorClass] = useState('10')
   const [hitPoints, setHitPoints] = useState('10')
   const [abilities, setAbilities] = useState<AbilityDraft[]>([])
+  const [statuses, setStatuses] = useState<string[]>([])
   const [justAddedId, setJustAddedId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -131,6 +139,7 @@ export function MonsterFormModal({
         ? initial.abilities.map((ability) => ({ ...ability }))
         : [createMonsterAbility()]
     )
+    setStatuses(initial?.statuses ?? [])
     setJustAddedId(null)
     setError(null)
     setSaving(false)
@@ -182,7 +191,7 @@ export function MonsterFormModal({
       return
     }
 
-    const input: MonsterInput = {
+    const input: MonsterFormSubmission = {
       name: trimmedName,
       strength: clampNumber(parseIntOr(scores.strength, 0), -10, 10, 0),
       dexterity: clampNumber(parseIntOr(scores.dexterity, 0), -10, 10, 0),
@@ -197,7 +206,8 @@ export function MonsterFormModal({
         id: ability.id,
         name: ability.name.trim(),
         description: ability.description.trim()
-      }))
+      })),
+      ...(showStatuses ? { statuses } : {})
     }
 
     setSaving(true)
@@ -407,6 +417,8 @@ export function MonsterFormModal({
             </button>
           </div>
         </div>
+
+        {showStatuses ? <StatusField value={statuses} onChange={setStatuses} /> : null}
 
         {error ? <p className="notice notice--error">{error}</p> : null}
       </form>
