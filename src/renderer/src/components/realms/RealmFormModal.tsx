@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { FormEvent, JSX } from 'react'
 import type { Realm, RealmInput } from '@shared/realm'
+import { errorMessage } from '@renderer/lib/api'
 import { Modal } from '../ui/Modal'
 
 interface RealmFormModalProps {
@@ -52,7 +53,7 @@ export function RealmFormModal({
       await onSubmit({ name: trimmed, description })
       setSaving(false)
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Не удалось сохранить сеттинг')
+      setError(errorMessage(caught))
       setSaving(false)
     }
   }
