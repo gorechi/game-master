@@ -37,7 +37,7 @@ interface CombatModalProps {
 }
 
 const INITIATIVE_MIN = 1
-const INITIATIVE_MAX = 20
+const INITIATIVE_MAX = 99
 
 function parseInitiative(value: string): number | null {
   if (!value.trim()) return null
@@ -266,7 +266,7 @@ export function CombatModal({
     participants.length === 0
       ? 'Добавьте хотя бы одного участника и отметьте его участие.'
       : !allInitiativesFilled
-        ? 'Заполните инициативу от 1 до 20 у всех участников схватки.'
+        ? 'Заполните инициативу от 1 до 99 у всех участников схватки.'
         : !allCollisionsResolved
           ? 'Участники с одинаковой инициативой должны получить разные значения дополнительной инициативы.'
           : null
