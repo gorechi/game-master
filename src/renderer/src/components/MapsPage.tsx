@@ -11,18 +11,13 @@ import { MapFormModal } from './maps/MapFormModal'
 
 interface MapsPageProps {
   realms: readonly Realm[]
-  activeRealmId: string | null
   onOpenMap: (mapId: string) => void
 }
 
 type MapFormState = { mode: 'create' } | { mode: 'edit'; map: GameMap }
 
 /** Карты: пространства, в которых проходят игры. */
-export function MapsPage({
-  realms,
-  activeRealmId,
-  onOpenMap
-}: MapsPageProps): JSX.Element {
+export function MapsPage({ realms, onOpenMap }: MapsPageProps): JSX.Element {
   const [maps, setMaps] = useState<GameMap[] | null>(null)
   const [filter, setFilter] = useState('all')
   const [error, setError] = useState<string | null>(null)
@@ -104,15 +99,6 @@ export function MapsPage({
               onChange={setFilter}
             />
           </div>
-          {activeRealmId ? (
-            <button
-              type="button"
-              className="button button--ghost button--tiny"
-              onClick={() => setFilter(activeRealmId)}
-            >
-              Текущий сеттинг
-            </button>
-          ) : null}
         </div>
 
         {error ? <p className="notice notice--error">{error}</p> : null}

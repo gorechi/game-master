@@ -136,7 +136,6 @@ export default function App(): JSX.Element {
         {route.name === 'maps' ? (
           <MapsPage
             realms={realms}
-            activeRealmId={settings.activeRealmId}
             onOpenMap={(id) => setRoute({ name: 'map', id })}
           />
         ) : null}
