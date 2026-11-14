@@ -39,14 +39,12 @@ export const IPC = {
   monsterUpdate: 'monster:update',
   monsterRemove: 'monster:remove',
   mapsList: 'maps:list',
-  mapsListAll: 'maps:list-all',
   mapCreate: 'map:create',
   mapUpdate: 'map:update',
   mapRemove: 'map:remove',
   realmsList: 'realms:list',
   realmCreate: 'realm:create',
   realmUpdate: 'realm:update',
-  realmActivate: 'realm:activate',
   realmRemove: 'realm:remove',
   placeTypesList: 'place-types:list',
   placeTypeCreate: 'place-types:create',
@@ -73,7 +71,7 @@ export interface GameMasterApi {
   /** Игры — основная сущность приложения. */
   games: {
     list(): Promise<Game[]>
-    create(input: GameInput): Promise<Game>
+    create(input: GameInput, realmId: string): Promise<Game>
     update(game: Game): Promise<Game>
     /** Удаляет игру. Монстры не сохраняются: выбор делается при завершении игры. */
     remove(id: string): Promise<void>
@@ -85,7 +83,7 @@ export interface GameMasterApi {
   /** Уникальные игровые монстры: сохранённые из игр и созданные вручную. */
   gameMonsters: {
     list(): Promise<GameMonsterEntry[]>
-    create(input: GameMonsterInput): Promise<GameMonsterEntry>
+    create(input: GameMonsterInput, realmId: string): Promise<GameMonsterEntry>
     update(entry: GameMonsterEntry): Promise<GameMonsterEntry>
     remove(id: string): Promise<void>
   }
@@ -99,23 +97,21 @@ export interface GameMasterApi {
   /** Персонажи: у игрока их может быть несколько. */
   characters: {
     list(): Promise<CharacterProfile[]>
-    create(input: CharacterProfileInput): Promise<CharacterProfile>
+    create(input: CharacterProfileInput, realmId: string): Promise<CharacterProfile>
     update(profile: CharacterProfile): Promise<CharacterProfile>
     remove(id: string): Promise<void>
   }
   /** Бестиарий: монстры с характеристиками и способностями. */
   monsters: {
     list(): Promise<Monster[]>
-    create(input: MonsterInput): Promise<Monster>
+    create(input: MonsterInput, realmId: string): Promise<Monster>
     update(monster: Monster): Promise<Monster>
     remove(id: string): Promise<void>
   }
   /** Карты: пространства с местами и путями между ними. */
   maps: {
-    /** Карты активного сеттинга или указанного явно. */
+    /** Все карты или карты указанного сеттинга. */
     list(realmId?: string): Promise<GameMap[]>
-    /** Все карты всех сеттингов — для общего списка и фильтра. */
-    listAll(): Promise<GameMap[]>
     create(input: GameMapInput): Promise<GameMap>
     update(map: GameMap): Promise<GameMap>
     remove(id: string): Promise<void>
@@ -125,13 +121,12 @@ export interface GameMasterApi {
     list(): Promise<Realm[]>
     create(input: RealmInput): Promise<Realm>
     update(realm: Realm): Promise<Realm>
-    activate(id: string): Promise<Realm>
     remove(id: string): Promise<void>
   }
   /** Типы мест конкретного сеттинга: у каждого свой набор. */
   placeTypes: {
-    list(realmId?: string): Promise<PlaceType[]>
-    create(input: PlaceTypeInput, realmId?: string): Promise<PlaceType>
+    list(realmId: string): Promise<PlaceType[]>
+    create(input: PlaceTypeInput, realmId: string): Promise<PlaceType>
     update(placeType: PlaceType): Promise<PlaceType>
     remove(id: string): Promise<void>
   }

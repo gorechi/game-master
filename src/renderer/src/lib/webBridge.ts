@@ -296,18 +296,6 @@ function placeTypeIdsForRealm(realmId: string): Set<string> {
   )
 }
 
-function getActiveRealmId(): string {
-  const realms = readRealms()
-  const settings = readSettings()
-  const active = realms.find((realm) => realm.id === settings.activeRealmId)
-
-  if (active) return active.id
-
-  const fallback = realms[0]!
-  writeSettings({ ...settings, activeRealmId: fallback.id })
-  return fallback.id
-}
-
 function readSettings(): AppSettings {
   try {
     const raw = window.localStorage.getItem(SETTINGS_KEY)
@@ -316,9 +304,7 @@ function readSettings(): AppSettings {
       if (isThemeName(parsed.theme)) {
         return {
           schemaVersion: SETTINGS_SCHEMA_VERSION,
-          theme: parsed.theme,
-          activeRealmId:
-            typeof parsed.activeRealmId === 'string' ? parsed.activeRealmId : null
+          theme: parsed.theme
         }
       }
     }
@@ -348,13 +334,11 @@ export function createWebBridge(): GameMasterApi {
     },
 
     games: {
-      list: async (): Promise<Game[]> => {
-        const realmId = getActiveRealmId()
-        return readGames().filter((game) => game.realmId === realmId)
-      },
+      list: async (): Promise<Game[]> => readGames(),
 
-      create: async (input: GameInput): Promise<Game> => {
-        const game = createGame(input, getActiveRealmId())
+      create: async (input: GameInput, realmId: string): Promise<Game> => {
+        assertRealm(realmId)
+        const game = createGame(input, realmId)
         writeGames([...readGames(), game])
         return game
       },
@@ -466,13 +450,11 @@ export function createWebBridge(): GameMasterApi {
     },
 
     gameMonsters: {
-      list: async (): Promise<GameMonsterEntry[]> => {
-        const realmId = getActiveRealmId()
-        return readGameMonsters().filter((monster) => monster.realmId === realmId)
-      },
+      list: async (): Promise<GameMonsterEntry[]> => readGameMonsters(),
 
-      create: async (input: GameMonsterInput): Promise<GameMonsterEntry> => {
-        const entry = createGameMonsterEntry(input, getActiveRealmId())
+      create: async (input: GameMonsterInput, realmId: string): Promise<GameMonsterEntry> => {
+        assertRealm(realmId)
+        const entry = createGameMonsterEntry(input, realmId)
         writeGameMonsters([...readGameMonsters(), entry])
         return entry
       },
@@ -527,13 +509,14 @@ export function createWebBridge(): GameMasterApi {
     },
 
     characters: {
-      list: async (): Promise<CharacterProfile[]> => {
-        const realmId = getActiveRealmId()
-        return readCharacters().filter((character) => character.realmId === realmId)
-      },
+      list: async (): Promise<CharacterProfile[]> => readCharacters(),
 
-      create: async (input: CharacterProfileInput): Promise<CharacterProfile> => {
-        const character = createCharacterProfile(input, getActiveRealmId())
+      create: async (
+        input: CharacterProfileInput,
+        realmId: string
+      ): Promise<CharacterProfile> => {
+        assertRealm(realmId)
+        const character = createCharacterProfile(input, realmId)
         writeCharacters([...readCharacters(), character])
         return character
       },
@@ -557,13 +540,11 @@ export function createWebBridge(): GameMasterApi {
     },
 
     monsters: {
-      list: async (): Promise<Monster[]> => {
-        const realmId = getActiveRealmId()
-        return readMonsters().filter((monster) => monster.realmId === realmId)
-      },
+      list: async (): Promise<Monster[]> => readMonsters(),
 
-      create: async (input: MonsterInput): Promise<Monster> => {
-        const monster = createMonster(input, getActiveRealmId())
+      create: async (input: MonsterInput, realmId: string): Promise<Monster> => {
+        assertRealm(realmId)
+        const monster = createMonster(input, realmId)
         writeMonsters([...readMonsters(), monster])
         return monster
       },
@@ -588,11 +569,9 @@ export function createWebBridge(): GameMasterApi {
 
     maps: {
       list: async (realmId?: string): Promise<GameMap[]> => {
-        const id = realmId ?? getActiveRealmId()
-        return readMaps().filter((map) => map.realmId === id)
+        const maps = readMaps()
+        return realmId ? maps.filter((map) => map.realmId === realmId) : maps
       },
-
-      listAll: async (): Promise<GameMap[]> => readMaps(),
 
       create: async (input: GameMapInput): Promise<GameMap> => {
         assertRealm(input.realmId)
@@ -708,16 +687,6 @@ export function createWebBridge(): GameMasterApi {
         return updated
       },
 
-      activate: async (id: string): Promise<Realm> => {
-        const realm = readRealms().find((item) => item.id === id)
-        if (!realm) {
-          throw new Error('Сеттинг не найден — возможно, запись уже удалена')
-        }
-
-        writeSettings({ ...readSettings(), activeRealmId: realm.id })
-        return realm
-      },
-
       remove: async (id: string): Promise<void> => {
         const realms = readRealms()
         if (realms.length <= 1) {
@@ -738,24 +707,18 @@ export function createWebBridge(): GameMasterApi {
           )
         }
 
-        const remaining = realms.filter((realm) => realm.id !== id)
-        writeRealms(remaining)
-
-        if (readSettings().activeRealmId === id) {
-          writeSettings({ ...readSettings(), activeRealmId: remaining[0]!.id })
-        }
+        writeRealms(realms.filter((realm) => realm.id !== id))
       }
     },
 
     placeTypes: {
-      list: async (realmId?: string): Promise<PlaceType[]> => {
-        const id = realmId ?? getActiveRealmId()
-        return readPlaceTypes().filter((placeType) => placeType.realmId === id)
-      },
+      list: async (realmId: string): Promise<PlaceType[]> =>
+        readPlaceTypes().filter((placeType) => placeType.realmId === realmId),
 
-      create: async (input: PlaceTypeInput, realmId?: string): Promise<PlaceType> => {
+      create: async (input: PlaceTypeInput, realmId: string): Promise<PlaceType> => {
+        assertRealm(realmId)
         assertPlaceTypeIcon(input.iconSvg)
-        const placeType = createPlaceType(input, realmId ?? getActiveRealmId())
+        const placeType = createPlaceType(input, realmId)
         writePlaceTypes([...readPlaceTypes(), placeType])
         return placeType
       },
@@ -792,10 +755,7 @@ export function createWebBridge(): GameMasterApi {
       update: async (patch: SettingsPatch): Promise<AppSettings> => {
         const next: AppSettings = {
           ...readSettings(),
-          ...(patch.theme ? { theme: patch.theme } : {}),
-          ...('activeRealmId' in patch
-            ? { activeRealmId: patch.activeRealmId ?? null }
-            : {})
+          ...(patch.theme ? { theme: patch.theme } : {})
         }
 
         writeSettings(next)

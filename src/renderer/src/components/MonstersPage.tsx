@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { JSX } from 'react'
 import type { Monster } from '@shared/monster'
+import type { Realm } from '@shared/realm'
 import { api, errorMessage } from '@renderer/lib/api'
 import { pluralize } from '@renderer/lib/format'
 import { ConfirmDialog } from './ui/ConfirmDialog'
@@ -9,11 +10,13 @@ import { MonsterCard } from './monsters/MonsterCard'
 import { MonsterFormModal } from './monsters/MonsterFormModal'
 
 /** Бестиарий: монстры, которых можно использовать в игре. */
-export function MonstersPage(): JSX.Element {
+export function MonstersPage({ realms }: { realms: readonly Realm[] }): JSX.Element {
   const [monsters, setMonsters] = useState<Monster[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState<Monster | 'new' | null>(null)
   const [deleting, setDeleting] = useState<Monster | null>(null)
+
+  const realmNames = new Map(realms.map((realm) => [realm.id, realm.name]))
 
   const refresh = useCallback(async (): Promise<void> => {
     try {
@@ -79,6 +82,7 @@ export function MonstersPage(): JSX.Element {
                 <MonsterCard
                   key={monster.id}
                   monster={monster}
+                  realmName={realmNames.get(monster.realmId) ?? 'Без сеттинга'}
                   onEdit={() => setEditing(monster)}
                   onDelete={() => setDeleting(monster)}
                 />
@@ -93,10 +97,13 @@ export function MonstersPage(): JSX.Element {
         title={editing === 'new' ? 'Новый монстр' : 'Редактировать монстра'}
         description="Характеристики, классы и способности. Способности можно добавлять и удалять."
         initial={editing === 'new' ? null : editing}
+        realms={realms}
+        lockRealm={editing !== 'new'}
         onClose={() => setEditing(null)}
-        onSubmit={async (input) => {
+        onSubmit={async (input, realmId) => {
           if (editing === 'new') {
-            await api.monsters.create(input)
+            if (!realmId) throw new Error('Выберите сеттинг монстра')
+            await api.monsters.create(input, realmId)
           } else if (editing) {
             await api.monsters.update({ ...editing, ...input })
           }

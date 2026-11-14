@@ -1,9 +1,11 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { FormEvent, JSX } from 'react'
 import type { MonsterAbility, MonsterInput } from '@shared/monster'
+import type { Realm } from '@shared/realm'
 import { createMonsterAbility } from '@shared/domain'
 import { errorMessage } from '@renderer/lib/api'
 import { Modal } from '../ui/Modal'
+import { Select } from '../ui/Select'
 import { IconPlus, IconTrash } from '../ui/icons'
 
 const SCORE_FIELDS = [
@@ -49,6 +51,7 @@ function parseFloatOr(value: string, fallback: number): number {
 }
 
 export interface MonsterFormValues {
+  realmId?: string
   name: string
   strength: number
   dexterity: number
@@ -67,8 +70,12 @@ interface MonsterFormModalProps {
   title: string
   description?: string
   initial: MonsterFormValues | null
+  /** Если задано, в форме появляется выбор сеттинга. */
+  realms?: readonly Realm[]
+  /** Сеттинг уже известен (редактирование или наследство) — выбор заблокирован. */
+  lockRealm?: boolean
   onClose: () => void
-  onSubmit: (input: MonsterInput) => Promise<void> | void
+  onSubmit: (input: MonsterInput, realmId: string | null) => Promise<void> | void
 }
 
 export function MonsterFormModal({
@@ -76,10 +83,13 @@ export function MonsterFormModal({
   title,
   description,
   initial,
+  realms,
+  lockRealm = false,
   onClose,
   onSubmit
 }: MonsterFormModalProps): JSX.Element {
   const [name, setName] = useState('')
+  const [realmId, setRealmId] = useState('')
   const [scores, setScores] = useState<ScoreDraft>(EMPTY_SCORES)
   const [challengeRating, setChallengeRating] = useState('1')
   const [armorClass, setArmorClass] = useState('10')
@@ -96,6 +106,7 @@ export function MonsterFormModal({
     if (!open) return
 
     setName(initial?.name ?? '')
+    setRealmId(initial?.realmId ?? '')
     setScores(
       initial
         ? {
@@ -162,6 +173,11 @@ export function MonsterFormModal({
       return
     }
 
+    if (realms && !realmId) {
+      setError('Выберите сеттинг монстра')
+      return
+    }
+
     const input: MonsterInput = {
       name: trimmedName,
       strength: clampNumber(parseIntOr(scores.strength, 0), -10, 10, 0),
@@ -184,7 +200,7 @@ export function MonsterFormModal({
     setError(null)
 
     try {
-      await onSubmit(input)
+      await onSubmit(input, realms ? realmId || null : null)
     } catch (caught) {
       setError(errorMessage(caught))
     } finally {
@@ -205,7 +221,12 @@ export function MonsterFormModal({
           <button type="button" className="button" onClick={onClose} disabled={saving}>
             Отмена
           </button>
-          <button type="submit" form={formId} className="button button--primary" disabled={saving}>
+          <button
+            type="submit"
+            form={formId}
+            className="button button--primary"
+            disabled={saving || (Boolean(realms) && !realmId)}
+          >
             {saving ? 'Сохраняем…' : 'Сохранить'}
           </button>
         </>
@@ -217,6 +238,25 @@ export function MonsterFormModal({
         noValidate
         onSubmit={(event) => void submit(event)}
       >
+        {realms && realms.length > 0 ? (
+          <div className="field">
+            <span className="field__label">Сеттинг *</span>
+            <Select
+              ariaLabel="Сеттинг монстра"
+              value={realmId}
+              placeholder="Выберите сеттинг"
+              disabled={lockRealm}
+              options={realms.map((realm) => ({ value: realm.id, label: realm.name }))}
+              onChange={setRealmId}
+            />
+            <span className="game-editor__hint">
+              {lockRealm
+                ? 'Сеттинг задаётся при создании и не меняется.'
+                : 'Монстр будет доступен в играх и бестиарии этого сеттинга.'}
+            </span>
+          </div>
+        ) : null}
+
         <label className="field">
           <span className="field__label">Название</span>
           <input

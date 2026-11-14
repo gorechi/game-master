@@ -9,7 +9,7 @@ const api: GameMasterApi = {
   },
   games: {
     list: () => ipcRenderer.invoke(IPC.gamesList),
-    create: (input) => ipcRenderer.invoke(IPC.gameCreate, input),
+    create: (input, realmId) => ipcRenderer.invoke(IPC.gameCreate, input, realmId),
     update: (game) => ipcRenderer.invoke(IPC.gameUpdate, game),
     remove: (id) => ipcRenderer.invoke(IPC.gameRemove, id),
     finish: (id, keepMonsterIds) => ipcRenderer.invoke(IPC.gameFinish, id, keepMonsterIds),
@@ -17,7 +17,7 @@ const api: GameMasterApi = {
   },
   gameMonsters: {
     list: () => ipcRenderer.invoke(IPC.gameMonstersList),
-    create: (input) => ipcRenderer.invoke(IPC.gameMonsterCreate, input),
+    create: (input, realmId) => ipcRenderer.invoke(IPC.gameMonsterCreate, input, realmId),
     update: (entry) => ipcRenderer.invoke(IPC.gameMonsterUpdate, entry),
     remove: (id) => ipcRenderer.invoke(IPC.gameMonsterRemove, id)
   },
@@ -29,19 +29,18 @@ const api: GameMasterApi = {
   },
   characters: {
     list: () => ipcRenderer.invoke(IPC.charactersList),
-    create: (input) => ipcRenderer.invoke(IPC.characterCreate, input),
+    create: (input, realmId) => ipcRenderer.invoke(IPC.characterCreate, input, realmId),
     update: (profile) => ipcRenderer.invoke(IPC.characterUpdate, profile),
     remove: (id) => ipcRenderer.invoke(IPC.characterRemove, id)
   },
   monsters: {
     list: () => ipcRenderer.invoke(IPC.monstersList),
-    create: (input) => ipcRenderer.invoke(IPC.monsterCreate, input),
+    create: (input, realmId) => ipcRenderer.invoke(IPC.monsterCreate, input, realmId),
     update: (monster) => ipcRenderer.invoke(IPC.monsterUpdate, monster),
     remove: (id) => ipcRenderer.invoke(IPC.monsterRemove, id)
   },
   maps: {
     list: (realmId) => ipcRenderer.invoke(IPC.mapsList, realmId),
-    listAll: () => ipcRenderer.invoke(IPC.mapsListAll),
     create: (input) => ipcRenderer.invoke(IPC.mapCreate, input),
     update: (map) => ipcRenderer.invoke(IPC.mapUpdate, map),
     remove: (id) => ipcRenderer.invoke(IPC.mapRemove, id)
@@ -50,7 +49,6 @@ const api: GameMasterApi = {
     list: () => ipcRenderer.invoke(IPC.realmsList),
     create: (input) => ipcRenderer.invoke(IPC.realmCreate, input),
     update: (realm) => ipcRenderer.invoke(IPC.realmUpdate, realm),
-    activate: (id) => ipcRenderer.invoke(IPC.realmActivate, id),
     remove: (id) => ipcRenderer.invoke(IPC.realmRemove, id)
   },
   placeTypes: {

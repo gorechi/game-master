@@ -26,19 +26,19 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
   useEffect(() => {
     let cancelled = false
 
-    void Promise.all([api.games.list(), api.maps.list()])
-      .then(([games, nextMaps]) => {
-        if (cancelled) return
+    void (async () => {
+      const games = await api.games.list()
+      const loaded = games.find((item) => item.id === gameId) ?? null
+      const nextMaps = loaded ? await api.maps.list(loaded.realmId) : []
 
-        const loaded = games.find((item) => item.id === gameId) ?? null
-        setGame(loaded)
-        setMaps(nextMaps)
-        setNotes(loaded?.notes ?? '')
-      })
-      .catch((caught: unknown) => {
-        if (cancelled) return
-        setError(errorMessage(caught))
-      })
+      if (cancelled) return
+
+      setGame(loaded)
+      setMaps(nextMaps)
+      setNotes(loaded?.notes ?? '')
+    })().catch((caught: unknown) => {
+      if (!cancelled) setError(errorMessage(caught))
+    })
 
     return () => {
       cancelled = true

@@ -10,7 +10,7 @@ import { PlaceTypeIcon } from './PlaceTypeIcon'
 interface PlaceTypeFormModalProps {
   open: boolean
   placeType: PlaceType | null
-  /** Типы активного сеттинга: их иконки можно выбрать повторно. */
+  /** Типы сеттинга, к которому относится создаваемое место. */
   existingTypes: readonly PlaceType[]
   onClose: () => void
   onSubmit: (input: PlaceTypeInput) => Promise<void>

@@ -35,9 +35,7 @@ import {
   updateGameMonster
 } from './storage/gameMonsterStore'
 import {
-  activateRealm,
   addRealm,
-  getActiveRealmId,
   listRealms,
   removeRealm,
   updateRealm
@@ -55,11 +53,6 @@ function assertId(value: unknown): string {
     throw new Error('Некорректный идентификатор')
   }
   return value
-}
-
-/** Типы мест можно смотреть и создавать для любого сеттинга, не только активного. */
-async function resolveRealmId(value: unknown): Promise<string> {
-  return typeof value === 'string' && value.length > 0 ? assertId(value) : getActiveRealmId()
 }
 
 async function assertRealmExists(realmId: string): Promise<void> {
@@ -128,11 +121,14 @@ export function registerIpcHandlers(): void {
     if (error) throw new Error(`Не удалось открыть папку: ${error}`)
   })
 
-  ipcMain.handle(IPC.gamesList, async () => listGames(await getActiveRealmId()))
+  ipcMain.handle(IPC.gamesList, () => listGames())
 
-  ipcMain.handle(IPC.gameCreate, async (_event, input: unknown) =>
-    addGame(gameInputSchema.parse(input), await getActiveRealmId())
-  )
+  ipcMain.handle(IPC.gameCreate, async (_event, input: unknown, realmId: unknown) => {
+    const parsed = gameInputSchema.parse(input)
+    const targetRealm = assertId(realmId)
+    await assertRealmExists(targetRealm)
+    return addGame(parsed, targetRealm)
+  })
 
   ipcMain.handle(IPC.gameUpdate, (_event, input: unknown) => updateGame(gameSchema.parse(input)))
 
@@ -151,11 +147,14 @@ export function registerIpcHandlers(): void {
     return setGameStatus(assertId(id), status)
   })
 
-  ipcMain.handle(IPC.gameMonstersList, async () => listGameMonsters(await getActiveRealmId()))
+  ipcMain.handle(IPC.gameMonstersList, () => listGameMonsters())
 
-  ipcMain.handle(IPC.gameMonsterCreate, async (_event, input: unknown) =>
-    addGameMonster(gameMonsterInputSchema.parse(input), await getActiveRealmId())
-  )
+  ipcMain.handle(IPC.gameMonsterCreate, async (_event, input: unknown, realmId: unknown) => {
+    const parsed = gameMonsterInputSchema.parse(input)
+    const targetRealm = assertId(realmId)
+    await assertRealmExists(targetRealm)
+    return addGameMonster(parsed, targetRealm)
+  })
 
   ipcMain.handle(IPC.gameMonsterUpdate, (_event, input: unknown) =>
     updateGameMonster(gameMonsterEntrySchema.parse(input))
@@ -178,11 +177,14 @@ export function registerIpcHandlers(): void {
     removePlayer(assertId(id))
   )
 
-  ipcMain.handle(IPC.charactersList, async () => listCharacters(await getActiveRealmId()))
+  ipcMain.handle(IPC.charactersList, () => listCharacters())
 
-  ipcMain.handle(IPC.characterCreate, async (_event, input: unknown) =>
-    addCharacter(characterProfileInputSchema.parse(input), await getActiveRealmId())
-  )
+  ipcMain.handle(IPC.characterCreate, async (_event, input: unknown, realmId: unknown) => {
+    const parsed = characterProfileInputSchema.parse(input)
+    const targetRealm = assertId(realmId)
+    await assertRealmExists(targetRealm)
+    return addCharacter(parsed, targetRealm)
+  })
 
   ipcMain.handle(IPC.characterUpdate, (_event, input: unknown) =>
     updateCharacter(characterProfileSchema.parse(input))
@@ -192,11 +194,14 @@ export function registerIpcHandlers(): void {
     removeCharacter(assertId(id))
   )
 
-  ipcMain.handle(IPC.monstersList, async () => listMonsters(await getActiveRealmId()))
+  ipcMain.handle(IPC.monstersList, () => listMonsters())
 
-  ipcMain.handle(IPC.monsterCreate, async (_event, input: unknown) =>
-    addMonster(monsterInputSchema.parse(input), await getActiveRealmId())
-  )
+  ipcMain.handle(IPC.monsterCreate, async (_event, input: unknown, realmId: unknown) => {
+    const parsed = monsterInputSchema.parse(input)
+    const targetRealm = assertId(realmId)
+    await assertRealmExists(targetRealm)
+    return addMonster(parsed, targetRealm)
+  })
 
   ipcMain.handle(IPC.monsterUpdate, (_event, input: unknown) =>
     updateMonster(monsterSchema.parse(input))
@@ -206,11 +211,9 @@ export function registerIpcHandlers(): void {
     removeMonster(assertId(id))
   )
 
-  ipcMain.handle(IPC.mapsList, async (_event, realmId: unknown) =>
-    listMaps(await resolveRealmId(realmId))
+  ipcMain.handle(IPC.mapsList, (_event, realmId: unknown) =>
+    realmId === undefined || realmId === null ? listMaps() : listMaps(assertId(realmId))
   )
-
-  ipcMain.handle(IPC.mapsListAll, () => listMaps())
 
   ipcMain.handle(IPC.mapCreate, async (_event, input: unknown) => {
     const parsed = gameMapInputSchema.parse(input)
@@ -240,17 +243,15 @@ export function registerIpcHandlers(): void {
     updateRealm(realmSchema.parse(input))
   )
 
-  ipcMain.handle(IPC.realmActivate, (_event, id: unknown) =>
-    activateRealm(assertId(id))
+  ipcMain.handle(IPC.placeTypesList, (_event, realmId: unknown) =>
+    listPlaceTypes(assertId(realmId))
   )
 
-  ipcMain.handle(IPC.placeTypesList, async (_event, realmId: unknown) =>
-    listPlaceTypes(await resolveRealmId(realmId))
-  )
-
-  ipcMain.handle(IPC.placeTypeCreate, async (_event, input: unknown, realmId: unknown) =>
-    addPlaceType(placeTypeInputSchema.parse(input), await resolveRealmId(realmId))
-  )
+  ipcMain.handle(IPC.placeTypeCreate, async (_event, input: unknown, realmId: unknown) => {
+    const targetRealm = assertId(realmId)
+    await assertRealmExists(targetRealm)
+    return addPlaceType(placeTypeInputSchema.parse(input), targetRealm)
+  })
 
   ipcMain.handle(IPC.placeTypeUpdate, (_event, input: unknown) =>
     updatePlaceType(placeTypeSchema.parse(input))

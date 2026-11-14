@@ -4,18 +4,11 @@ import { PlaceTypesSection } from './placeTypes/PlaceTypesSection'
 
 interface RealmDetailPageProps {
   realm: Realm | null
-  active: boolean
-  onActivate: () => void
   onBack: () => void
 }
 
 /** Экран одного сеттинга: его описание и собственный набор типов мест. */
-export function RealmDetailPage({
-  realm,
-  active,
-  onActivate,
-  onBack
-}: RealmDetailPageProps): JSX.Element {
+export function RealmDetailPage({ realm, onBack }: RealmDetailPageProps): JSX.Element {
   return (
     <main className="page">
       <div className="page__inner">
@@ -37,12 +30,6 @@ export function RealmDetailPage({
                 <h1>{realm.name}</h1>
                 <p className="muted">{realm.description || 'Без описания'}</p>
               </div>
-
-              {!active ? (
-                <button className="button" onClick={onActivate}>
-                  Выбрать сеттинг
-                </button>
-              ) : null}
             </header>
           )}
         </div>

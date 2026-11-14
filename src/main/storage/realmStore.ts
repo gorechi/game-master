@@ -10,7 +10,6 @@ import {
   type RealmsFile
 } from '@shared/realm'
 import { JsonFileError, readJsonFile, withFileLock, writeJsonAtomic } from './jsonFile'
-import { getSettings, updateSettings } from './settingsStore'
 
 const LOCK_KEY = 'realms.json'
 
@@ -77,19 +76,6 @@ export async function listRealms(): Promise<Realm[]> {
   return (await readRealmsFile()).realms
 }
 
-/** Возвращает активный сеттинг, выбирая первый, если сохранённый недоступен. */
-export async function getActiveRealmId(): Promise<string> {
-  const realms = await listRealms()
-  const settings = await getSettings()
-  const active = realms.find((realm) => realm.id === settings.activeRealmId)
-
-  if (active) return active.id
-
-  const fallback = realms[0]!
-  await updateSettings({ activeRealmId: fallback.id })
-  return fallback.id
-}
-
 export async function addRealm(input: RealmInput): Promise<Realm> {
   const normalized = assertRealmInput(input)
 
@@ -141,22 +127,4 @@ export async function removeRealm(id: string): Promise<void> {
 
     await writeRealms({ ...file, realms })
   })
-
-  const settings = await getSettings()
-  if (settings.activeRealmId === id) {
-    const realms = await listRealms()
-    await updateSettings({ activeRealmId: realms[0]!.id })
-  }
-}
-
-export async function activateRealm(id: string): Promise<Realm> {
-  const realms = await listRealms()
-  const realm = realms.find((item) => item.id === id)
-
-  if (!realm) {
-    throw new Error('Сеттинг не найден — возможно, запись уже удалена')
-  }
-
-  await updateSettings({ activeRealmId: realm.id })
-  return realm
 }

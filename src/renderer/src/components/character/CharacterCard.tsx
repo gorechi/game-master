@@ -7,6 +7,8 @@ import { IconPencil, IconTrash } from '../ui/icons'
 interface CharacterCardProps {
   profile: CharacterProfile
   player: Player | undefined
+  /** Название сеттинга — карточки из разных миров не смешиваются визуально. */
+  realmName?: string
   onEdit: () => void
   onDelete: () => void
   /** Переход на экран игрока; на самом экране игрока не нужен. */
@@ -17,6 +19,7 @@ interface CharacterCardProps {
 export function CharacterCard({
   profile,
   player,
+  realmName,
   onEdit,
   onDelete,
   onOpenPlayer
@@ -45,6 +48,10 @@ export function CharacterCard({
         </div>
 
         <dl className="hero-card__facts">
+          <div>
+            <dt>Сеттинг</dt>
+            <dd>{realmName || '—'}</dd>
+          </div>
           <div>
             <dt>Раса</dt>
             <dd>{profile.race || '—'}</dd>

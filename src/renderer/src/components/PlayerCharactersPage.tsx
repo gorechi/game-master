@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { JSX } from 'react'
 import type { Player } from '@shared/player'
 import type { CharacterProfile } from '@shared/characterProfile'
+import type { Realm } from '@shared/realm'
 import { playerFullName, playerInitials } from '@shared/domain'
 import { api, errorMessage } from '@renderer/lib/api'
 import { formatDate, pluralize } from '@renderer/lib/format'
@@ -12,6 +13,7 @@ import { IconPlus } from './ui/icons'
 
 interface PlayerCharactersPageProps {
   playerId: string
+  realms: readonly Realm[]
   /** Откуда пришли — от этого зависит подпись кнопки «назад». */
   backLabel: string
   onBack: () => void
@@ -20,6 +22,7 @@ interface PlayerCharactersPageProps {
 /** Все персонажи выбранного игрока. */
 export function PlayerCharactersPage({
   playerId,
+  realms,
   backLabel,
   onBack
 }: PlayerCharactersPageProps): JSX.Element {
@@ -28,6 +31,8 @@ export function PlayerCharactersPage({
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState<CharacterProfile | 'new' | null>(null)
   const [deleting, setDeleting] = useState<CharacterProfile | null>(null)
+
+  const realmNames = new Map(realms.map((realm) => [realm.id, realm.name]))
 
   const refresh = useCallback(async (): Promise<void> => {
     try {
@@ -128,6 +133,7 @@ export function PlayerCharactersPage({
               <CharacterCard
                 key={character.id}
                 profile={character}
+                realmName={realmNames.get(character.realmId) ?? 'Без сеттинга'}
                 player={player ?? undefined}
                 onEdit={() => setEditing(character)}
                 onDelete={() => setDeleting(character)}
@@ -141,6 +147,7 @@ export function PlayerCharactersPage({
         open={editing !== null}
         profile={editing === 'new' ? null : editing}
         players={player ? [player] : []}
+        realms={realms}
         defaultPlayerId={player?.id}
         lockPlayer
         onClose={() => setEditing(null)}

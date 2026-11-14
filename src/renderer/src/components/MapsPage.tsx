@@ -26,7 +26,7 @@ export function MapsPage({ realms, onOpenMap }: MapsPageProps): JSX.Element {
 
   const refresh = useCallback(async (): Promise<void> => {
     try {
-      setMaps(await api.maps.listAll())
+      setMaps(await api.maps.list())
       setError(null)
     } catch (caught) {
       setError(errorMessage(caught))

@@ -8,8 +8,6 @@ import { RealmFormModal } from './realms/RealmFormModal'
 
 interface RealmsPageProps {
   realms: readonly Realm[]
-  activeRealmId: string | null
-  onActivate: (realmId: string) => void
   onOpenRealm: (realmId: string) => void
   onChanged: () => void
 }
@@ -19,8 +17,6 @@ type RealmFormState = { mode: 'create' } | { mode: 'edit'; realm: Realm }
 /** Сеттинги: верхнеуровневые миры, между которыми разделены данные приложения. */
 export function RealmsPage({
   realms,
-  activeRealmId,
-  onActivate,
   onOpenRealm,
   onChanged
 }: RealmsPageProps): JSX.Element {
@@ -60,8 +56,8 @@ export function RealmsPage({
           <div>
             <h1>Сеттинги</h1>
             <p className="muted">
-              Миры, между которыми разделены игры, персонажи, монстры и карты. Сеттинг
-              выбирается в меню слева.
+              Миры, между которыми разделены игры, персонажи, монстры, карты и типы мест.
+              Откройте сеттинг, чтобы настроить его собственный набор типов мест.
             </p>
           </div>
           <button className="button button--primary" onClick={() => setForm({ mode: 'create' })}>
@@ -74,11 +70,10 @@ export function RealmsPage({
 
         <ul className="realm-list">
           {realms.map((realm) => {
-            const active = realm.id === activeRealmId
             const canDelete = realms.length > 1
 
             return (
-              <li className={`realm-card${active ? ' realm-card--active' : ''}`} key={realm.id}>
+              <li className="realm-card" key={realm.id}>
                 <span className="realm-card__sigil" aria-hidden="true">
                   <IconGlobe width={22} height={22} />
                 </span>
@@ -100,15 +95,6 @@ export function RealmsPage({
                   >
                     Открыть
                   </button>
-                  {!active ? (
-                    <button
-                      type="button"
-                      className="button button--tiny"
-                      onClick={() => onActivate(realm.id)}
-                    >
-                      Выбрать
-                    </button>
-                  ) : null}
                   <button
                     type="button"
                     className="icon-button"

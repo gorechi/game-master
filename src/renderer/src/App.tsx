@@ -31,18 +31,9 @@ export default function App(): JSX.Element {
       .then(([loaded, loadedRealms]) => {
         if (cancelled) return
 
-        const active =
-          loadedRealms.find((realm) => realm.id === loaded.activeRealmId) ??
-          loadedRealms[0] ??
-          null
-
-        setSettings({ ...loaded, activeRealmId: active?.id ?? null })
+        setSettings(loaded)
         setRealms(loadedRealms)
         applyTheme(loaded.theme)
-
-        if (active && active.id !== loaded.activeRealmId) {
-          void api.realms.activate(active.id)
-        }
       })
       .catch(() => {
         // Настройки недоступны — остаёмся на теме из кэша.
@@ -60,24 +51,9 @@ export default function App(): JSX.Element {
     void api.settings.update({ theme }).catch(() => undefined)
   }, [])
 
-  const changeRealm = useCallback((realmId: string): void => {
-    setSettings((previous) => ({ ...previous, activeRealmId: realmId }))
-    void api.realms.activate(realmId)
-    setRoute((current) => (current.name === 'realms' ? current : { name: 'games' }))
-  }, [])
-
   const refreshRealms = useCallback(async (): Promise<void> => {
     try {
-      const loaded = await api.realms.list()
-      setRealms(loaded)
-      setSettings((previous) => {
-        const active =
-          loaded.find((realm) => realm.id === previous.activeRealmId) ?? loaded[0] ?? null
-
-        if (!active) return { ...previous, activeRealmId: null }
-        if (active.id !== previous.activeRealmId) void api.realms.activate(active.id)
-        return { ...previous, activeRealmId: active.id }
-      })
+      setRealms(await api.realms.list())
     } catch {
       // Страница сеттингов покажет ошибку сама.
     }
@@ -85,19 +61,14 @@ export default function App(): JSX.Element {
 
   return (
     <div className={`app${route.name === 'game' ? ' app--full' : ''}`}>
-      {route.name !== 'game' ? (
-        <Sidebar
-          route={route}
-          onNavigate={setRoute}
-          realms={realms}
-          activeRealmId={settings.activeRealmId}
-          onRealmChange={changeRealm}
-        />
-      ) : null}
+      {route.name !== 'game' ? <Sidebar route={route} onNavigate={setRoute} /> : null}
 
-      <div className="app__content" key={settings.activeRealmId ?? 'loading'}>
+      <div className="app__content">
         {route.name === 'games' ? (
-          <GamesPage onOpenGame={(id) => setRoute({ name: 'game', id })} />
+          <GamesPage
+            realms={realms}
+            onOpenGame={(id) => setRoute({ name: 'game', id })}
+          />
         ) : null}
 
         {route.name === 'game' ? (
@@ -113,6 +84,7 @@ export default function App(): JSX.Element {
         {route.name === 'player' ? (
           <PlayerCharactersPage
             playerId={route.id}
+            realms={realms}
             backLabel={route.from === 'characters' ? 'Персонажи' : 'Игроки'}
             onBack={() =>
               setRoute(
@@ -124,14 +96,15 @@ export default function App(): JSX.Element {
 
         {route.name === 'characters' ? (
           <CharactersPage
+            realms={realms}
             onOpenPlayers={() => setRoute({ name: 'players' })}
             onOpenPlayer={(id) => setRoute({ name: 'player', id, from: 'characters' })}
           />
         ) : null}
 
-        {route.name === 'monsters' ? <MonstersPage /> : null}
+        {route.name === 'monsters' ? <MonstersPage realms={realms} /> : null}
 
-        {route.name === 'savedMonsters' ? <SavedMonstersPage /> : null}
+        {route.name === 'savedMonsters' ? <SavedMonstersPage realms={realms} /> : null}
 
         {route.name === 'maps' ? (
           <MapsPage
@@ -152,8 +125,6 @@ export default function App(): JSX.Element {
         {route.name === 'realms' ? (
           <RealmsPage
             realms={realms}
-            activeRealmId={settings.activeRealmId}
-            onActivate={changeRealm}
             onOpenRealm={(id) => setRoute({ name: 'realm', id })}
             onChanged={() => void refreshRealms()}
           />
@@ -162,8 +133,6 @@ export default function App(): JSX.Element {
         {route.name === 'realm' ? (
           <RealmDetailPage
             realm={realms.find((realm) => realm.id === route.id) ?? null}
-            active={settings.activeRealmId === route.id}
-            onActivate={() => changeRealm(route.id)}
             onBack={() => setRoute({ name: 'realms' })}
           />
         ) : null}

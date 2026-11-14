@@ -14,8 +14,7 @@ const LOCK_KEY = 'settings.json'
 
 const settingsFileSchema = z.object({
   schemaVersion: z.number().int().min(1),
-  theme: z.enum(THEMES),
-  activeRealmId: z.string().min(1).nullable().default(null)
+  theme: z.enum(THEMES)
 })
 
 export function settingsFile(): string {
@@ -45,8 +44,7 @@ export async function updateSettings(patch: SettingsPatch): Promise<AppSettings>
     const current = await getSettings()
     const next: AppSettings = {
       ...current,
-      ...(patch.theme ? { theme: patch.theme } : {}),
-      ...('activeRealmId' in patch ? { activeRealmId: patch.activeRealmId ?? null } : {})
+      ...(patch.theme ? { theme: patch.theme } : {})
     }
 
     await writeJsonAtomic(settingsFile(), next)

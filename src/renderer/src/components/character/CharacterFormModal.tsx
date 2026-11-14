@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import type { DragEvent, FormEvent, JSX, KeyboardEvent } from 'react'
 import type { Player } from '@shared/player'
 import type { CharacterProfile, CharacterProfileInput } from '@shared/characterProfile'
+import type { Realm } from '@shared/realm'
 import { clampCharacterLevel, playerFullName } from '@shared/domain'
 import { api, errorMessage } from '@renderer/lib/api'
 import { prepareCharacterImage } from '@renderer/lib/image'
@@ -26,6 +27,8 @@ interface CharacterFormModalProps {
   open: boolean
   profile: CharacterProfile | null
   players: Player[]
+  /** Сеттинги, из которых выбирается мир персонажа при создании. */
+  realms: readonly Realm[]
   /** Игрок, за которым закрепляем нового персонажа (например, на экране игрока). */
   defaultPlayerId?: string
   /** Если задано, поле игрока показывается только для чтения. */
@@ -38,12 +41,14 @@ export function CharacterFormModal({
   open,
   profile,
   players,
+  realms,
   defaultPlayerId,
   lockPlayer = false,
   onClose,
   onSaved
 }: CharacterFormModalProps): JSX.Element {
   const [name, setName] = useState('')
+  const [realmId, setRealmId] = useState('')
   const [className, setClassName] = useState('')
   const [level, setLevel] = useState('1')
   const [race, setRace] = useState('')
@@ -65,6 +70,7 @@ export function CharacterFormModal({
     if (!open) return
 
     setName(profile?.name ?? '')
+    setRealmId(profile?.realmId ?? '')
     setClassName(profile?.className ?? '')
     setLevel(String(profile?.level ?? 1))
     setRace(profile?.race ?? '')
@@ -133,6 +139,10 @@ export function CharacterFormModal({
       setError('Выберите игрока — персонаж должен за кем-то числиться')
       return
     }
+    if (!profile && !realmId) {
+      setError('Выберите сеттинг персонажа')
+      return
+    }
 
     const input: CharacterProfileInput = {
       playerId,
@@ -150,7 +160,7 @@ export function CharacterFormModal({
     try {
       const saved = profile
         ? await api.characters.update({ ...profile, ...input })
-        : await api.characters.create(input)
+        : await api.characters.create(input, realmId)
       onSaved(saved)
     } catch (caught) {
       setError(errorMessage(caught))
@@ -167,7 +177,8 @@ export function CharacterFormModal({
   }
 
   const playerIsKnown = players.some((player) => player.id === playerId)
-  const canSave = Boolean(name.trim()) && playerIsKnown && !saving && !processingImage
+  const canSave =
+    Boolean(name.trim()) && playerIsKnown && Boolean(realmId) && !saving && !processingImage
   const orphanPlayer = Boolean(playerId) && !playerIsKnown
   const lockedPlayer = players.find((player) => player.id === playerId)
 
@@ -277,6 +288,23 @@ export function CharacterFormModal({
               onChange={(event) => setName(event.target.value)}
             />
           </label>
+
+          <div className="field">
+            <span className="field__label">Сеттинг *</span>
+            <Select
+              ariaLabel="Сеттинг персонажа"
+              value={realmId}
+              placeholder="Выберите сеттинг"
+              disabled={Boolean(profile) || realms.length === 0}
+              options={realms.map((realm) => ({ value: realm.id, label: realm.name }))}
+              onChange={setRealmId}
+            />
+            <span className="game-editor__hint">
+              {profile
+                ? 'Сеттинг задаётся при создании персонажа и не меняется.'
+                : 'Сеттинг определяет, в каких играх и с какими монстрами может участвовать персонаж.'}
+            </span>
+          </div>
 
           <div className="character-form__row">
             <label className="field">

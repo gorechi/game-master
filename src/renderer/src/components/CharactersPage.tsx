@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { JSX } from 'react'
 import type { Player } from '@shared/player'
 import type { CharacterProfile } from '@shared/characterProfile'
+import type { Realm } from '@shared/realm'
 import { api, errorMessage } from '@renderer/lib/api'
 import { pluralize } from '@renderer/lib/format'
 import { CharacterCard } from './character/CharacterCard'
@@ -10,12 +11,17 @@ import { ConfirmDialog } from './ui/ConfirmDialog'
 import { IconPlus } from './ui/icons'
 
 interface CharactersPageProps {
+  realms: readonly Realm[]
   onOpenPlayers: () => void
   onOpenPlayer: (playerId: string) => void
 }
 
 /** Все персонажи приложения: у каждого игрока их может быть несколько. */
-export function CharactersPage({ onOpenPlayers, onOpenPlayer }: CharactersPageProps): JSX.Element {
+export function CharactersPage({
+  realms,
+  onOpenPlayers,
+  onOpenPlayer
+}: CharactersPageProps): JSX.Element {
   const [players, setPlayers] = useState<Player[]>([])
   const [characters, setCharacters] = useState<CharacterProfile[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -43,6 +49,10 @@ export function CharactersPage({ onOpenPlayers, onOpenPlayer }: CharactersPagePr
   const playerById = useMemo(
     () => new Map(players.map((player) => [player.id, player])),
     [players]
+  )
+  const realmNames = useMemo(
+    () => new Map(realms.map((realm) => [realm.id, realm.name])),
+    [realms]
   )
 
   async function confirmDelete(): Promise<void> {
@@ -117,6 +127,7 @@ export function CharactersPage({ onOpenPlayers, onOpenPlayer }: CharactersPagePr
                 <CharacterCard
                   key={character.id}
                   profile={character}
+                  realmName={realmNames.get(character.realmId) ?? 'Без сеттинга'}
                   player={character.playerId ? playerById.get(character.playerId) : undefined}
                   onEdit={() => setEditing(character)}
                   onDelete={() => setDeleting(character)}
@@ -132,6 +143,7 @@ export function CharactersPage({ onOpenPlayers, onOpenPlayer }: CharactersPagePr
         open={editing !== null}
         profile={editing === 'new' ? null : editing}
         players={players}
+        realms={realms}
         onClose={() => setEditing(null)}
         onSaved={() => {
           setEditing(null)

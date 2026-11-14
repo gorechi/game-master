@@ -21,7 +21,7 @@ interface MapFormModalProps {
   open: boolean
   map: GameMap | null
   realms: readonly Realm[]
-  /** Сеттинг, выбранный в фильтре или активный в приложении. */
+  /** Сеттинг по умолчанию: выбранный фильтр или сеттинг редактируемой карты. */
   defaultRealmId: string
   onClose: () => void
   onSaved: (map: GameMap) => void

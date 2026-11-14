@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { JSX } from 'react'
 import type { Game } from '@shared/game'
+import type { Realm } from '@shared/realm'
 import { gameStatusLabels, isGameDeletable } from '@shared/gameStatus'
 import { api, errorMessage } from '@renderer/lib/api'
 import { formatDate, pluralize } from '@renderer/lib/format'
@@ -9,21 +10,29 @@ import { IconPencil, IconPlay, IconPlus, IconTrash } from './ui/icons'
 import { GameFormModal } from './games/GameFormModal'
 
 interface GamesPageProps {
+  realms: readonly Realm[]
   onOpenGame: (gameId: string) => void
 }
 
 type GameFormState =
-  | { mode: 'create'; initialCharacterIds?: string[]; initialMapId?: string | null }
+  | {
+      mode: 'create'
+      initialRealmId?: string
+      initialCharacterIds?: string[]
+      initialMapId?: string | null
+    }
   | { mode: 'edit'; game: Game }
   | { mode: 'view'; game: Game }
 
 /** Основной раздел: игры, которые мастер готовит или проводит. */
-export function GamesPage({ onOpenGame }: GamesPageProps): JSX.Element {
+export function GamesPage({ realms, onOpenGame }: GamesPageProps): JSX.Element {
   const [games, setGames] = useState<Game[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState<GameFormState | null>(null)
   const [confirmingGame, setConfirmingGame] = useState<Game | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+
+  const realmNames = new Map(realms.map((realm) => [realm.id, realm.name]))
 
   const refresh = useCallback(async (): Promise<void> => {
     try {
@@ -136,7 +145,12 @@ export function GamesPage({ onOpenGame }: GamesPageProps): JSX.Element {
                         {gameStatusLabels[game.status]}
                       </span>
                     </div>
-                    <span className="game-card__meta">Создана {formatDate(game.createdAt)}</span>
+                    <span className="game-card__meta">
+                      <span className="game-card__realm">
+                        {realmNames.get(game.realmId) ?? 'Без сеттинга'}
+                      </span>
+                      {' · '}Создана {formatDate(game.createdAt)}
+                    </span>
                   </div>
 
                   <div className="game-card__actions">
@@ -155,6 +169,7 @@ export function GamesPage({ onOpenGame }: GamesPageProps): JSX.Element {
                           onClick={() =>
                             setForm({
                               mode: 'create',
+                              initialRealmId: game.realmId,
                               initialCharacterIds: game.characterIds,
                               initialMapId: game.mapId
                             })
@@ -212,6 +227,8 @@ export function GamesPage({ onOpenGame }: GamesPageProps): JSX.Element {
       <GameFormModal
         open={form !== null}
         game={form && form.mode !== 'create' ? form.game : null}
+        realms={realms}
+        initialRealmId={form?.mode === 'create' ? form.initialRealmId : undefined}
         initialCharacterIds={form?.mode === 'create' ? form.initialCharacterIds : undefined}
         initialMapId={form?.mode === 'create' ? form.initialMapId : undefined}
         readOnly={form?.mode === 'view'}

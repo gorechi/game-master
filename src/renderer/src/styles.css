@@ -419,25 +419,6 @@ input[type='number'] {
   gap: 4px;
 }
 
-.realm-switcher {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 0 2px;
-}
-
-.realm-switcher__label {
-  color: var(--ink-faint);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.realm-switcher .picker--field .picker__trigger {
-  padding: 7px 10px;
-  font-size: 13px;
-}
-
 .nav-item {
   display: flex;
   align-items: center;
@@ -1390,6 +1371,11 @@ input[type='number'] {
   color: var(--ink-faint);
 }
 
+.game-card__realm {
+  color: var(--gold-strong);
+  font-weight: 600;
+}
+
 .game-card__title-row,
 .run-title-row {
   display: flex;
@@ -1455,9 +1441,15 @@ input[type='number'] {
 
 .game-editor__top {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
   align-items: start;
+}
+
+@media (max-width: 900px) {
+  .game-editor__top {
+    grid-template-columns: 1fr;
+  }
 }
 
 .form-tabs {
@@ -2937,11 +2929,6 @@ input[type='number'] {
 
 .realm-card:hover {
   border-color: var(--border-strong);
-}
-
-.realm-card--active {
-  border-color: rgba(216, 178, 92, 0.45);
-  background: linear-gradient(120deg, rgba(216, 178, 92, 0.08), var(--panel));
 }
 
 .realm-card__sigil {

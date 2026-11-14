@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { JSX } from 'react'
 import type { Monster } from '@shared/monster'
+import type { Realm } from '@shared/realm'
 import { formatChallengeRating } from '@shared/domain'
 import { Modal } from '../ui/Modal'
 import { Select } from '../ui/Select'
@@ -8,6 +9,7 @@ import { Select } from '../ui/Select'
 interface BaseMonsterModalProps {
   open: boolean
   monsters: readonly Monster[]
+  realms: readonly Realm[]
   onClose: () => void
   onChoose: (monster: Monster) => void
 }
@@ -16,6 +18,7 @@ interface BaseMonsterModalProps {
 export function BaseMonsterModal({
   open,
   monsters,
+  realms,
   onClose,
   onChoose
 }: BaseMonsterModalProps): JSX.Element {
@@ -26,6 +29,7 @@ export function BaseMonsterModal({
   }, [open])
 
   const selected = monsters.find((monster) => monster.id === selectedId)
+  const realmNames = new Map(realms.map((realm) => [realm.id, realm.name]))
 
   return (
     <Modal
@@ -66,7 +70,9 @@ export function BaseMonsterModal({
               placeholder="Найти монстра…"
               options={monsters.map((monster) => ({
                 value: monster.id,
-                label: `${monster.name} · КО ${formatChallengeRating(monster.challengeRating)}`
+                label: `${monster.name} · КО ${formatChallengeRating(
+                  monster.challengeRating
+                )} · ${realmNames.get(monster.realmId) ?? 'Без сеттинга'}`
               }))}
               onChange={setSelectedId}
             />

@@ -6,6 +6,7 @@ import type { CharacterProfile } from '@shared/characterProfile'
 import type { Monster } from '@shared/monster'
 import type { Player } from '@shared/player'
 import type { GameMap } from '@shared/map'
+import type { Realm } from '@shared/realm'
 import { createGameMonster, formatChallengeRating, gameMonsterFromEntry, playerFullName } from '@shared/domain'
 import { api, errorMessage } from '@renderer/lib/api'
 import { Modal } from '../ui/Modal'
@@ -16,6 +17,10 @@ import { MonsterFormModal } from '../monsters/MonsterFormModal'
 interface GameFormModalProps {
   open: boolean
   game: Game | null
+  /** Все сеттинги: при создании игры мастер выбирает один из них. */
+  realms: readonly Realm[]
+  /** Для создания продолжения: сеттинг исходной игры. */
+  initialRealmId?: string
   /** Для создания продолжения: участники, уже отмеченные в форме. */
   initialCharacterIds?: string[]
   /** Для создания продолжения: карта исходной игры. */
@@ -69,6 +74,8 @@ function expandSelections(
 export function GameFormModal({
   open,
   game,
+  realms,
+  initialRealmId,
   initialCharacterIds,
   initialMapId,
   readOnly = false,
@@ -78,6 +85,7 @@ export function GameFormModal({
   const isEdit = game !== null
 
   const [name, setName] = useState('')
+  const [realmId, setRealmId] = useState('')
   const [mapId, setMapId] = useState('')
   const [characterIds, setCharacterIds] = useState<string[]>([])
   const [playerFilter, setPlayerFilter] = useState('all')
@@ -103,6 +111,7 @@ export function GameFormModal({
     if (!open) return
 
     setName(game?.name ?? '')
+    setRealmId(game?.realmId ?? initialRealmId ?? '')
     setMapId(game?.mapId ?? initialMapId ?? '')
     setCharacterIds(game?.characterIds ?? initialCharacterIds ?? [])
     setPlayerFilter('all')
@@ -143,7 +152,18 @@ export function GameFormModal({
     return () => {
       cancelled = true
     }
-  }, [open, game, initialCharacterIds, initialMapId])
+  }, [open, game, initialRealmId, initialCharacterIds, initialMapId])
+
+  function changeRealm(nextRealmId: string): void {
+    setRealmId(nextRealmId)
+    setMapId('')
+    setCharacterIds([])
+    setSelections([])
+    setInstances([])
+    setReadyIds([])
+    setEditingMonsterId(null)
+    setError(null)
+  }
 
   function playerName(playerId: string | null): string {
     const player = playerId ? players.find((item) => item.id === playerId) : undefined
@@ -159,7 +179,7 @@ export function GameFormModal({
   }
 
   function addMonster(sourceId: string): void {
-    const source = bestiary.find((monster) => monster.id === sourceId)
+    const source = realmBestiary.find((monster) => monster.id === sourceId)
     if (!source) return
 
     if (isEdit) {
@@ -229,18 +249,22 @@ export function GameFormModal({
     : null
 
   const totalSelections = selections.reduce((sum, selection) => sum + selection.count, 0)
-  const availableBestiary = bestiary.filter(
+  const realmCharacters = characters.filter((character) => character.realmId === realmId)
+  const realmBestiary = bestiary.filter((monster) => monster.realmId === realmId)
+  const realmSavedMonsters = savedMonsters.filter((monster) => monster.realmId === realmId)
+  const realmMaps = maps.filter((map) => map.realmId === realmId)
+  const availableBestiary = realmBestiary.filter(
     (monster) => !selections.some((selection) => selection.sourceId === monster.id)
   )
 
-  const readyMonsters = savedMonsters.filter((monster) => readyIds.includes(monster.id))
-  const availableSaved = savedMonsters.filter((monster) => !readyIds.includes(monster.id))
+  const readyMonsters = realmSavedMonsters.filter((monster) => readyIds.includes(monster.id))
+  const availableSaved = realmSavedMonsters.filter((monster) => !readyIds.includes(monster.id))
   const totalMonsters = isEdit ? instances.length : totalSelections + readyMonsters.length
 
   const filteredCharacters =
     playerFilter === 'all'
-      ? characters
-      : characters.filter((character) => character.playerId === playerFilter)
+      ? realmCharacters
+      : realmCharacters.filter((character) => character.playerId === playerFilter)
   const playerFilterOptions = [
     { value: 'all', label: 'Все' },
     ...players.map((player) => ({ value: player.id, label: playerFullName(player) }))
@@ -399,8 +423,13 @@ export function GameFormModal({
       return
     }
 
+    if (!realmId) {
+      setError('Выберите сеттинг игры')
+      return
+    }
+
     const validCharacterIds = characterIds.filter((id) =>
-      characters.some((character) => character.id === id)
+      realmCharacters.some((character) => character.id === id)
     )
 
     if (validCharacterIds.length === 0) {
@@ -414,10 +443,11 @@ export function GameFormModal({
 
     try {
       const readyInstances = isEdit ? [] : readyMonsters.map(gameMonsterFromEntry)
+      const validMapId = mapId && realmMaps.some((map) => map.id === mapId) ? mapId : null
 
       const input = {
         name: trimmedName,
-        mapId: mapId || null,
+        mapId: validMapId,
         characterIds: validCharacterIds,
         monsters: isEdit
           ? instances
@@ -425,7 +455,7 @@ export function GameFormModal({
               ...readyInstances,
               ...expandSelections(
                 selections,
-                bestiary,
+                realmBestiary,
                 readyInstances.map((monster) => monster.name)
               )
             ]
@@ -433,7 +463,7 @@ export function GameFormModal({
 
       const saved = game
         ? await api.games.update({ ...game, ...input })
-        : await api.games.create(input)
+        : await api.games.create(input, realmId)
 
       onSaved(saved)
     } catch (caught) {
@@ -472,7 +502,7 @@ export function GameFormModal({
               type="submit"
               form={formId}
               className="button button--primary"
-              disabled={saving || loadingData || Boolean(dataError)}
+              disabled={saving || loadingData || Boolean(dataError) || !realmId}
             >
               {saving ? 'Сохраняем…' : 'Сохранить'}
             </button>
@@ -497,20 +527,43 @@ export function GameFormModal({
           </label>
 
           <div className="field">
+            <span className="field__label">Сеттинг *</span>
+            <Select
+              ariaLabel="Сеттинг игры"
+              value={realmId}
+              placeholder="Выберите сеттинг"
+              disabled={isEdit || readOnly || realms.length === 0}
+              options={realms.map((realm) => ({ value: realm.id, label: realm.name }))}
+              onChange={changeRealm}
+            />
+            <span className="game-editor__hint">
+              {isEdit
+                ? 'Сеттинг задаётся при создании игры и не меняется.'
+                : 'Участники, карта и монстры будут выбраны из этого сеттинга.'}
+            </span>
+          </div>
+
+          <div className="field">
             <span className="field__label">Карта</span>
             <Select
               ariaLabel="Карта игры"
               value={mapId}
               placeholder="Без карты"
+              disabled={readOnly || !realmId}
               options={[
                 { value: '', label: 'Без карты' },
-                ...maps.map((map) => ({ value: map.id, label: map.name }))
+                ...realmMaps.map((map) => ({ value: map.id, label: map.name }))
               ]}
-              disabled={readOnly}
               onChange={(value) => setMapId(value)}
             />
           </div>
         </div>
+
+        {!realmId ? (
+          <p className="notice">
+            Сначала выберите сеттинг игры — персонажи, карты и монстры берутся только из него.
+          </p>
+        ) : null}
 
         {dataError ? <p className="notice notice--error">{dataError}</p> : null}
 
@@ -570,7 +623,7 @@ export function GameFormModal({
                   </div>
                 </div>
 
-                {characters.length === 0 ? (
+                {realmCharacters.length === 0 ? (
                   <div className="participant-list participant-list--empty">
                     <p className="notice">
                       В базе нет персонажей — сначала добавьте их в разделе «Персонажи».
@@ -635,7 +688,7 @@ export function GameFormModal({
                   <div className={`monster-pickers${isEdit ? ' monster-pickers--single' : ''}`}>
                     <div className="field">
                       <span className="field__label">Из бестиария</span>
-                      {bestiary.length === 0 ? (
+                      {realmBestiary.length === 0 ? (
                         <p className="abilities-editor__empty">В бестиарии пока нет монстров.</p>
                       ) : !isEdit && availableBestiary.length === 0 ? (
                         <p className="abilities-editor__empty">
@@ -651,7 +704,7 @@ export function GameFormModal({
                           value=""
                           searchable
                           placeholder="Найти монстра…"
-                          options={(isEdit ? bestiary : availableBestiary).map((monster) => ({
+                          options={(isEdit ? realmBestiary : availableBestiary).map((monster) => ({
                             value: monster.id,
                             label: `${monster.name} · КО ${formatChallengeRating(
                               monster.challengeRating
@@ -665,7 +718,7 @@ export function GameFormModal({
                     {!isEdit ? (
                       <div className="field">
                         <span className="field__label">Сохранённые игровые монстры</span>
-                        {savedMonsters.length === 0 ? (
+                        {realmSavedMonsters.length === 0 ? (
                           <p className="abilities-editor__empty">
                             Появляются после завершения игры с сохранением монстров.
                           </p>

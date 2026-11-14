@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { JSX } from 'react'
 import type { GameMonsterEntry } from '@shared/gameMonster'
 import type { Monster, MonsterInput } from '@shared/monster'
+import type { Realm } from '@shared/realm'
 import { api, errorMessage } from '@renderer/lib/api'
 import { pluralize } from '@renderer/lib/format'
 import { ConfirmDialog } from './ui/ConfirmDialog'
@@ -11,7 +12,7 @@ import { MonsterFormModal } from './monsters/MonsterFormModal'
 import { BaseMonsterModal } from './savedMonsters/BaseMonsterModal'
 
 /** Сохранённые игровые монстры: уникальные экземпляры вне бестиария. */
-export function SavedMonstersPage(): JSX.Element {
+export function SavedMonstersPage({ realms }: { realms: readonly Realm[] }): JSX.Element {
   const [monsters, setMonsters] = useState<GameMonsterEntry[] | null>(null)
   const [bestiary, setBestiary] = useState<Monster[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -19,6 +20,8 @@ export function SavedMonstersPage(): JSX.Element {
   const [baseMonster, setBaseMonster] = useState<Monster | null>(null)
   const [editing, setEditing] = useState<GameMonsterEntry | null>(null)
   const [deleting, setDeleting] = useState<GameMonsterEntry | null>(null)
+
+  const realmNames = new Map(realms.map((realm) => [realm.id, realm.name]))
 
   const refresh = useCallback(async (): Promise<void> => {
     try {
@@ -46,7 +49,10 @@ export function SavedMonstersPage(): JSX.Element {
   async function createMonster(input: MonsterInput): Promise<void> {
     if (!baseMonster) return
 
-    await api.gameMonsters.create({ ...input, sourceMonsterId: baseMonster.id })
+    await api.gameMonsters.create(
+      { ...input, sourceMonsterId: baseMonster.id },
+      baseMonster.realmId
+    )
     setBaseMonster(null)
     await refresh()
   }
@@ -124,6 +130,7 @@ export function SavedMonstersPage(): JSX.Element {
                 <MonsterCard
                   key={monster.id}
                   monster={monster}
+                  realmName={realmNames.get(monster.realmId) ?? 'Без сеттинга'}
                   badge="Уникальный"
                   onEdit={() => setEditing(monster)}
                   onDelete={() => setDeleting(monster)}
@@ -137,6 +144,7 @@ export function SavedMonstersPage(): JSX.Element {
       <BaseMonsterModal
         open={choosingBase}
         monsters={bestiary}
+        realms={realms}
         onClose={() => setChoosingBase(false)}
         onChoose={chooseBase}
       />
@@ -146,6 +154,8 @@ export function SavedMonstersPage(): JSX.Element {
         title={formTitle}
         description={formDescription}
         initial={formInitial}
+        realms={realms}
+        lockRealm
         onClose={() => {
           setBaseMonster(null)
           setEditing(null)

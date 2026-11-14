@@ -35,7 +35,7 @@ export function MapGraphPage({
 
   const load = useCallback(async (): Promise<void> => {
     try {
-      const maps = await api.maps.listAll()
+      const maps = await api.maps.list()
       setMap(maps.find((item) => item.id === mapId) ?? null)
       setLinkedMapNames(Object.fromEntries(maps.map((item) => [item.id, item.name])))
       setPositions(null)
