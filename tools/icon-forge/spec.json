@@ -1,0 +1,47 @@
+{
+  "set": "fantasy-places",
+  "title": "Фэнтезийные места",
+  "viewBox": "0 0 24 24",
+  "icons": [
+    {
+      "id": "place-generic",
+      "title": "Место",
+      "tags": ["place", "fallback", "pin"]
+    },
+    {
+      "id": "forest",
+      "title": "Лес",
+      "tags": ["forest", "woods", "tree"]
+    },
+    {
+      "id": "mountains",
+      "title": "Горы",
+      "tags": ["mountains", "hills", "peak"]
+    },
+    {
+      "id": "water",
+      "title": "Вода",
+      "tags": ["water", "lake", "river", "sea"]
+    },
+    {
+      "id": "settlement",
+      "title": "Поселение",
+      "tags": ["settlement", "village", "town", "houses"]
+    },
+    {
+      "id": "dungeon",
+      "title": "Подземелье",
+      "tags": ["dungeon", "cave", "entrance"]
+    },
+    {
+      "id": "ruins",
+      "title": "Руины",
+      "tags": ["ruins", "ruined", "columns"]
+    },
+    {
+      "id": "exit-arch",
+      "title": "Выход",
+      "tags": ["exit", "portal", "arch"]
+    }
+  ]
+}

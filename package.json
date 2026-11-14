@@ -18,6 +18,8 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "build": "npm run typecheck && electron-vite build",
     "icons": "node scripts/generate-icon.mjs",
+    "icons:validate": "node tools/icon-forge/validate.mjs",
+    "icons:preview": "node tools/icon-forge/preview.mjs",
     "pack": "npm run build && electron-builder --dir --publish never",
     "dist:win": "npm run build && electron-builder --win --publish never",
     "dist:mac": "npm run build && electron-builder --mac --publish never"

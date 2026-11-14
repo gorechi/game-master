@@ -1,0 +1,90 @@
+{
+  "set": "fantasy-places",
+  "title": "Фэнтезийные места",
+  "viewBox": "0 0 24 24",
+  "generatedAt": "2026-11-14T12:09:41.754Z",
+  "icons": [
+    {
+      "id": "place-generic",
+      "title": "Место",
+      "tags": [
+        "place",
+        "fallback",
+        "pin"
+      ],
+      "file": "icons/place-generic.svg"
+    },
+    {
+      "id": "forest",
+      "title": "Лес",
+      "tags": [
+        "forest",
+        "woods",
+        "tree"
+      ],
+      "file": "icons/forest.svg"
+    },
+    {
+      "id": "mountains",
+      "title": "Горы",
+      "tags": [
+        "mountains",
+        "hills",
+        "peak"
+      ],
+      "file": "icons/mountains.svg"
+    },
+    {
+      "id": "water",
+      "title": "Вода",
+      "tags": [
+        "water",
+        "lake",
+        "river",
+        "sea"
+      ],
+      "file": "icons/water.svg"
+    },
+    {
+      "id": "settlement",
+      "title": "Поселение",
+      "tags": [
+        "settlement",
+        "village",
+        "town",
+        "houses"
+      ],
+      "file": "icons/settlement.svg"
+    },
+    {
+      "id": "dungeon",
+      "title": "Подземелье",
+      "tags": [
+        "dungeon",
+        "cave",
+        "entrance"
+      ],
+      "file": "icons/dungeon.svg"
+    },
+    {
+      "id": "ruins",
+      "title": "Руины",
+      "tags": [
+        "ruins",
+        "ruined",
+        "columns"
+      ],
+      "file": "icons/ruins.svg"
+    },
+    {
+      "id": "exit-arch",
+      "title": "Выход",
+      "tags": [
+        "exit",
+        "portal",
+        "arch"
+      ],
+      "file": "icons/exit-arch.svg"
+    }
+  ]
+}
