@@ -2,13 +2,28 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { validateSvg } from './lib.mjs'
+import { pickDirection } from './directions.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const previewDir = join(here, 'preview')
+const briefsPath = join(here, 'briefs.json')
 mkdirSync(previewDir, { recursive: true })
 
 const spec = JSON.parse(readFileSync(join(here, 'spec.json'), 'utf8'))
 const styleGuide = readFileSync(join(here, 'style.md'), 'utf8')
+
+function readBriefs() {
+  if (!existsSync(briefsPath)) return {}
+  try {
+    return JSON.parse(readFileSync(briefsPath, 'utf8'))
+  } catch {
+    return {}
+  }
+}
+
+function writeBriefs(briefs) {
+  writeFileSync(briefsPath, `${JSON.stringify(briefs, null, 2)}\n`)
+}
 
 const apiKey = process.env.DEEPSEEK_API_KEY
 const baseUrl = (process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com').replace(/\/+$/, '')
@@ -19,6 +34,22 @@ const idIndex = args.indexOf('--id')
 const requestedId = idIndex === -1 ? null : args[idIndex + 1]
 const allMissing = args.includes('--all-missing')
 const force = args.includes('--force')
+const variant = args.includes('--variant') || args.includes('--fresh')
+
+function cleanText(value) {
+  const text = String(value ?? '').trim()
+  return /^(undefined|null|nan)$/i.test(text) ? '' : text
+}
+
+function readArg(name) {
+  const index = args.indexOf(name)
+  if (index === -1) return null
+  const value = args[index + 1]
+  return typeof value === 'string' && !value.startsWith('--') ? cleanText(value) : null
+}
+
+const briefOverride = readArg('--brief')
+const avoidOverride = readArg('--avoid')
 
 function fail(message) {
   console.error(`\n${message}\n`)
@@ -61,6 +92,19 @@ const systemPrompt = `Ты — senior SVG-иконограф и арт-дире�
 - Иконка должна читаться при 24 px и не быть перегруженной.
 - Одинаковая толщина линий у всех элементов.
 
+СМЫСЛ ИКОНКИ
+
+- Иконка обозначает само место: сооружение, ландшафт или их характерный фрагмент.
+- Не заменяй место предметом-метафорой. Для таверны это не кружка и не бокал,
+  для магазина — не монета, для кузницы — не один молот. Рисуй место, если
+  заказчик прямо не попросил предмет.
+- Иконку должны узнавать без подписи. Абстрактные линии, лепестки и росчерки,
+  в которых угадывается «что-то», — брак.
+- Не рисуй пустую геометрическую фигуру — куб, квадрат или круг — без
+  характерных примет конкретного места.
+- Не повторяй одну и ту же композицию: в каждом запросе указан новый подход,
+  и его нужно соблюдать, пока он не мешает узнаваемости.
+
 СТИЛЬ
 
 ${styleGuide}
@@ -75,12 +119,14 @@ ${golden}
 Без объяснений, без markdown-текста вокруг, без нескольких вариантов.
 Не сокращай SVG многоточием.`
 
-function buildUserPrompt(entry, repair) {
+function buildUserPrompt(entry, options = {}) {
+  const { repair, brief, avoid, direction } = options
+
   if (repair) {
     return `Исправь SVG для иконки «${entry.title}» (${entry.id}).
 Проблемы:
 ${repair.problems.map((problem) => `- ${problem}`).join('\n')}
-
+${brief ? `\nУточнение заказчика: ${brief}\n` : ''}
 Предыдущий SVG:
 \`\`\`svg
 ${repair.svg}
@@ -89,12 +135,42 @@ ${repair.svg}
 Верни только исправленный SVG в блоке \`\`\`svg ... \`\`\`. Без объяснений.`
   }
 
-  return `Нарисуй иконку:
-- id: ${entry.id}
-- название: ${entry.title}
-- теги: ${entry.tags.join(', ')}
+  const lines = [
+    'Нарисуй иконку:',
+    `- id: ${entry.id}`,
+    `- название: ${entry.title}`,
+    `- теги: ${entry.tags.join(', ')}`
+  ]
 
-Верни только SVG в блоке \`\`\`svg ... \`\`\`. Никаких пояснений.`
+  if (brief) {
+    lines.push(
+      '',
+      'УТОЧНЕНИЕ ЗАКАЗЧИКА (важнее типичных ассоциаций):',
+      brief
+    )
+  }
+
+  if (avoid) {
+    lines.push('', 'НЕ ИЗОБРАЖАТЬ:', avoid)
+  }
+
+  if (direction) {
+    lines.push(
+      '',
+      'КОМПОЗИЦИЯ ЭТОЙ ПОПЫТКИ (не повторяй прошлые):',
+      direction.text
+    )
+  }
+
+  lines.push(
+    '',
+    `ГЛАВНОЕ: иконку «${entry.title}» должны узнавать без подписи. Если выбранный`,
+    'подход мешает узнать место, выбери ближайший узнаваемый ракурс того же места.',
+    'Силуэт важнее эффектной композиции.'
+  )
+
+  lines.push('', 'Верни только SVG в блоке ```svg ... ```. Никаких пояснений.')
+  return lines.join('\n')
 }
 
 function extractSvg(content) {
@@ -102,7 +178,7 @@ function extractSvg(content) {
   return match ? match[0].trim() : null
 }
 
-async function callDeepSeek(messages) {
+async function callDeepSeek(messages, temperature) {
   const response = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
@@ -112,7 +188,7 @@ async function callDeepSeek(messages) {
     body: JSON.stringify({
       model,
       messages,
-      temperature: 0.25,
+      temperature,
       max_tokens: 4000,
       stream: false
     }),
@@ -134,6 +210,23 @@ async function callDeepSeek(messages) {
   return content
 }
 
+function rememberDirection(id, direction, brief, avoid, restarted) {
+  const briefs = readBriefs()
+  const previous = briefs[id] ?? {}
+  const used = Array.isArray(previous.directions) ? previous.directions : []
+  const nextUsed = restarted ? [] : used
+
+  briefs[id] = {
+    ...previous,
+    brief,
+    avoid,
+    directions: [...nextUsed, direction.id].slice(-40),
+    lastDirection: direction.text,
+    updatedAt: new Date().toISOString()
+  }
+  writeBriefs(briefs)
+}
+
 async function generateIcon(entry) {
   const file = join(here, 'icons', `${entry.id}.svg`)
 
@@ -142,9 +235,20 @@ async function generateIcon(entry) {
     return true
   }
 
+  const stored = readBriefs()[entry.id] ?? {}
+  const brief = cleanText(briefOverride ?? stored.brief)
+  const avoid = cleanText(avoidOverride ?? stored.avoid)
+  const used = Array.isArray(stored.directions) ? stored.directions : []
+  const { direction, restarted } = pickDirection(used)
+  const isVariant = variant || (existsSync(file) && force)
+
+  rememberDirection(entry.id, direction, brief, avoid, restarted)
+
+  console.log(`GEN   ${entry.id}: подход «${direction.text}»`)
+
   let messages = [
     { role: 'system', content: systemPrompt },
-    { role: 'user', content: buildUserPrompt(entry) }
+    { role: 'user', content: buildUserPrompt(entry, { brief, avoid, direction }) }
   ]
 
   let lastSvg = null
@@ -152,7 +256,7 @@ async function generateIcon(entry) {
 
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     console.log(`GEN   ${entry.id}: попытка ${attempt}/3…`)
-    const content = await callDeepSeek(messages)
+    const content = await callDeepSeek(messages, isVariant ? 0.85 : 0.5)
     const svg = extractSvg(content)
 
     if (!svg) {
@@ -183,7 +287,10 @@ async function generateIcon(entry) {
 
     messages = [
       { role: 'system', content: systemPrompt },
-      { role: 'user', content: buildUserPrompt(entry, { svg, problems }) }
+      {
+        role: 'user',
+        content: buildUserPrompt(entry, { brief, repair: { svg, problems } })
+      }
     ]
   }
 

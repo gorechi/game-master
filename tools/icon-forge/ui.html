@@ -61,6 +61,22 @@
     background: #fffaf0; color: var(--ink); font: inherit; font-size: 14px; outline: none;
   }
   input[type="text"]:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(154,106,36,.12); }
+  textarea {
+    width: 100%; padding: 9px 11px; border-radius: 9px; border: 1px solid var(--border);
+    background: #fffaf0; color: var(--ink); font: inherit; font-size: 13px; line-height: 1.45;
+    outline: none; resize: vertical; min-height: 62px;
+  }
+  textarea:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(154,106,36,.12); }
+  .brief { border-top: 1px dashed var(--border); padding-top: 10px; margin-top: 2px; }
+  .brief summary {
+    cursor: pointer; font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--faint);
+  }
+  .brief[open] summary { color: var(--gold-strong); }
+  .brief__body { display: flex; flex-direction: column; gap: 8px; padding-top: 10px; }
+  .brief__body .field { margin-bottom: 0; }
+  .brief__meta { font-size: 10.5px; color: var(--faint); line-height: 1.45; }
+  .brief__row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
   .check { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); text-transform: none; letter-spacing: 0; }
   .check input { width: 16px; height: 16px; accent-color: var(--gold); }
   button {
@@ -164,6 +180,14 @@
             <input id="tags" name="tags" type="text" placeholder="swamp, marsh" autocomplete="off">
           </div>
           <div class="field">
+            <label for="brief">Уточнение</label>
+            <textarea id="brief" name="brief" rows="3" placeholder="Что именно изобразить? Например: здание таверны, фронтальный фасад, дверь, окно, вывеска на кронштейне"></textarea>
+          </div>
+          <div class="field">
+            <label for="avoid">Не изображать</label>
+            <input id="avoid" name="avoid" type="text" placeholder="кружка, бокал, чашка" autocomplete="off">
+          </div>
+          <div class="field">
             <label class="check"><input id="force" type="checkbox"> Перерисовать, если файл уже есть</label>
           </div>
           <div class="actions">
@@ -203,7 +227,7 @@
   let busy = false
 
   const esc = (value) =>
-    String(value)
+    String(value ?? '')
       .replaceAll('&', '&amp;')
       .replaceAll('<', '&lt;')
       .replaceAll('>', '&gt;')
@@ -241,6 +265,9 @@
       ? `<ul class="problems">${icon.problems.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>`
       : ''
     const regenerateDisabled = state?.keyConfigured ? '' : 'disabled'
+    const directionNote = icon.directionCount
+      ? `Подходов использовано: ${icon.directionCount}. Последний: ${esc(icon.lastDirection)}`
+      : 'Каждая генерация пробует новую композицию.'
 
     const visual = icon.svg
       ? `<div class="tokens">
@@ -250,7 +277,7 @@
          </div>`
       : `<div class="empty-icon">${icon.exists ? 'SVG не прошёл проверку' : 'Файла пока нет'}</div>`
 
-    return `<article class="icon-card">
+    return `<article class="icon-card" data-card="${esc(icon.id)}">
       <div class="icon-card__head">
         <div>
           <h3 class="icon-card__name">${esc(icon.title)}</h3>
@@ -261,8 +288,26 @@
       ${visual}
       ${tags ? `<div class="tags">${tags}</div>` : ''}
       ${problems}
+      <details class="brief" data-brief-for="${esc(icon.id)}">
+        <summary>Уточнение${icon.brief ? ' · задано' : ''}</summary>
+        <div class="brief__body">
+          <div class="field">
+            <label>Что изобразить</label>
+            <textarea data-brief="${esc(icon.id)}" rows="3" placeholder="Например: здание таверны, фронтальный фасад, дверь, окно, вывеска на кронштейне">${esc(icon.brief)}</textarea>
+          </div>
+          <div class="field">
+            <label>Не изображать</label>
+            <input data-avoid="${esc(icon.id)}" type="text" value="${esc(icon.avoid)}" placeholder="кружка, бокал, чашка" autocomplete="off">
+          </div>
+          <div class="brief__meta">${directionNote}</div>
+          <div class="brief__row">
+            <button class="small" type="button" data-save-brief="${esc(icon.id)}">Сохранить</button>
+            ${icon.directionCount ? `<button class="small" type="button" data-reset="${esc(icon.id)}">Сбросить историю</button>` : ''}
+          </div>
+        </div>
+      </details>
       <div class="actions-row">
-        <button class="small" type="button" data-regen="${esc(icon.id)}" ${regenerateDisabled}>Перегенерировать</button>
+        <button class="small" type="button" data-regen="${esc(icon.id)}" title="Новая композиция, а не повтор прошлой" ${regenerateDisabled}>Перегенерировать</button>
         ${icon.exists ? `<a class="download" href="/api/icon/${encodeURIComponent(icon.id)}.svg" target="_blank" rel="noreferrer">SVG</a>` : ''}
       </div>
     </article>`
@@ -270,12 +315,18 @@
 
   function render() {
     if (!state) return
+    const openBriefs = new Set(
+      [...document.querySelectorAll('details.brief[open]')].map((node) => node.dataset.briefFor)
+    )
     $('key-dot').className = `dot ${state.keyConfigured ? '' : 'dot--bad'}`
     $('key-text').textContent = state.keyConfigured ? 'DeepSeek подключён' : 'Ключ не найден'
     $('banner').innerHTML = state.keyConfigured
       ? ''
       : `<div class="banner">DEEPSEEK_API_KEY не найден. Создай <code>tools/icon-forge/.env</code> по образцу <code>.env.example</code> и перезапусти сервер.</div>`
     $('grid').innerHTML = state.icons.map(card).join('')
+    for (const node of document.querySelectorAll('details.brief')) {
+      if (openBriefs.has(node.dataset.briefFor)) node.open = true
+    }
     renderPreview()
     setBusy(busy)
   }
@@ -350,11 +401,15 @@
         id: $('id').value,
         title: $('title').value,
         tags: $('tags').value,
+        brief: $('brief').value,
+        avoid: $('avoid').value,
         force: $('force').checked
       })
       $('id').value = ''
       $('title').value = ''
       $('tags').value = ''
+      $('brief').value = ''
+      $('avoid').value = ''
       $('force').checked = false
     } catch (error) {
       log(String(error))
@@ -374,7 +429,14 @@
     try {
       for (const icon of missing) {
         log(`Генерируем ${icon.id}…`)
-        await generate({ id: icon.id, title: icon.title, tags: icon.tags, force: true })
+        await generate({
+          id: icon.id,
+          title: icon.title,
+          tags: icon.tags,
+          brief: icon.brief,
+          avoid: icon.avoid,
+          force: true
+        })
       }
       log('Все иконки обработаны.')
     } catch (error) {
@@ -384,19 +446,92 @@
     }
   })
 
+  function cardValues(article) {
+    return {
+      brief: article.querySelector('[data-brief]')?.value.trim() ?? '',
+      avoid: article.querySelector('[data-avoid]')?.value.trim() ?? ''
+    }
+  }
+
+  async function saveBrief(id, brief, avoid) {
+    const response = await fetch('/api/brief', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, brief, avoid })
+    })
+    const result = await response.json()
+    if (!response.ok) throw new Error(result.error || 'Не удалось сохранить уточнение')
+    state = result.state
+  }
+
   document.addEventListener('click', async (event) => {
+    if (busy) return
+
+    const saveButton = event.target.closest('[data-save-brief]')
+    if (saveButton) {
+      const article = saveButton.closest('.icon-card')
+      const values = cardValues(article)
+      try {
+        await saveBrief(saveButton.dataset.saveBrief, values.brief, values.avoid)
+        log(`Уточнение для ${saveButton.dataset.saveBrief} сохранено.`)
+      } catch (error) {
+        log(String(error))
+      }
+      return
+    }
+
+    const resetButton = event.target.closest('[data-reset]')
+    if (resetButton) {
+      const id = resetButton.dataset.reset
+      try {
+        const response = await fetch('/api/reset', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        })
+        const result = await response.json()
+        if (!response.ok) throw new Error(result.error || 'Ошибка сброса')
+        state = result.state
+        render()
+        log(`История подходов для ${id} сброшена.`)
+      } catch (error) {
+        log(String(error))
+      }
+      return
+    }
+
     const button = event.target.closest('[data-regen]')
-    if (!button || busy) return
+    if (!button) return
     const icon = state?.icons.find((item) => item.id === button.dataset.regen)
     if (!icon) return
+    const values = cardValues(button.closest('.icon-card'))
     setBusy(true)
+    log(`Генерируем ${icon.id}: новая композиция…`)
     try {
-      await generate({ id: icon.id, title: icon.title, tags: icon.tags, force: true })
+      await generate({
+        id: icon.id,
+        title: icon.title,
+        tags: icon.tags,
+        brief: values.brief,
+        avoid: values.avoid,
+        force: true,
+        variant: true
+      })
     } catch (error) {
       log(String(error))
     } finally {
       setBusy(false)
     }
+  })
+
+  document.addEventListener('change', (event) => {
+    const field = event.target.closest('[data-brief], [data-avoid]')
+    if (!field) return
+    const article = field.closest('.icon-card')
+    const id = article?.dataset.card
+    if (!id) return
+    const values = cardValues(article)
+    void saveBrief(id, values.brief, values.avoid).catch(() => {})
   })
 
   $('refresh').addEventListener('click', () => void load())

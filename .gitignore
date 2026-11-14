@@ -11,3 +11,4 @@ Thumbs.db
 *.tsbuildinfo
 tools/icon-forge/preview/
 tools/icon-forge/.env
+tools/icon-forge/briefs.json

@@ -8,6 +8,7 @@ import { validateSvg } from './lib.mjs'
 const here = dirname(fileURLToPath(import.meta.url))
 const iconsDir = join(here, 'icons')
 const specPath = join(here, 'spec.json')
+const briefsPath = join(here, 'briefs.json')
 const uiPath = join(here, 'ui.html')
 const port = Number(process.env.ICON_FORGE_PORT || 5190)
 const keyConfigured = Boolean(process.env.DEEPSEEK_API_KEY)
@@ -22,21 +23,55 @@ function writeSpec(spec) {
   writeFileSync(specPath, `${JSON.stringify(spec, null, 2)}\n`)
 }
 
+function readBriefs() {
+  if (!existsSync(briefsPath)) return {}
+  try {
+    return JSON.parse(readFileSync(briefsPath, 'utf8'))
+  } catch {
+    return {}
+  }
+}
+
+function writeBriefs(briefs) {
+  writeFileSync(briefsPath, `${JSON.stringify(briefs, null, 2)}\n`)
+}
+
+function normalizeId(value) {
+  const id = String(value ?? '')
+    .trim()
+    .toLowerCase()
+  if (!/^[a-z0-9-]+$/.test(id)) {
+    throw new Error('id может содержать только строчные латинские буквы, цифры и дефис')
+  }
+  return id
+}
+
+function cleanText(value) {
+  const text = String(value ?? '').trim()
+  return /^(undefined|null|nan)$/i.test(text) ? '' : text
+}
+
 function readState() {
   const spec = readSpec()
+  const briefs = readBriefs()
 
   const icons = spec.icons.map((entry) => {
     const file = join(iconsDir, `${entry.id}.svg`)
     const exists = existsSync(file)
     const svg = exists ? readFileSync(file, 'utf8') : null
     const problems = svg ? validateSvg(svg) : ['файл ещё не создан']
+    const meta = briefs[entry.id] ?? {}
 
     return {
       ...entry,
       exists,
       valid: problems.length === 0,
       problems,
-      svg: problems.length === 0 ? svg : null
+      svg: problems.length === 0 ? svg : null,
+      brief: typeof meta.brief === 'string' ? cleanText(meta.brief) : '',
+      avoid: typeof meta.avoid === 'string' ? cleanText(meta.avoid) : '',
+      directionCount: Array.isArray(meta.directions) ? meta.directions.length : 0,
+      lastDirection: typeof meta.lastDirection === 'string' ? meta.lastDirection : ''
     }
   })
 
@@ -91,16 +126,16 @@ function runNode(script, args = []) {
   })
 }
 
-function runGenerator(id, force) {
+function runGenerator(id, options = {}) {
   const args = ['--id', id]
-  if (force) args.push('--force')
+  if (options.force) args.push('--force')
+  if (options.variant) args.push('--variant')
+  if (options.brief) args.push('--brief', options.brief)
+  if (options.avoid) args.push('--avoid', options.avoid)
   return runNode('generate.mjs', args)
 }
 
 function normalizeEntry(input) {
-  const id = String(input.id ?? '')
-    .trim()
-    .toLowerCase()
   const title = String(input.title ?? '').trim()
   const tags = Array.isArray(input.tags)
     ? input.tags.map((tag) => String(tag).trim()).filter(Boolean)
@@ -109,12 +144,9 @@ function normalizeEntry(input) {
         .map((tag) => tag.trim())
         .filter(Boolean)
 
-  if (!/^[a-z0-9-]+$/.test(id)) {
-    throw new Error('id может содержать только строчные латинские буквы, цифры и дефис')
-  }
   if (!title) throw new Error('Укажи название иконки')
 
-  return { id, title, tags }
+  return { id: normalizeId(input.id), title, tags }
 }
 
 const server = createServer(async (req, res) => {
@@ -187,6 +219,40 @@ const server = createServer(async (req, res) => {
       return
     }
 
+    if (req.method === 'POST' && url.pathname === '/api/brief') {
+      const body = await readBody(req)
+      const id = normalizeId(body.id)
+      const briefs = readBriefs()
+
+      briefs[id] = {
+        ...briefs[id],
+        brief: cleanText(body.brief),
+        avoid: cleanText(body.avoid),
+        updatedAt: new Date().toISOString()
+      }
+      writeBriefs(briefs)
+
+      json(res, 200, { state: readState() })
+      return
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/reset') {
+      const body = await readBody(req)
+      const id = normalizeId(body.id)
+      const briefs = readBriefs()
+
+      briefs[id] = {
+        ...briefs[id],
+        directions: [],
+        lastDirection: '',
+        updatedAt: new Date().toISOString()
+      }
+      writeBriefs(briefs)
+
+      json(res, 200, { state: readState() })
+      return
+    }
+
     if (req.method === 'POST' && url.pathname === '/api/generate') {
       if (!keyConfigured) {
         json(res, 400, {
@@ -198,7 +264,8 @@ const server = createServer(async (req, res) => {
 
       const body = await readBody(req)
       const entry = normalizeEntry(body)
-      const force = Boolean(body.force)
+      const brief = cleanText(body.brief)
+      const avoid = cleanText(body.avoid)
       const spec = readSpec()
       const index = spec.icons.findIndex((icon) => icon.id === entry.id)
 
@@ -209,7 +276,21 @@ const server = createServer(async (req, res) => {
       }
       writeSpec(spec)
 
-      const result = await runGenerator(entry.id, force)
+      const briefs = readBriefs()
+      briefs[entry.id] = {
+        ...briefs[entry.id],
+        brief,
+        avoid,
+        updatedAt: new Date().toISOString()
+      }
+      writeBriefs(briefs)
+
+      const result = await runGenerator(entry.id, {
+        force: Boolean(body.force),
+        variant: Boolean(body.variant),
+        brief,
+        avoid
+      })
       json(res, 200, { ...result, state: readState() })
       return
     }
