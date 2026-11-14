@@ -27,7 +27,8 @@ function writeBriefs(briefs) {
 
 const apiKey = process.env.DEEPSEEK_API_KEY
 const baseUrl = (process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com').replace(/\/+$/, '')
-const model = process.env.ICON_FORGE_MODEL || 'deepseek-reasoner'
+const model = process.env.ICON_FORGE_MODEL || 'deepseek-flash'
+let lastUsage = null
 
 const args = process.argv.slice(2)
 const idIndex = args.indexOf('--id')
@@ -188,11 +189,11 @@ async function callDeepSeek(messages, temperature) {
   const payload = {
     model,
     messages,
-    max_tokens: model.includes('reasoner') ? 12_000 : 4000,
+    max_tokens: 12_000,
     stream: false
   }
 
-  // deepseek-reasoner не поддерживает temperature.
+  // У legacy-модели deepseek-reasoner temperature не поддерживается.
   if (!model.includes('reasoner')) payload.temperature = temperature
 
   const response = await fetch(`${baseUrl}/chat/completions`, {
@@ -211,6 +212,7 @@ async function callDeepSeek(messages, temperature) {
   }
 
   const data = await response.json()
+  lastUsage = data?.usage ?? null
   const content = data?.choices?.[0]?.message?.content
 
   if (typeof content !== 'string' || !content.trim()) {
@@ -317,10 +319,13 @@ async function generateIcon(entry) {
 
   let lastSvg = null
   let lastProblems = []
+  const usage = { input: 0, output: 0 }
 
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     console.log(`GEN   ${entry.id}: попытка ${attempt}/3…`)
     const content = await callDeepSeek(messages, isVariant ? 0.85 : 0.5)
+    usage.input += lastUsage?.prompt_tokens ?? 0
+    usage.output += lastUsage?.completion_tokens ?? 0
     const svg = extractSvg(content)
 
     if (!svg) {
@@ -342,6 +347,9 @@ async function generateIcon(entry) {
     if (problems.length === 0) {
       writeFileSync(file, `${svg}\n`)
       console.log(`OK    ${entry.id}: сохранено в icons/${entry.id}.svg`)
+      console.log(
+        `TOKENS ${entry.id}: вход ${usage.input}, выход ${usage.output}`
+      )
       return true
     }
 

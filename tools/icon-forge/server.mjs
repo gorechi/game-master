@@ -12,7 +12,7 @@ const briefsPath = join(here, 'briefs.json')
 const uiPath = join(here, 'ui.html')
 const port = Number(process.env.ICON_FORGE_PORT || 5190)
 const keyConfigured = Boolean(process.env.DEEPSEEK_API_KEY)
-const model = process.env.ICON_FORGE_MODEL || 'deepseek-reasoner'
+const model = process.env.ICON_FORGE_MODEL || 'deepseek-flash'
 
 // Эти иконки передаются модели как эталоны стиля, поэтому их нельзя удалить.
 const styleAnchors = new Set(['forest', 'mountains', 'exit-arch'])
