@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import type { JSX, KeyboardEvent } from 'react'
+import type { CSSProperties, JSX, KeyboardEvent } from 'react'
+import { createPortal } from 'react-dom'
 import { IconChevronDown } from './icons'
 
 export interface SelectOption<T extends string> {
@@ -37,7 +38,9 @@ export function Select<T extends string>({
   const [activeIndex, setActiveIndex] = useState(-1)
   const [query, setQuery] = useState('')
   const [placement, setPlacement] = useState<'down' | 'up'>('down')
+  const [menuStyle, setMenuStyle] = useState<CSSProperties>({})
   const rootRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLUListElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const listId = useId()
 
@@ -45,7 +48,8 @@ export function Select<T extends string>({
     if (!open) return
 
     const onPointerDown = (event: PointerEvent): void => {
-      if (!rootRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node
+      if (!rootRef.current?.contains(target) && !menuRef.current?.contains(target)) {
         setOpen(false)
         setQuery('')
       }
@@ -65,9 +69,61 @@ export function Select<T extends string>({
     const rect = rootRef.current?.getBoundingClientRect()
     if (!rect) return
 
-    const spaceBelow = window.innerHeight - rect.bottom
-    setPlacement(spaceBelow < 280 && rect.top > spaceBelow ? 'up' : 'down')
+    const viewportHeight = window.innerHeight
+    const viewportWidth = window.innerWidth
+
+    // Меню не должно вылезать за прокручиваемую область модалки или другой контейнер.
+    let boundary: DOMRect | null = null
+    let node = rootRef.current?.parentElement ?? null
+
+    while (node && node !== document.body) {
+      const style = window.getComputedStyle(node)
+      if (
+        node.classList.contains('modal__body') ||
+        /(auto|scroll)/.test(style.overflowY)
+      ) {
+        boundary = node.getBoundingClientRect()
+        break
+      }
+      node = node.parentElement
+    }
+
+    const boundsTop = boundary?.top ?? 0
+    const boundsBottom = boundary?.bottom ?? viewportHeight
+    const boundsLeft = boundary?.left ?? 0
+    const boundsRight = boundary?.right ?? viewportWidth
+    const spaceBelow = boundsBottom - rect.bottom
+    const spaceAbove = rect.top - boundsTop
+    const next = spaceBelow < 280 && spaceAbove > spaceBelow ? 'up' : 'down'
+    const available = next === 'down' ? spaceBelow : spaceAbove
+
+    setPlacement(next)
+    setMenuStyle({
+      left: Math.max(boundsLeft + 8, Math.min(rect.left, boundsRight - rect.width - 8)),
+      minWidth: rect.width,
+      maxWidth: Math.max(
+        220,
+        Math.min(440, boundsRight - rect.left - 8, viewportWidth - rect.left - 8)
+      ),
+      maxHeight: Math.max(120, Math.min(260, available - 8)),
+      ...(next === 'down'
+        ? { top: rect.bottom + 6 }
+        : { bottom: viewportHeight - rect.top + 6 })
+    })
   }
+
+  useEffect(() => {
+    if (!open) return
+
+    const reposition = (): void => updatePlacement()
+    window.addEventListener('resize', reposition)
+    window.addEventListener('scroll', reposition, true)
+
+    return () => {
+      window.removeEventListener('resize', reposition)
+      window.removeEventListener('scroll', reposition, true)
+    }
+  }, [open])
 
   function closeMenu(): void {
     setOpen(false)
@@ -231,40 +287,45 @@ export function Select<T extends string>({
         </button>
       )}
 
-      {open ? (
-        <ul
-          id={listId}
-          className={`picker__menu picker__menu--${placement}`}
-          role="listbox"
-          aria-label={ariaLabel}
-        >
-          {visibleOptions.length === 0 ? (
-            <li className="picker__empty">Ничего не найдено</li>
-          ) : (
-            visibleOptions.map((option, index) => (
-              <li key={option.value}>
-                <button
-                  type="button"
-                  id={`${listId}-${index}`}
-                  role="option"
-                  aria-selected={option.value === value}
-                  className={[
-                    'picker__option',
-                    index === activeIndex ? 'picker__option--active' : '',
-                    option.value === value ? 'picker__option--selected' : ''
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  onPointerEnter={() => setActiveIndex(index)}
-                  onClick={() => choose(option)}
-                >
-                  {option.label}
-                </button>
-              </li>
-            ))
-          )}
-        </ul>
-      ) : null}
+      {open
+        ? createPortal(
+            <ul
+              ref={menuRef}
+              id={listId}
+              className={`picker__menu picker__menu--${placement} picker__menu--portal`}
+              style={menuStyle}
+              role="listbox"
+              aria-label={ariaLabel}
+            >
+              {visibleOptions.length === 0 ? (
+                <li className="picker__empty">Ничего не найдено</li>
+              ) : (
+                visibleOptions.map((option, index) => (
+                  <li key={option.value}>
+                    <button
+                      type="button"
+                      id={`${listId}-${index}`}
+                      role="option"
+                      aria-selected={option.value === value}
+                      className={[
+                        'picker__option',
+                        index === activeIndex ? 'picker__option--active' : '',
+                        option.value === value ? 'picker__option--selected' : ''
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
+                      onPointerEnter={() => setActiveIndex(index)}
+                      onClick={() => choose(option)}
+                    >
+                      {option.label}
+                    </button>
+                  </li>
+                ))
+              )}
+            </ul>,
+            document.body
+          )
+        : null}
     </div>
   )
 }

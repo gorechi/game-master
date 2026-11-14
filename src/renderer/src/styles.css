@@ -4023,6 +4023,17 @@ input[type='number'] {
   bottom: calc(100% + 6px);
 }
 
+.picker__menu--portal {
+  position: fixed;
+  z-index: 130;
+  overflow-x: hidden;
+}
+
+.picker__menu--portal .picker__option {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .picker--chip .picker__menu {
   min-width: 210px;
 }
