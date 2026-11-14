@@ -8,7 +8,7 @@ import { GameFinishModal } from './games/GameFinishModal'
 import { CombatModal, type CombatStart } from './games/CombatModal'
 import { CombatScreen } from './games/CombatScreen'
 import { RunMap } from './maps/RunMap'
-import { IconArrowLeft, IconFlag, IconSwords } from './ui/icons'
+import { IconArrowLeft, IconCollapse, IconExpand, IconFlag, IconSwords } from './ui/icons'
 
 interface GameRunPageProps {
   gameId: string
@@ -21,6 +21,7 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
   const [maps, setMaps] = useState<GameMap[]>([])
   const [placeTypes, setPlaceTypes] = useState<PlaceType[]>([])
   const [notes, setNotes] = useState('')
+  const [notesExpanded, setNotesExpanded] = useState(false)
   const [combatOpen, setCombatOpen] = useState(false)
   const [combat, setCombat] = useState<CombatStart | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -73,6 +74,25 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
 
     return () => window.clearTimeout(timer)
   }, [notes, game])
+
+  function collapseNotes(): void {
+    setNotesExpanded(false)
+    void persistNotes(notesRef.current)
+  }
+
+  useEffect(() => {
+    if (!notesExpanded) return
+
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      setNotesExpanded(false)
+      void persistNotes(notesRef.current)
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [notesExpanded])
 
   async function saveMonsterHp(monsterId: string, hitPoints: number): Promise<void> {
     if (!game) return
@@ -164,17 +184,30 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
           </section>
 
           <section className="run-screen__bottom">
-            <textarea
-              className="run-notes__input"
-              value={notes}
-              readOnly={game.status === 'finished'}
-              placeholder="Заметки…"
-              spellCheck={false}
-              onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
-                setNotes(event.target.value)
-              }
-              onBlur={() => void persistNotes(notes)}
-            />
+            <div className="run-notes">
+              <button
+                type="button"
+                className="run-notes__expand"
+                title="Развернуть заметки поверх карты"
+                aria-label="Развернуть заметки поверх карты"
+                onClick={() => setNotesExpanded(true)}
+              >
+                <IconExpand width={14} height={14} />
+                Развернуть
+              </button>
+
+              <textarea
+                className="run-notes__input"
+                value={notes}
+                readOnly={game.status === 'finished'}
+                placeholder="Заметки…"
+                spellCheck={false}
+                onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+                  setNotes(event.target.value)
+                }
+                onBlur={() => void persistNotes(notes)}
+              />
+            </div>
 
             <button
               type="button"
@@ -190,6 +223,43 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
               <span className="combat-button__label">Схватка</span>
             </button>
           </section>
+
+          {notesExpanded ? (
+            <section
+              className="run-notes-overlay"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Заметки мастера"
+            >
+              <header className="run-notes-overlay__head">
+                <div>
+                  <p className="page-kicker">Заметки</p>
+                  <h2>Заметки мастера</h2>
+                </div>
+                <button
+                  type="button"
+                  className="button button--tiny"
+                  onClick={collapseNotes}
+                >
+                  <IconCollapse width={14} height={14} />
+                  Свернуть
+                </button>
+              </header>
+
+              <textarea
+                className="run-notes-overlay__input"
+                value={notes}
+                readOnly={game.status === 'finished'}
+                placeholder="Заметки…"
+                spellCheck={false}
+                autoFocus
+                onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+                  setNotes(event.target.value)
+                }
+                onBlur={() => void persistNotes(notes)}
+              />
+            </section>
+          ) : null}
 
           {error ? (
             <p className="run-screen__error notice notice--error">{error}</p>

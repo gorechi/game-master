@@ -1971,11 +1971,44 @@ input[type='number'] {
   height: 150px;
 }
 
+.run-notes {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.run-notes__expand {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 11.5px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.run-notes__expand:hover {
+  border-color: var(--gold);
+  background: var(--panel-raised);
+  color: var(--ink);
+}
+
 .run-notes__input {
   width: 100%;
   height: 100%;
   min-height: 0;
   padding: 16px 18px;
+  padding-right: 124px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   outline: none;
@@ -1998,6 +2031,65 @@ input[type='number'] {
 }
 
 .run-notes__input:read-only {
+  color: var(--ink-muted);
+}
+
+.run-notes-overlay {
+  position: absolute;
+  z-index: 20;
+  inset: 12px;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: linear-gradient(160deg, var(--panel-raised), var(--panel));
+  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.45);
+}
+
+.run-notes-overlay__head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.run-notes-overlay__head h2 {
+  margin-top: 2px;
+  font-family: var(--font-display);
+  font-size: 29px;
+}
+
+.run-notes-overlay__input {
+  width: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  resize: none;
+  background: rgba(10, 8, 14, 0.18);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.run-notes-overlay__input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(216, 178, 92, 0.12);
+}
+
+.run-notes-overlay__input::placeholder {
+  color: var(--ink-faint);
+}
+
+.run-notes-overlay__input:read-only {
   color: var(--ink-muted);
 }
 

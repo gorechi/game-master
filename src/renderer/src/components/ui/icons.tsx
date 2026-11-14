@@ -201,6 +201,22 @@ export function IconCoffin(props: IconProps): JSX.Element {
   )
 }
 
+export function IconExpand(props: IconProps): JSX.Element {
+  return (
+    <Svg {...props}>
+      <path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5" />
+    </Svg>
+  )
+}
+
+export function IconCollapse(props: IconProps): JSX.Element {
+  return (
+    <Svg {...props}>
+      <path d="M4 9h5V4M20 9h-5V4M4 15h5v5M20 15h-5v5" />
+    </Svg>
+  )
+}
+
 export function IconMap(props: IconProps): JSX.Element {
   return (
     <Svg {...props}>
