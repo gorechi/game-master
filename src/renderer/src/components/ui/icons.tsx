@@ -192,6 +192,15 @@ export function IconSkull(props: IconProps): JSX.Element {
   )
 }
 
+export function IconCoffin(props: IconProps): JSX.Element {
+  return (
+    <Svg {...props}>
+      <path d="M9.3 2.8h5.4l1.3 4h2.5l-1.6 4.9 2 9.5H5.1l2-9.5L5.5 6.8H8l1.3-4Z" />
+      <path d="M12 9.2v6M9.4 11.4h5.2" />
+    </Svg>
+  )
+}
+
 export function IconMap(props: IconProps): JSX.Element {
   return (
     <Svg {...props}>
