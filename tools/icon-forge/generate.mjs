@@ -104,6 +104,9 @@ const systemPrompt = `Ты — senior SVG-иконограф и арт-дире�
   характерных примет конкретного места.
 - Не повторяй одну и ту же композицию: в каждом запросе указан новый подход,
   и его нужно соблюдать, пока он не мешает узнаваемости.
+- Уточнение заказчика и список «не изображать» важнее любой композиционной
+  подсказки. Если подсказка противоречит уточнению или запрету — отмени её
+  и выбери ракурс, который соответствует уточнению.
 
 СТИЛЬ
 
@@ -151,14 +154,15 @@ ${repair.svg}
   }
 
   if (avoid) {
-    lines.push('', 'НЕ ИЗОБРАЖАТЬ:', avoid)
+    lines.push('', 'НЕ ИЗОБРАЖАТЬ (жёсткий запрет):', avoid)
   }
 
   if (direction) {
     lines.push(
       '',
-      'КОМПОЗИЦИЯ ЭТОЙ ПОПЫТКИ (не повторяй прошлые):',
-      direction.text
+      'ПОДСКАЗКА КОМПОЗИЦИИ (подчиняется уточнению и запретам):',
+      direction.text,
+      'Если подсказка противоречит уточнению или запрету — не используй её.'
     )
   }
 
@@ -210,11 +214,40 @@ async function callDeepSeek(messages, temperature) {
   return content
 }
 
-function rememberDirection(id, direction, brief, avoid, restarted) {
+function detectKinds(entry, brief) {
+  const text = `${brief} ${entry.title} ${entry.tags.join(' ')} ${entry.id}`
+
+  if (
+    /(внутренн|помещен|комнат|интерьер|внутри|\broom\b|\binterior\b|\binside\b|зал\b|кабинет|спальн|кухн|коридор|подземель|шахт[аеуы]?\b|темниц)/i.test(
+      text
+    ) &&
+    !/двор/i.test(text)
+  ) {
+    return ['interior']
+  }
+
+  if (/(снаружи|наружн|фасад|здани|\bbuilding\b|\bfacade\b|\bexterior\b|улиц|двор)/i.test(text)) {
+    return ['exterior']
+  }
+
+  if (
+    /(лес|гор[аыу]?\b|озер|рек[аиу]?\b|мор[ея]\b|полян|долин|берег|остров|пустын|болот|\bforest\b|\bmountain|\blake\b|\briver\b|\bsea\b|\bisland\b|\bdesert\b|\bswamp\b|\bmarsh\b)/i.test(
+      text
+    )
+  ) {
+    return ['landscape']
+  }
+
+  return []
+}
+
+function rememberDirection(id, direction, brief, avoid, resetIds) {
   const briefs = readBriefs()
   const previous = briefs[id] ?? {}
   const used = Array.isArray(previous.directions) ? previous.directions : []
-  const nextUsed = restarted ? [] : used
+  const nextUsed = resetIds.length > 0
+    ? used.filter((directionId) => !resetIds.includes(directionId))
+    : used
 
   briefs[id] = {
     ...previous,
@@ -239,10 +272,11 @@ async function generateIcon(entry) {
   const brief = cleanText(briefOverride ?? stored.brief)
   const avoid = cleanText(avoidOverride ?? stored.avoid)
   const used = Array.isArray(stored.directions) ? stored.directions : []
-  const { direction, restarted } = pickDirection(used)
+  const kinds = detectKinds(entry, brief)
+  const { direction, resetIds } = pickDirection(used, kinds)
   const isVariant = variant || (existsSync(file) && force)
 
-  rememberDirection(entry.id, direction, brief, avoid, restarted)
+  rememberDirection(entry.id, direction, brief, avoid, resetIds)
 
   console.log(`GEN   ${entry.id}: подход «${direction.text}»`)
 
