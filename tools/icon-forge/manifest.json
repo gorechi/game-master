@@ -2,7 +2,7 @@
   "set": "fantasy-places",
   "title": "Фэнтезийные места",
   "viewBox": "0 0 24 24",
-  "generatedAt": "2026-11-14T13:03:30.596Z",
+  "generatedAt": "2026-11-14T13:22:48.272Z",
   "icons": [
     {
       "id": "place-generic",
@@ -93,6 +93,23 @@
         "village"
       ],
       "file": "icons/village.svg"
+    },
+    {
+      "id": "castle",
+      "title": "Замок",
+      "tags": [
+        "castle",
+        "tower"
+      ],
+      "file": "icons/castle.svg"
+    },
+    {
+      "id": "tavern",
+      "title": "Таверна",
+      "tags": [
+        "tavern"
+      ],
+      "file": "icons/tavern.svg"
     }
   ]
 }

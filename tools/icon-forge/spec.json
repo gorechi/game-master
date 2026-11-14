@@ -83,6 +83,21 @@
       "tags": [
         "village"
       ]
+    },
+    {
+      "id": "castle",
+      "title": "Замок",
+      "tags": [
+        "castle",
+        "tower"
+      ]
+    },
+    {
+      "id": "tavern",
+      "title": "Таверна",
+      "tags": [
+        "tavern"
+      ]
     }
   ]
 }
