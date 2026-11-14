@@ -62,6 +62,9 @@ export function RunMap({
   function startPan(event: PointerEvent<HTMLDivElement>): void {
     if (event.button !== 0) return
 
+    const target = event.target
+    if (target instanceof Element && target.closest('.map-node--linked')) return
+
     const viewport = event.currentTarget
     event.preventDefault()
 

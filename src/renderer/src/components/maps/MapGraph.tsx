@@ -118,8 +118,20 @@ export function MapGraph({
   const dragRef = useRef<DragState | null>(null)
   const connectionRef = useRef<ConnectionDraft | null>(null)
   const graphRef = useRef<HTMLDivElement>(null)
+  const lastPointerOpenRef = useRef(0)
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [connection, setConnection] = useState<ConnectionDraft | null>(null)
+
+  function openLinkedMap(node: MapNodePosition): void {
+    if (!node.linkedMapId) return
+    lastPointerOpenRef.current = Date.now()
+    onOpenMap(node.linkedMapId)
+  }
+
+  function onLinkedClick(node: MapNodePosition): void {
+    if (Date.now() - lastPointerOpenRef.current < 500) return
+    openLinkedMap(node)
+  }
 
   if (layout.nodes.length === 0) {
     return (
@@ -396,17 +408,26 @@ export function MapGraph({
                   : node.name
             }
             onClick={
-              !interactive && linkedName
-                ? () => {
-                    if (node.linkedMapId) onOpenMap(node.linkedMapId)
-                  }
-                : undefined
+              !interactive && linkedName ? () => onLinkedClick(node) : undefined
             }
             onPointerDown={
-              interactive ? (event) => onPointerDown(event, node) : undefined
+              interactive
+                ? (event) => onPointerDown(event, node)
+                : linkedName
+                  ? (event) => event.stopPropagation()
+                  : undefined
             }
             onPointerMove={interactive ? onPointerMove : undefined}
-            onPointerUp={interactive ? (event) => finishDrag(event, node) : undefined}
+            onPointerUp={
+              interactive
+                ? (event) => finishDrag(event, node)
+                : linkedName
+                  ? (event) => {
+                      event.stopPropagation()
+                      openLinkedMap(node)
+                    }
+                  : undefined
+            }
             onPointerCancel={interactive ? cancelDrag : undefined}
             onKeyDown={linkedName ? (event) => onNodeKeyDown(event, node) : undefined}
           >
