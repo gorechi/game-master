@@ -89,6 +89,12 @@
   button.primary:hover:not(:disabled) { filter: brightness(1.04); }
   button:disabled { opacity: .45; cursor: not-allowed; }
   button.small { padding: 5px 9px; font-size: 11px; border-radius: 7px; }
+  button.danger { color: var(--danger); border-color: rgba(165,58,44,.4); background: rgba(165,58,44,.06); }
+  button.danger:hover:not(:disabled) { border-color: var(--danger); background: rgba(165,58,44,.12); }
+  .confirm {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    font-size: 11px; color: var(--danger);
+  }
   .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
   .log {
     min-height: 90px; max-height: 220px; overflow: auto; white-space: pre-wrap;
@@ -250,8 +256,10 @@
   }
 
   function renderPreview() {
-    if (state?.previewExists && !$('preview-wrap').querySelector('img')) {
-      showPreview('/preview.png')
+    if (state?.previewExists) {
+      if (!$('preview-wrap').querySelector('img')) showPreview('/preview.png')
+    } else {
+      $('preview-wrap').innerHTML = 'Превью ещё не собрано.'
     }
   }
 
@@ -259,12 +267,22 @@
     return `<span class="size"><span style="width:${size}px;height:${size}px;display:block">${svg.replace('<svg ', `<svg style="width:${size}px;height:${size}px" `)}</span><span>${size}</span></span>`
   }
 
+  function actionsMarkup(icon) {
+    const regenerateDisabled = state?.keyConfigured ? '' : 'disabled'
+    const deleteButton = icon.protected
+      ? ''
+      : `<button class="small danger" type="button" data-delete="${esc(icon.id)}">Удалить</button>`
+
+    return `<button class="small" type="button" data-regen="${esc(icon.id)}" title="Новая композиция, а не повтор прошлой" ${regenerateDisabled}>Перегенерировать</button>
+        ${deleteButton}
+        ${icon.exists ? `<a class="download" href="/api/icon/${encodeURIComponent(icon.id)}.svg" target="_blank" rel="noreferrer">SVG</a>` : ''}`
+  }
+
   function card(icon) {
     const tags = icon.tags.map((tag) => `<span class="tag">${esc(tag)}</span>`).join('')
     const problems = icon.problems.length
       ? `<ul class="problems">${icon.problems.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>`
       : ''
-    const regenerateDisabled = state?.keyConfigured ? '' : 'disabled'
     const directionNote = icon.directionCount
       ? `Подходов использовано: ${icon.directionCount}. Последний: ${esc(icon.lastDirection)}`
       : 'Каждая генерация пробует новую композицию.'
@@ -281,7 +299,7 @@
       <div class="icon-card__head">
         <div>
           <h3 class="icon-card__name">${esc(icon.title)}</h3>
-          <div class="icon-card__id">${esc(icon.id)}</div>
+          <div class="icon-card__id">${esc(icon.id)}${icon.protected ? ' · эталон стиля' : ''}</div>
         </div>
         <span class="status ${icon.valid ? 'status--ok' : 'status--bad'}">${icon.valid ? 'OK' : 'Проверить'}</span>
       </div>
@@ -306,10 +324,7 @@
           </div>
         </div>
       </details>
-      <div class="actions-row">
-        <button class="small" type="button" data-regen="${esc(icon.id)}" title="Новая композиция, а не повтор прошлой" ${regenerateDisabled}>Перегенерировать</button>
-        ${icon.exists ? `<a class="download" href="/api/icon/${encodeURIComponent(icon.id)}.svg" target="_blank" rel="noreferrer">SVG</a>` : ''}
-      </div>
+      <div class="actions-row">${actionsMarkup(icon)}</div>
     </article>`
   }
 
@@ -468,6 +483,50 @@
 
   document.addEventListener('click', async (event) => {
     if (busy) return
+
+    const deleteButton = event.target.closest('[data-delete]')
+    if (deleteButton) {
+      const icon = state?.icons.find((item) => item.id === deleteButton.dataset.delete)
+      const row = deleteButton.closest('.actions-row')
+      if (!icon || !row) return
+      row.innerHTML = `<span class="confirm">Удалить «${esc(icon.title)}»?
+        <button class="small danger" type="button" data-delete-confirm="${esc(icon.id)}">Удалить</button>
+        <button class="small" type="button" data-delete-cancel="${esc(icon.id)}">Отмена</button>
+      </span>`
+      return
+    }
+
+    const cancelButton = event.target.closest('[data-delete-cancel]')
+    if (cancelButton) {
+      const icon = state?.icons.find((item) => item.id === cancelButton.dataset.deleteCancel)
+      const row = cancelButton.closest('.actions-row')
+      if (icon && row) row.innerHTML = actionsMarkup(icon)
+      return
+    }
+
+    const confirmButton = event.target.closest('[data-delete-confirm]')
+    if (confirmButton) {
+      const id = confirmButton.dataset.deleteConfirm
+      setBusy(true)
+      log(`Удаляем ${id}…`)
+      try {
+        const response = await fetch('/api/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        })
+        const result = await response.json()
+        if (!response.ok) throw new Error(result.error || 'Не удалось удалить иконку')
+        state = result.state
+        render()
+        log(result.output || `Иконка ${id} удалена.`)
+      } catch (error) {
+        log(String(error))
+      } finally {
+        setBusy(false)
+      }
+      return
+    }
 
     const saveButton = event.target.closest('[data-save-brief]')
     if (saveButton) {

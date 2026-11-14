@@ -1,5 +1,5 @@
 import { createServer } from 'node:http'
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, unlinkSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawn } from 'node:child_process'
@@ -13,6 +13,9 @@ const uiPath = join(here, 'ui.html')
 const port = Number(process.env.ICON_FORGE_PORT || 5190)
 const keyConfigured = Boolean(process.env.DEEPSEEK_API_KEY)
 const model = process.env.ICON_FORGE_MODEL || 'deepseek-reasoner'
+
+// Эти иконки передаются модели как эталоны стиля, поэтому их нельзя удалить.
+const styleAnchors = new Set(['forest', 'mountains', 'exit-arch'])
 
 mkdirSync(iconsDir, { recursive: true })
 
@@ -72,7 +75,8 @@ function readState() {
       brief: typeof meta.brief === 'string' ? cleanText(meta.brief) : '',
       avoid: typeof meta.avoid === 'string' ? cleanText(meta.avoid) : '',
       directionCount: Array.isArray(meta.directions) ? meta.directions.length : 0,
-      lastDirection: typeof meta.lastDirection === 'string' ? meta.lastDirection : ''
+      lastDirection: typeof meta.lastDirection === 'string' ? meta.lastDirection : '',
+      protected: styleAnchors.has(entry.id)
     }
   })
 
@@ -252,6 +256,54 @@ const server = createServer(async (req, res) => {
       writeBriefs(briefs)
 
       json(res, 200, { state: readState() })
+      return
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/delete') {
+      const body = await readBody(req)
+      const id = normalizeId(body.id)
+
+      if (styleAnchors.has(id)) {
+        json(res, 400, {
+          error: `${id} — эталон стиля для генерации, его нельзя удалить`
+        })
+        return
+      }
+
+      const spec = readSpec()
+      const index = spec.icons.findIndex((icon) => icon.id === id)
+
+      if (index === -1) {
+        json(res, 404, { error: `В spec.json нет иконки "${id}"` })
+        return
+      }
+
+      spec.icons.splice(index, 1)
+      writeSpec(spec)
+
+      const briefs = readBriefs()
+      if (briefs[id]) {
+        delete briefs[id]
+        writeBriefs(briefs)
+      }
+
+      const files = [
+        join(iconsDir, `${id}.svg`),
+        join(here, 'preview', `rejected-${id}.svg`),
+        join(here, 'preview', 'preview.png'),
+        join(here, 'preview', 'index.html')
+      ]
+      for (const file of files) {
+        if (existsSync(file)) unlinkSync(file)
+      }
+
+      const validation = await runNode('validate.mjs')
+      json(res, 200, {
+        ok: true,
+        validationOk: validation.ok,
+        output: `Иконка ${id} удалена.\n${validation.output}`,
+        state: readState()
+      })
       return
     }
 
