@@ -39,6 +39,7 @@ export const IPC = {
   monsterUpdate: 'monster:update',
   monsterRemove: 'monster:remove',
   mapsList: 'maps:list',
+  mapsListAll: 'maps:list-all',
   mapCreate: 'map:create',
   mapUpdate: 'map:update',
   mapRemove: 'map:remove',
@@ -111,7 +112,10 @@ export interface GameMasterApi {
   }
   /** Карты: пространства с местами и путями между ними. */
   maps: {
-    list(): Promise<GameMap[]>
+    /** Карты активного сеттинга или указанного явно. */
+    list(realmId?: string): Promise<GameMap[]>
+    /** Все карты всех сеттингов — для общего списка и фильтра. */
+    listAll(): Promise<GameMap[]>
     create(input: GameMapInput): Promise<GameMap>
     update(map: GameMap): Promise<GameMap>
     remove(id: string): Promise<void>

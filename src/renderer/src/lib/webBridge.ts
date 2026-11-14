@@ -153,6 +153,7 @@ function readMaps(): GameMap[] {
         ? map.places.map((place) => ({
             ...place,
             linkedMapId: typeof place.linkedMapId === 'string' ? place.linkedMapId : null,
+            placeTypeId: typeof place.placeTypeId === 'string' ? place.placeTypeId : null,
             x: typeof place.x === 'number' ? place.x : null,
             y: typeof place.y === 'number' ? place.y : null
           }))
@@ -279,6 +280,20 @@ function assertPlaceTypeIcon(svg: string): void {
   if (!check.ok) {
     throw new Error(`Иконка не соответствует требованиям: ${check.problems.join(' ')}`)
   }
+}
+
+function assertRealm(realmId: string): void {
+  if (!readRealms().some((realm) => realm.id === realmId)) {
+    throw new Error('Сеттинг не найден — возможно, он был удалён')
+  }
+}
+
+function placeTypeIdsForRealm(realmId: string): Set<string> {
+  return new Set(
+    readPlaceTypes()
+      .filter((placeType) => placeType.realmId === realmId)
+      .map((placeType) => placeType.id)
+  )
 }
 
 function getActiveRealmId(): string {
@@ -572,27 +587,64 @@ export function createWebBridge(): GameMasterApi {
     },
 
     maps: {
-      list: async (): Promise<GameMap[]> => {
-        const realmId = getActiveRealmId()
-        return readMaps().filter((map) => map.realmId === realmId)
+      list: async (realmId?: string): Promise<GameMap[]> => {
+        const id = realmId ?? getActiveRealmId()
+        return readMaps().filter((map) => map.realmId === id)
       },
 
+      listAll: async (): Promise<GameMap[]> => readMaps(),
+
       create: async (input: GameMapInput): Promise<GameMap> => {
-        const map = createMap(input, getActiveRealmId())
-        writeMaps([...readMaps(), map])
-        return map
+        assertRealm(input.realmId)
+        const map = createMap(input)
+        const validTypeIds = placeTypeIdsForRealm(input.realmId)
+        const created: GameMap = {
+          ...map,
+          places: map.places.map((place) => ({
+            ...place,
+            placeTypeId:
+              place.placeTypeId && validTypeIds.has(place.placeTypeId)
+                ? place.placeTypeId
+                : null
+          }))
+        }
+
+        writeMaps([...readMaps(), created])
+        return created
       },
 
       update: async (map: GameMap): Promise<GameMap> => {
         const existing = readMaps().find((item) => item.id === map.id)
+        if (!existing) {
+          throw new Error('Карта не найдена — возможно, запись уже удалена')
+        }
+
+        assertRealm(map.realmId)
         const normalized = normalizeMapInput(map)
+        const validTypeIds = placeTypeIdsForRealm(map.realmId)
+        const knownMapIds = new Set(
+          readMaps()
+            .filter((item) => item.realmId === map.realmId)
+            .map((item) => item.id)
+        )
+
         const updated: GameMap = {
-          ...map,
-          realmId: existing?.realmId ?? DEFAULT_REALM_ID,
+          ...existing,
           ...normalized,
-          places: normalized.places.map((place) =>
-            place.linkedMapId === map.id ? { ...place, linkedMapId: null } : place
-          ),
+          places: normalized.places.map((place) => ({
+            ...place,
+            placeTypeId:
+              place.placeTypeId && validTypeIds.has(place.placeTypeId)
+                ? place.placeTypeId
+                : null,
+            linkedMapId:
+              place.isExit &&
+              place.linkedMapId &&
+              place.linkedMapId !== map.id &&
+              knownMapIds.has(place.linkedMapId)
+                ? place.linkedMapId
+                : null
+          })),
           updatedAt: new Date().toISOString()
         }
 

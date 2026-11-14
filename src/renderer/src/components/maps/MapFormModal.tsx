@@ -1,6 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { FormEvent, JSX } from 'react'
 import type { GameMap, MapPath, MapPlace } from '@shared/map'
+import type { PlaceType } from '@shared/placeType'
+import type { Realm } from '@shared/realm'
 import {
   connectedPlaceIds,
   createMapPlace,
@@ -10,26 +12,42 @@ import {
 import { api, errorMessage } from '@renderer/lib/api'
 import { pluralize } from '@renderer/lib/format'
 import { Modal } from '../ui/Modal'
+import { Select } from '../ui/Select'
 import { IconPencil, IconPlus, IconTrash } from '../ui/icons'
+import { PlaceTypeIcon } from '../placeTypes/PlaceTypeIcon'
 import { PlaceFormModal } from './PlaceFormModal'
 
 interface MapFormModalProps {
   open: boolean
   map: GameMap | null
+  realms: readonly Realm[]
+  /** Сеттинг, выбранный в фильтре или активный в приложении. */
+  defaultRealmId: string
   onClose: () => void
   onSaved: (map: GameMap) => void
 }
 
-/** Создание и редактирование карты: название, места и пути между ними. */
-export function MapFormModal({ open, map, onClose, onSaved }: MapFormModalProps): JSX.Element {
+/** Создание и редактирование карты: сеттинг, название, места и пути между ними. */
+export function MapFormModal({
+  open,
+  map,
+  realms,
+  defaultRealmId,
+  onClose,
+  onSaved
+}: MapFormModalProps): JSX.Element {
   const [name, setName] = useState('')
+  const [realmId, setRealmId] = useState('')
   const [places, setPlaces] = useState<MapPlace[]>([])
   const [paths, setPaths] = useState<MapPath[]>([])
   const [otherMaps, setOtherMaps] = useState<GameMap[]>([])
+  const [placeTypes, setPlaceTypes] = useState<PlaceType[]>([])
+  const [newPlaceTypeId, setNewPlaceTypeId] = useState<string | null>(null)
   const [placeName, setPlaceName] = useState('')
   const [editingPlaceId, setEditingPlaceId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [loadingRealm, setLoadingRealm] = useState(false)
   const nameRef = useRef<HTMLInputElement>(null)
   const formId = useId()
 
@@ -37,30 +55,57 @@ export function MapFormModal({ open, map, onClose, onSaved }: MapFormModalProps)
     if (!open) return
 
     setName(map?.name ?? '')
+    setRealmId(map?.realmId ?? defaultRealmId)
     setPlaces(map?.places ?? [])
     setPaths(map?.paths ?? [])
     setOtherMaps([])
+    setPlaceTypes([])
+    setNewPlaceTypeId(null)
     setPlaceName('')
     setEditingPlaceId(null)
     setError(null)
     setSaving(false)
+    setLoadingRealm(false)
     window.setTimeout(() => nameRef.current?.focus(), 0)
+  }, [open, map, defaultRealmId])
+
+  useEffect(() => {
+    if (!open || !realmId) {
+      setOtherMaps([])
+      setPlaceTypes([])
+      return
+    }
 
     let cancelled = false
+    setLoadingRealm(true)
 
-    void api.maps
-      .list()
-      .then((maps) => {
-        if (!cancelled) setOtherMaps(maps.filter((item) => item.id !== map?.id))
+    void Promise.all([api.maps.list(realmId), api.placeTypes.list(realmId)])
+      .then(([maps, types]) => {
+        if (cancelled) return
+        setOtherMaps(maps.filter((item) => item.id !== map?.id))
+        setPlaceTypes(types)
       })
-      .catch(() => {
-        if (!cancelled) setOtherMaps([])
+      .catch((caught: unknown) => {
+        if (!cancelled) setError(errorMessage(caught))
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingRealm(false)
       })
 
     return () => {
       cancelled = true
     }
-  }, [open, map])
+  }, [open, realmId, map?.id])
+
+  function changeRealm(nextRealmId: string): void {
+    setRealmId(nextRealmId)
+    setNewPlaceTypeId(null)
+    // Типы принадлежат сеттингу: при его смене все места теряют тип.
+    setPlaces((current) =>
+      current.map((place) => (place.placeTypeId ? { ...place, placeTypeId: null } : place))
+    )
+    setError(null)
+  }
 
   const editingPlace = editingPlaceId
     ? (places.find((place) => place.id === editingPlaceId) ?? null)
@@ -72,10 +117,17 @@ export function MapFormModal({ open, map, onClose, onSaved }: MapFormModalProps)
 
   function addPlace(): void {
     const trimmed = placeName.trim()
-    if (!trimmed) return
+    if (!trimmed || !realmId) return
 
-    setPlaces((current) => [...current, createMapPlace(trimmed)])
+    const placeTypeId =
+      newPlaceTypeId && placeTypes.some((placeType) => placeType.id === newPlaceTypeId)
+        ? newPlaceTypeId
+        : null
+
+    const place = createMapPlace(trimmed)
+    setPlaces((current) => [...current, { ...place, placeTypeId }])
     setPlaceName('')
+    setNewPlaceTypeId(null)
   }
 
   function removePlace(placeId: string): void {
@@ -88,9 +140,15 @@ export function MapFormModal({ open, map, onClose, onSaved }: MapFormModalProps)
     name: string
     isExit: boolean
     linkedMapId: string | null
+    placeTypeId: string | null
     connectedIds: string[]
   }): void {
     if (!editingPlace) return
+
+    const placeTypeId =
+      input.placeTypeId && placeTypes.some((placeType) => placeType.id === input.placeTypeId)
+        ? input.placeTypeId
+        : null
 
     setPlaces((current) =>
       current.map((place) =>
@@ -99,7 +157,8 @@ export function MapFormModal({ open, map, onClose, onSaved }: MapFormModalProps)
               ...place,
               name: input.name,
               isExit: input.isExit,
-              linkedMapId: input.linkedMapId
+              linkedMapId: input.linkedMapId,
+              placeTypeId
             }
           : place
       )
@@ -119,11 +178,16 @@ export function MapFormModal({ open, map, onClose, onSaved }: MapFormModalProps)
       return
     }
 
+    if (!realmId) {
+      setError('Выберите сеттинг карты')
+      return
+    }
+
     setSaving(true)
     setError(null)
 
     try {
-      const input = { name: trimmed, places, paths }
+      const input = { name: trimmed, realmId, places, paths }
       const saved = map
         ? await api.maps.update({ ...map, ...input })
         : await api.maps.create(input)
@@ -178,6 +242,34 @@ export function MapFormModal({ open, map, onClose, onSaved }: MapFormModalProps)
             />
           </label>
 
+          <div className="field">
+            <span className="field__label">Сеттинг *</span>
+            <Select
+              ariaLabel="Сеттинг карты"
+              value={realmId}
+              placeholder="Выберите сеттинг"
+              disabled={realms.length === 0}
+              options={realms.map((realm) => ({ value: realm.id, label: realm.name }))}
+              onChange={changeRealm}
+            />
+            <p className="game-editor__hint">
+              Карта принадлежит выбранному сеттингу. При смене сеттинга типы всех мест
+              сбрасываются.
+            </p>
+          </div>
+
+          {realms.length === 0 ? (
+            <p className="notice notice--error">
+              Нет доступных сеттингов. Создайте сеттинг, чтобы добавлять карты.
+            </p>
+          ) : null}
+
+          {map && realmId && realmId !== map.realmId && map.places.some((place) => place.placeTypeId) ? (
+            <p className="notice notice--error">
+              При сохранении карты в другом сеттинге типы всех мест будут сброшены.
+            </p>
+          ) : null}
+
           <section className="editor-section">
             <header className="editor-section__head">
               <h3>Места</h3>
@@ -191,8 +283,9 @@ export function MapFormModal({ open, map, onClose, onSaved }: MapFormModalProps)
                 className="input"
                 value={placeName}
                 maxLength={100}
-                placeholder="Название нового места"
+                placeholder={realmId ? 'Название нового места' : 'Сначала выберите сеттинг'}
                 autoComplete="off"
+                disabled={!realmId}
                 onChange={(event) => setPlaceName(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key !== 'Enter') return
@@ -200,16 +293,43 @@ export function MapFormModal({ open, map, onClose, onSaved }: MapFormModalProps)
                   addPlace()
                 }}
               />
+              <div className="map-add-place__type">
+                <Select
+                  ariaLabel="Тип нового места"
+                  value={newPlaceTypeId ?? ''}
+                  placeholder="Без типа"
+                  disabled={!realmId}
+                  options={[
+                    { value: '', label: 'Без типа' },
+                    ...placeTypes.map((placeType) => ({
+                      value: placeType.id,
+                      label: placeType.name
+                    }))
+                  ]}
+                  onChange={(value) => setNewPlaceTypeId(value || null)}
+                />
+              </div>
               <button
                 type="button"
                 className="button"
                 onClick={addPlace}
-                disabled={!placeName.trim()}
+                disabled={!realmId || !placeName.trim()}
               >
                 <IconPlus width={15} height={15} />
                 Добавить место
               </button>
             </div>
+
+            {!realmId ? (
+              <p className="notice">
+                Сначала выберите сеттинг карты — без него нельзя добавлять места и
+                выбирать их типы.
+              </p>
+            ) : null}
+
+            {realmId && loadingRealm ? (
+              <p className="game-editor__hint">Загружаем типы мест…</p>
+            ) : null}
 
             {places.length === 0 ? (
               <div className="map-place-list map-place-list--empty">
@@ -220,10 +340,19 @@ export function MapFormModal({ open, map, onClose, onSaved }: MapFormModalProps)
                 {places.map((place) => {
                   const links = placePaths(paths, place.id).length
                   const linkedName = linkedMapName(place.linkedMapId)
+                  const placeType = place.placeTypeId
+                    ? placeTypes.find((item) => item.id === place.placeTypeId)
+                    : undefined
 
                   return (
                     <li key={place.id} className="map-place-row">
                       <span className="map-place-row__name">{place.name}</span>
+                      {placeType ? (
+                        <span className="map-place-row__type">
+                          <PlaceTypeIcon svg={placeType.iconSvg} size={14} />
+                          {placeType.name}
+                        </span>
+                      ) : null}
                       {place.isExit ? <span className="map-badge">Выход</span> : null}
                       {linkedName ? (
                         <span className="map-place-row__link">→ {linkedName}</span>
@@ -275,6 +404,7 @@ export function MapFormModal({ open, map, onClose, onSaved }: MapFormModalProps)
         otherPlaces={otherPlaces}
         connectedIds={editingConnections}
         otherMaps={otherMaps}
+        placeTypes={placeTypes}
         onClose={() => setEditingPlaceId(null)}
         onSave={savePlace}
       />

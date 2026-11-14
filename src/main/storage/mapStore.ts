@@ -1,7 +1,6 @@
 import path from 'node:path'
 import { app } from 'electron'
 import { createMap, normalizeMapInput, type NormalizedMapInput } from '@shared/domain'
-import { DEFAULT_REALM_ID } from '@shared/realm'
 import {
   MAPS_FILE_SCHEMA_VERSION,
   mapsFileSchema,
@@ -10,6 +9,7 @@ import {
   type MapsFile
 } from '@shared/map'
 import { JsonFileError, readJsonFile, withFileLock, writeJsonAtomic } from './jsonFile'
+import { listPlaceTypes } from './placeTypeStore'
 
 const LOCK_KEY = 'maps.json'
 
@@ -82,21 +82,33 @@ function assertMapInput(input: GameMapInput): NormalizedMapInput {
   return normalized
 }
 
-/** Ссылка на другую карту допустима только у выхода и только на существующую карту. */
-function sanitizeLinks(map: GameMap, knownIds: ReadonlySet<string>): GameMap {
+/** Ссылки допустимы только на существующую карту; тип места — только из своего сеттинга. */
+function sanitizeMap(
+  map: GameMap,
+  knownMapIds: ReadonlySet<string>,
+  validPlaceTypeIds: ReadonlySet<string>
+): GameMap {
   return {
     ...map,
     places: map.places.map((place) => ({
       ...place,
+      placeTypeId:
+        place.placeTypeId && validPlaceTypeIds.has(place.placeTypeId)
+          ? place.placeTypeId
+          : null,
       linkedMapId:
         place.isExit &&
         place.linkedMapId &&
         place.linkedMapId !== map.id &&
-        knownIds.has(place.linkedMapId)
+        knownMapIds.has(place.linkedMapId)
           ? place.linkedMapId
           : null
     }))
   }
+}
+
+async function placeTypeIdsOf(realmId: string): Promise<Set<string>> {
+  return new Set((await listPlaceTypes(realmId)).map((placeType) => placeType.id))
 }
 
 export async function listMaps(realmId?: string): Promise<GameMap[]> {
@@ -104,16 +116,22 @@ export async function listMaps(realmId?: string): Promise<GameMap[]> {
   return realmId ? maps.filter((map) => map.realmId === realmId) : maps
 }
 
-export async function addMap(
-  input: GameMapInput,
-  realmId: string = DEFAULT_REALM_ID
-): Promise<GameMap> {
+export async function addMap(input: GameMapInput): Promise<GameMap> {
   const normalized = assertMapInput(input)
 
   return withFileLock(LOCK_KEY, async () => {
     const file = await readMapsFile()
-    const created = createMap(normalized, realmId)
-    const map = sanitizeLinks(created, new Set(file.maps.map((item) => item.id)))
+    const created = createMap(normalized)
+    const realmMapIds = new Set(
+      file.maps
+        .filter((item) => item.realmId === normalized.realmId)
+        .map((item) => item.id)
+    )
+    const map = sanitizeMap(
+      created,
+      realmMapIds,
+      await placeTypeIdsOf(normalized.realmId)
+    )
 
     await writeJsonAtomic(mapsFile(), {
       ...file,
@@ -135,15 +153,21 @@ export async function updateMap(map: GameMap): Promise<GameMap> {
       throw new Error('Карта не найдена — возможно, запись уже удалена')
     }
 
-    const updated = sanitizeLinks(
+    const updated = sanitizeMap(
       {
         ...file.maps[index]!,
+        realmId: normalized.realmId,
         name: normalized.name,
         places: normalized.places,
         paths: normalized.paths,
         updatedAt: new Date().toISOString()
       },
-      new Set(file.maps.map((item) => item.id))
+      new Set(
+        file.maps
+          .filter((item) => item.realmId === normalized.realmId)
+          .map((item) => item.id)
+      ),
+      await placeTypeIdsOf(normalized.realmId)
     )
 
     const maps = [...file.maps]

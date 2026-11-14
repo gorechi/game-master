@@ -40,7 +40,8 @@ const api: GameMasterApi = {
     remove: (id) => ipcRenderer.invoke(IPC.monsterRemove, id)
   },
   maps: {
-    list: () => ipcRenderer.invoke(IPC.mapsList),
+    list: (realmId) => ipcRenderer.invoke(IPC.mapsList, realmId),
+    listAll: () => ipcRenderer.invoke(IPC.mapsListAll),
     create: (input) => ipcRenderer.invoke(IPC.mapCreate, input),
     update: (map) => ipcRenderer.invoke(IPC.mapUpdate, map),
     remove: (id) => ipcRenderer.invoke(IPC.mapRemove, id)

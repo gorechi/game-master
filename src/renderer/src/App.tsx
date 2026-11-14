@@ -134,12 +134,17 @@ export default function App(): JSX.Element {
         {route.name === 'savedMonsters' ? <SavedMonstersPage /> : null}
 
         {route.name === 'maps' ? (
-          <MapsPage onOpenMap={(id) => setRoute({ name: 'map', id })} />
+          <MapsPage
+            realms={realms}
+            activeRealmId={settings.activeRealmId}
+            onOpenMap={(id) => setRoute({ name: 'map', id })}
+          />
         ) : null}
 
         {route.name === 'map' ? (
           <MapGraphPage
             mapId={route.id}
+            realms={realms}
             onBack={() => setRoute({ name: 'maps' })}
             onOpenMap={(id) => setRoute({ name: 'map', id })}
           />

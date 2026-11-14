@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { JSX } from 'react'
 import type { GameMap, MapPath } from '@shared/map'
+import type { Realm } from '@shared/realm'
 import { canonicalMapPath } from '@shared/domain'
 import { api, errorMessage } from '@renderer/lib/api'
 import { pluralize } from '@renderer/lib/format'
@@ -11,12 +12,18 @@ import { MapGraph } from './maps/MapGraph'
 
 interface MapGraphPageProps {
   mapId: string
+  realms: readonly Realm[]
   onBack: () => void
   onOpenMap: (mapId: string) => void
 }
 
 /** Просмотр карты: граф мест и путей. */
-export function MapGraphPage({ mapId, onBack, onOpenMap }: MapGraphPageProps): JSX.Element {
+export function MapGraphPage({
+  mapId,
+  realms,
+  onBack,
+  onOpenMap
+}: MapGraphPageProps): JSX.Element {
   const [map, setMap] = useState<GameMap | null | undefined>(undefined)
   const [linkedMapNames, setLinkedMapNames] = useState<Record<string, string>>({})
   const [positions, setPositions] = useState<Record<string, MapPoint> | null>(null)
@@ -28,7 +35,7 @@ export function MapGraphPage({ mapId, onBack, onOpenMap }: MapGraphPageProps): J
 
   const load = useCallback(async (): Promise<void> => {
     try {
-      const maps = await api.maps.list()
+      const maps = await api.maps.listAll()
       setMap(maps.find((item) => item.id === mapId) ?? null)
       setLinkedMapNames(Object.fromEntries(maps.map((item) => [item.id, item.name])))
       setPositions(null)
@@ -229,6 +236,8 @@ export function MapGraphPage({ mapId, onBack, onOpenMap }: MapGraphPageProps): J
       <MapFormModal
         open={editing}
         map={map ?? null}
+        realms={realms}
+        defaultRealmId={map?.realmId ?? ''}
         onClose={() => setEditing(false)}
         onSaved={(saved) => {
           setMap(saved)
@@ -236,7 +245,7 @@ export function MapGraphPage({ mapId, onBack, onOpenMap }: MapGraphPageProps): J
           setDraftPaths(null)
           setChangeError(null)
           setEditing(false)
-          setLinkedMapNames((current) => ({ ...current, [saved.id]: saved.name }))
+          void load()
         }}
       />
     </main>

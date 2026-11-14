@@ -62,6 +62,13 @@ async function resolveRealmId(value: unknown): Promise<string> {
   return typeof value === 'string' && value.length > 0 ? assertId(value) : getActiveRealmId()
 }
 
+async function assertRealmExists(realmId: string): Promise<void> {
+  const realms = await listRealms()
+  if (!realms.some((realm) => realm.id === realmId)) {
+    throw new Error('Сеттинг не найден — возможно, он был удалён')
+  }
+}
+
 function parsePlayerInput(value: unknown): PlayerInput {
   if (!value || typeof value !== 'object') {
     throw new Error('Некорректные данные игрока')
@@ -199,15 +206,23 @@ export function registerIpcHandlers(): void {
     removeMonster(assertId(id))
   )
 
-  ipcMain.handle(IPC.mapsList, async () => listMaps(await getActiveRealmId()))
-
-  ipcMain.handle(IPC.mapCreate, async (_event, input: unknown) =>
-    addMap(gameMapInputSchema.parse(input), await getActiveRealmId())
+  ipcMain.handle(IPC.mapsList, async (_event, realmId: unknown) =>
+    listMaps(await resolveRealmId(realmId))
   )
 
-  ipcMain.handle(IPC.mapUpdate, (_event, input: unknown) =>
-    updateMap(gameMapSchema.parse(input))
-  )
+  ipcMain.handle(IPC.mapsListAll, () => listMaps())
+
+  ipcMain.handle(IPC.mapCreate, async (_event, input: unknown) => {
+    const parsed = gameMapInputSchema.parse(input)
+    await assertRealmExists(parsed.realmId)
+    return addMap(parsed)
+  })
+
+  ipcMain.handle(IPC.mapUpdate, async (_event, input: unknown) => {
+    const map = gameMapSchema.parse(input)
+    await assertRealmExists(map.realmId)
+    return updateMap(map)
+  })
 
   ipcMain.handle(IPC.mapRemove, async (_event, id: unknown): Promise<void> => {
     const mapId = assertId(id)

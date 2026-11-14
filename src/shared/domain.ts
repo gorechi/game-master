@@ -258,6 +258,7 @@ export function createMapPlace(
     name: name.trim().slice(0, 100),
     isExit,
     linkedMapId: isExit ? linkedMapId : null,
+    placeTypeId: null,
     x: null,
     y: null
   }
@@ -282,6 +283,7 @@ export type NormalizedMapInput = {
   name: string
   places: MapPlace[]
   paths: MapPath[]
+  realmId: string
 }
 
 export function normalizeMapInput(input: GameMapInput): NormalizedMapInput {
@@ -290,6 +292,7 @@ export function normalizeMapInput(input: GameMapInput): NormalizedMapInput {
     name: place.name.trim().slice(0, 100),
     isExit: place.isExit,
     linkedMapId: place.isExit ? (place.linkedMapId ?? null) : null,
+    placeTypeId: place.placeTypeId ?? null,
     x: normalizeCoordinate(place.x),
     y: normalizeCoordinate(place.y)
   }))
@@ -320,21 +323,22 @@ export function normalizeMapInput(input: GameMapInput): NormalizedMapInput {
   return {
     name: input.name.trim().slice(0, 120),
     places,
-    paths
+    paths,
+    realmId: input.realmId
   }
 }
 
 export function createMap(
   input: GameMapInput,
-  realmId: string = DEFAULT_REALM_ID,
+  realmId: string = input.realmId,
   id: string = crypto.randomUUID()
 ): GameMap {
   const now = new Date().toISOString()
 
   return {
     id,
-    realmId,
     ...normalizeMapInput(input),
+    realmId,
     createdAt: now,
     updatedAt: now
   }
