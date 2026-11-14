@@ -33,6 +33,7 @@ export function BaseMonsterModal({
       title="Новый уникальный монстр"
       description="Выберите базового монстра из бестиария, затем настройте экземпляр."
       size="md"
+      panelClassName="modal--base-monster"
       onClose={onClose}
       footer={
         <>
