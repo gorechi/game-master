@@ -10,12 +10,20 @@ import { Select } from '../ui/Select'
 import { IconTrash } from '../ui/icons'
 
 export interface CombatResultEntry {
+  key: string
   id: string
   kind: 'character' | 'monster'
   name: string
   playerName: string | null
   initiative: number
   tieBreaker: number | null
+  character: CharacterProfile | null
+  monster: GameMonster | null
+}
+
+export interface CombatStart {
+  participants: CombatResultEntry[]
+  reserves: CombatResultEntry[]
 }
 
 interface Combatant {
@@ -27,13 +35,15 @@ interface Combatant {
   participating: boolean
   initiative: string
   tieBreaker: string
+  character: CharacterProfile | null
+  monster: GameMonster | null
 }
 
 interface CombatModalProps {
   open: boolean
   game: Game
   onClose: () => void
-  onStart: (order: CombatResultEntry[]) => void
+  onStart: (start: CombatStart) => void
 }
 
 const INITIATIVE_MIN = 1
@@ -121,7 +131,9 @@ export function CombatModal({
         playerName: playerNameOf(character.playerId),
         participating: true,
         initiative: '',
-        tieBreaker: ''
+        tieBreaker: '',
+        character,
+        monster: null
       }
     ])
   }
@@ -137,7 +149,9 @@ export function CombatModal({
         playerName: null,
         participating: true,
         initiative: '',
-        tieBreaker: ''
+        tieBreaker: '',
+        character: null,
+        monster
       }
     ])
   }
@@ -181,12 +195,6 @@ export function CombatModal({
       .map(([value]) => value)
   )
 
-  const requiredCollisionValues = new Set(
-    [...collisionValues].filter((value) =>
-      (initiativeGroups.get(value) ?? []).some((combatant) => combatant.participating)
-    )
-  )
-
   function groupFor(combatant: Combatant): Combatant[] | null {
     const initiative = parseInitiative(combatant.initiative)
     if (initiative === null) return null
@@ -201,47 +209,55 @@ export function CombatModal({
   }
 
   const allInitiativesFilled =
-    participants.length > 0 &&
-    participants.every((combatant) => parseInitiative(combatant.initiative) !== null)
-  const allCollisionsResolved = [...requiredCollisionValues].every((value) => {
+    combatants.length > 0 &&
+    combatants.every((combatant) => parseInitiative(combatant.initiative) !== null)
+  const allCollisionsResolved = [...collisionValues].every((value) => {
     const group = initiativeGroups.get(value)
     return group
       ? group.every((combatant) => parseInitiative(combatant.tieBreaker) !== null) &&
           tieValuesAreUnique(group)
       : true
   })
-  const canFight = !loading && !loadError && allInitiativesFilled && allCollisionsResolved
+  const canFight =
+    !loading &&
+    !loadError &&
+    participants.length > 0 &&
+    allInitiativesFilled &&
+    allCollisionsResolved
+
+  function toResult(combatant: Combatant): CombatResultEntry | null {
+    const initiative = parseInitiative(combatant.initiative)
+    if (initiative === null) return null
+
+    const group = groupFor(combatant)
+    const tieBreaker = group ? parseInitiative(combatant.tieBreaker) : null
+
+    return {
+      key: combatant.key,
+      id: combatant.id,
+      kind: combatant.kind,
+      name: combatant.name,
+      playerName: combatant.playerName,
+      initiative,
+      tieBreaker,
+      character: combatant.character,
+      monster: combatant.monster
+    }
+  }
 
   function submit(event: FormEvent): void {
     event.preventDefault()
     if (!canFight) return
 
-    const order: CombatResultEntry[] = participants
-      .map((combatant) => {
-        const initiative = parseInitiative(combatant.initiative)
-        if (initiative === null) return null
-
-        const group = groupFor(combatant)
-        const tieBreaker = group ? parseInitiative(combatant.tieBreaker) : null
-
-        return {
-          id: combatant.id,
-          kind: combatant.kind,
-          name: combatant.name,
-          playerName: combatant.playerName,
-          initiative,
-          tieBreaker
-        }
-      })
+    const queue = participants
+      .map(toResult)
       .filter((entry): entry is CombatResultEntry => entry !== null)
-      .sort(
-        (a, b) =>
-          b.initiative - a.initiative ||
-          (b.tieBreaker ?? 0) - (a.tieBreaker ?? 0) ||
-          a.name.localeCompare(b.name, 'ru')
-      )
+    const reserves = combatants
+      .filter((combatant) => !combatant.participating)
+      .map(toResult)
+      .filter((entry): entry is CombatResultEntry => entry !== null)
 
-    onStart(order)
+    onStart({ participants: queue, reserves })
   }
 
   const addedCharacterIds = new Set(
@@ -263,13 +279,15 @@ export function CombatModal({
     .map((monster) => ({ value: monster.id, label: monster.name }))
 
   const hint =
-    participants.length === 0
-      ? 'Добавьте хотя бы одного участника и отметьте его участие.'
-      : !allInitiativesFilled
-        ? 'Заполните инициативу от 1 до 99 у всех участников схватки.'
-        : !allCollisionsResolved
-          ? 'Участники с одинаковой инициативой должны получить разные значения дополнительной инициативы.'
-          : null
+    combatants.length === 0
+      ? 'Добавьте персонажей или монстров в схватку.'
+      : participants.length === 0
+        ? 'Отметьте хотя бы одного участника схватки.'
+        : !allInitiativesFilled
+          ? 'Заполните инициативу от 1 до 99 у всех добавленных персонажей и монстров.'
+          : !allCollisionsResolved
+            ? 'Участники с одинаковой инициативой должны получить разные значения дополнительной инициативы.'
+            : null
 
   function renderCard(combatant: Combatant): JSX.Element {
     const group = groupFor(combatant)
