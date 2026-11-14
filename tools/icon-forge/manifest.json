@@ -2,7 +2,7 @@
   "set": "fantasy-places",
   "title": "Фэнтезийные места",
   "viewBox": "0 0 24 24",
-  "generatedAt": "2026-11-14T13:22:48.272Z",
+  "generatedAt": "2026-11-14T20:22:10.338Z",
   "icons": [
     {
       "id": "place-generic",
@@ -110,6 +110,64 @@
         "tavern"
       ],
       "file": "icons/tavern.svg"
+    },
+    {
+      "id": "volcano",
+      "title": "Вулкан",
+      "tags": [
+        "volcano",
+        "ash",
+        "smoke"
+      ],
+      "file": "icons/volcano.svg"
+    },
+    {
+      "id": "lighthouse",
+      "title": "Маяк",
+      "tags": [],
+      "file": "icons/lighthouse.svg"
+    },
+    {
+      "id": "tower",
+      "title": "Башня",
+      "tags": [],
+      "file": "icons/tower.svg"
+    },
+    {
+      "id": "fort",
+      "title": "Крепость",
+      "tags": [],
+      "file": "icons/fort.svg"
+    },
+    {
+      "id": "crossing",
+      "title": "Перекресток",
+      "tags": [],
+      "file": "icons/crossing.svg"
+    },
+    {
+      "id": "field",
+      "title": "Поле",
+      "tags": [],
+      "file": "icons/field.svg"
+    },
+    {
+      "id": "mansion",
+      "title": "Особняк",
+      "tags": [],
+      "file": "icons/mansion.svg"
+    },
+    {
+      "id": "church",
+      "title": "Цековь",
+      "tags": [],
+      "file": "icons/church.svg"
+    },
+    {
+      "id": "shop",
+      "title": "Лавка",
+      "tags": [],
+      "file": "icons/shop.svg"
     }
   ]
 }

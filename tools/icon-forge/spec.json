@@ -98,6 +98,55 @@
       "tags": [
         "tavern"
       ]
+    },
+    {
+      "id": "volcano",
+      "title": "Вулкан",
+      "tags": [
+        "volcano",
+        "ash",
+        "smoke"
+      ]
+    },
+    {
+      "id": "lighthouse",
+      "title": "Маяк",
+      "tags": []
+    },
+    {
+      "id": "tower",
+      "title": "Башня",
+      "tags": []
+    },
+    {
+      "id": "fort",
+      "title": "Крепость",
+      "tags": []
+    },
+    {
+      "id": "crossing",
+      "title": "Перекресток",
+      "tags": []
+    },
+    {
+      "id": "field",
+      "title": "Поле",
+      "tags": []
+    },
+    {
+      "id": "mansion",
+      "title": "Особняк",
+      "tags": []
+    },
+    {
+      "id": "church",
+      "title": "Цековь",
+      "tags": []
+    },
+    {
+      "id": "shop",
+      "title": "Лавка",
+      "tags": []
     }
   ]
 }

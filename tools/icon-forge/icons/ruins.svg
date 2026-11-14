@@ -1,5 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M4 20h16M7 20V9l3-2v13M14 20V12l3-2v10"/>
-  <path d="M7 9l3-2M14 12l3-2" opacity=".45"/>
-  <path d="M10 20v-3h4v3" opacity=".55"/>
+  <path d="M3 20h18"/>
+  <path d="M5 20V9.5l2.2-1.6V20"/>
+  <path d="M10.2 20V6.2l2.2-1.6V20"/>
+  <path d="M15.4 20V11l2.2-1.6V20"/>
+  <path d="M4.2 9.5h3.8M9.4 6.2h3.8M14.6 11h3.8" opacity=".5"/>
+  <path d="M19.6 20V13.4l1.4-1V20" opacity=".6"/>
+  <path d="M3.4 20h17.2" opacity=".45"/>
 </svg>
