@@ -2,7 +2,7 @@
   "set": "fantasy-places",
   "title": "Фэнтезийные места",
   "viewBox": "0 0 24 24",
-  "generatedAt": "2026-11-14T12:57:42.580Z",
+  "generatedAt": "2026-11-14T13:03:30.596Z",
   "icons": [
     {
       "id": "place-generic",
@@ -85,6 +85,14 @@
         "arch"
       ],
       "file": "icons/exit-arch.svg"
+    },
+    {
+      "id": "village",
+      "title": "Деревня",
+      "tags": [
+        "village"
+      ],
+      "file": "icons/village.svg"
     }
   ]
 }

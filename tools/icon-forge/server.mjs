@@ -45,6 +45,7 @@ function readState() {
     title: spec.title,
     viewBox: spec.viewBox,
     keyConfigured,
+    previewExists: existsSync(join(here, 'preview', 'preview.png')),
     icons
   }
 }
@@ -67,12 +68,9 @@ async function readBody(req) {
   return body ? JSON.parse(body) : {}
 }
 
-function runGenerator(id, force) {
+function runNode(script, args = []) {
   return new Promise((resolve) => {
-    const args = [join(here, 'generate.mjs'), '--id', id]
-    if (force) args.push('--force')
-
-    const child = spawn(process.execPath, args, {
+    const child = spawn(process.execPath, [join(here, script), ...args], {
       env: process.env,
       windowsHide: true
     })
@@ -91,6 +89,12 @@ function runGenerator(id, force) {
       resolve({ ok: code === 0, output: output.trim() })
     })
   })
+}
+
+function runGenerator(id, force) {
+  const args = ['--id', id]
+  if (force) args.push('--force')
+  return runNode('generate.mjs', args)
 }
 
 function normalizeEntry(input) {
@@ -145,6 +149,38 @@ const server = createServer(async (req, res) => {
 
       res.writeHead(200, {
         'Content-Type': 'image/svg+xml; charset=utf-8',
+        'Cache-Control': 'no-store'
+      })
+      res.end(readFileSync(file))
+      return
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/validate') {
+      const result = await runNode('validate.mjs')
+      json(res, 200, { ...result, state: readState() })
+      return
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/preview') {
+      const result = await runNode('preview.mjs')
+      json(res, 200, {
+        ...result,
+        previewUrl: result.ok ? `/preview.png?v=${Date.now()}` : null,
+        state: readState()
+      })
+      return
+    }
+
+    if (req.method === 'GET' && url.pathname === '/preview.png') {
+      const file = join(here, 'preview', 'preview.png')
+
+      if (!existsSync(file)) {
+        json(res, 404, { error: 'Превью ещё не собрано' })
+        return
+      }
+
+      res.writeHead(200, {
+        'Content-Type': 'image/png',
         'Cache-Control': 'no-store'
       })
       res.end(readFileSync(file))
