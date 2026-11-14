@@ -318,9 +318,10 @@ npm run pack       # распакованное приложение без ин
 - `game-master-<version>-<arch>.dmg` — образ для macOS;
 - `game-master-<version>-<arch>.zip` — архив (удобно для автообновления).
 
-Сборка `.dmg` возможна только на macOS — для этого есть
-`.github/workflows/build.yml`: он собирает инсталляторы на `windows-latest` и `macos-latest`
-и складывает их в артефакты.
+Сборка `.dmg` возможна только на macOS. CI-workflow сейчас отключён:
+он лежит в `.github/workflows-disabled/build.yml`. Чтобы включить автоматическую
+сборку на `windows-latest` и `macos-latest`, верни файл в `.github/workflows/`
+и добавь GitHub CLI право `workflow`.
 
 ### Подпись и нотаризация
 
