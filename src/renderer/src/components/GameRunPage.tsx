@@ -8,7 +8,7 @@ import { GameFinishModal } from './games/GameFinishModal'
 import { CombatModal, type CombatStart } from './games/CombatModal'
 import { CombatScreen } from './games/CombatScreen'
 import { RunMap } from './maps/RunMap'
-import { IconArrowLeft, IconCollapse, IconExpand, IconFlag, IconSwords } from './ui/icons'
+import { IconArrowLeft, IconCollapse, IconExpand, IconFlag, IconMap, IconSwords } from './ui/icons'
 
 interface GameRunPageProps {
   gameId: string
@@ -19,6 +19,7 @@ interface GameRunPageProps {
 export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
   const [game, setGame] = useState<Game | null | undefined>(undefined)
   const [maps, setMaps] = useState<GameMap[]>([])
+  const [activeMapId, setActiveMapId] = useState<string | null>(null)
   const [placeTypes, setPlaceTypes] = useState<PlaceType[]>([])
   const [notes, setNotes] = useState('')
   const [notesExpanded, setNotesExpanded] = useState(false)
@@ -42,6 +43,7 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
 
       setGame(loaded)
       setMaps(nextMaps)
+      setActiveMapId(loaded?.mapId ?? null)
       setPlaceTypes(nextPlaceTypes)
       setNotes(loaded?.notes ?? '')
     })().catch((caught: unknown) => {
@@ -123,7 +125,9 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
     onBack()
   }
 
-  const map = game?.mapId ? (maps.find((item) => item.id === game.mapId) ?? null) : null
+  const map = activeMapId
+    ? (maps.find((item) => item.id === activeMapId) ?? null)
+    : null
   const linkedMapNames = Object.fromEntries(maps.map((item) => [item.id, item.name]))
 
   if (combat) {
@@ -162,6 +166,19 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
                 <span>К играм</span>
               </button>
 
+              {game.mapId && activeMapId !== game.mapId ? (
+                <button
+                  type="button"
+                  className="run-map-tool run-map-tool--map"
+                  title="Вернуться к карте игры"
+                  aria-label="Вернуться к карте игры"
+                  onClick={() => setActiveMapId(game.mapId)}
+                >
+                  <IconMap width={16} height={16} />
+                  <span>К карте игры</span>
+                </button>
+              ) : null}
+
               {game.status === 'running' || game.status === 'paused' ? (
                 <button
                   type="button"
@@ -177,7 +194,12 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
             </div>
 
             {map ? (
-              <RunMap map={map} placeTypes={placeTypes} linkedMapNames={linkedMapNames} />
+              <RunMap
+                map={map}
+                placeTypes={placeTypes}
+                linkedMapNames={linkedMapNames}
+                onOpenMap={(mapId) => setActiveMapId(mapId)}
+              />
             ) : (
               <div className="run-map-empty">
                 <p>Карта не выбрана</p>

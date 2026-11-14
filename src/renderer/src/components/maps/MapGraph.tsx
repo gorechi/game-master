@@ -381,19 +381,26 @@ export function MapGraph({
             className={className}
             style={{ left: node.x, top: node.y }}
             data-map-node-id={node.id}
-            role={interactive && linkedName ? 'button' : undefined}
-            tabIndex={interactive && linkedName ? 0 : undefined}
+            role={linkedName ? 'button' : undefined}
+            tabIndex={linkedName ? 0 : undefined}
             aria-label={
-              interactive && linkedName
-                ? `${node.name}: перейти на карту «${linkedName}»`
-                : undefined
+              linkedName ? `${node.name}: перейти на карту «${linkedName}»` : undefined
             }
             title={
               interactive
                 ? linkedName
                   ? `Перетащите, чтобы сдвинуть. Нажмите, чтобы перейти на «${linkedName}»`
                   : 'Перетащите, чтобы сдвинуть'
-                : node.name
+                : linkedName
+                  ? `Открыть карту «${linkedName}»`
+                  : node.name
+            }
+            onClick={
+              !interactive && linkedName
+                ? () => {
+                    if (node.linkedMapId) onOpenMap(node.linkedMapId)
+                  }
+                : undefined
             }
             onPointerDown={
               interactive ? (event) => onPointerDown(event, node) : undefined
@@ -401,7 +408,7 @@ export function MapGraph({
             onPointerMove={interactive ? onPointerMove : undefined}
             onPointerUp={interactive ? (event) => finishDrag(event, node) : undefined}
             onPointerCancel={interactive ? cancelDrag : undefined}
-            onKeyDown={interactive ? (event) => onNodeKeyDown(event, node) : undefined}
+            onKeyDown={linkedName ? (event) => onNodeKeyDown(event, node) : undefined}
           >
             <span className="map-node__token">
               {placeType ? (

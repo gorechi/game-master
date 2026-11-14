@@ -9,6 +9,7 @@ interface RunMapProps {
   map: GameMap
   placeTypes: readonly PlaceType[]
   linkedMapNames: Record<string, string>
+  onOpenMap: (mapId: string) => void
 }
 
 const VIEWPORT_PADDING = 36
@@ -23,7 +24,12 @@ interface PanState {
 }
 
 /** Карта на экране проведения: только чтение, с автомасштабом и перетаскиванием. */
-export function RunMap({ map, placeTypes, linkedMapNames }: RunMapProps): JSX.Element {
+export function RunMap({
+  map,
+  placeTypes,
+  linkedMapNames,
+  onOpenMap
+}: RunMapProps): JSX.Element {
   const viewportRef = useRef<HTMLDivElement>(null)
   const panRef = useRef<PanState | null>(null)
   const [scale, setScale] = useState(1)
@@ -105,7 +111,7 @@ export function RunMap({ map, placeTypes, linkedMapNames }: RunMapProps): JSX.El
           layout={layout}
           placeTypes={placeTypes}
           linkedMapNames={linkedMapNames}
-          onOpenMap={() => undefined}
+          onOpenMap={onOpenMap}
           onMoveNode={() => undefined}
           onConnect={() => undefined}
           interactive={false}
@@ -141,7 +147,7 @@ export function RunMap({ map, placeTypes, linkedMapNames }: RunMapProps): JSX.El
             layout={layout}
             placeTypes={placeTypes}
             linkedMapNames={linkedMapNames}
-            onOpenMap={() => undefined}
+            onOpenMap={onOpenMap}
             onMoveNode={() => undefined}
             onConnect={() => undefined}
             interactive={false}

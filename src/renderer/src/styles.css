@@ -1965,6 +1965,22 @@ input[type='number'] {
   filter: brightness(1.07);
 }
 
+.run-map-tool--map {
+  border-color: var(--border-strong);
+  background: var(--panel);
+  color: var(--gold-strong);
+  font-size: 15px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+}
+
+.run-map-tool--map:hover {
+  filter: none;
+  border-color: var(--gold);
+  background: var(--panel-raised);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.27);
+}
+
 .run-map-viewport {
   width: 100%;
   height: 100%;
@@ -3449,7 +3465,7 @@ input[type='number'] {
 }
 
 .map-node--static.map-node--linked {
-  pointer-events: none;
+  cursor: pointer;
 }
 
 .map-node--target {
@@ -3557,7 +3573,7 @@ input[type='number'] {
   color: var(--gold-strong);
 }
 
-.map-node--token:hover .map-node__token {
+.map-node--token.map-node--linked:hover .map-node__token {
   border-color: var(--gold);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.32);
   transform: translateY(-1px);
