@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import type { JSX, KeyboardEvent, PointerEvent } from 'react'
 import type { MapPath } from '@shared/map'
+import type { PlaceType } from '@shared/placeType'
 import { mapPathKey } from '@shared/domain'
 import {
   MAP_GRAPH_PADDING,
@@ -10,6 +11,7 @@ import {
   type MapNodePosition
 } from '@renderer/lib/mapLayout'
 import { IconStoneArch } from '../ui/icons'
+import { PlaceTypeIcon } from '../placeTypes/PlaceTypeIcon'
 
 const DRAG_THRESHOLD = 4
 
@@ -90,6 +92,8 @@ interface MapGraphProps {
   mapName: string
   paths: readonly MapPath[]
   layout: MapLayout
+  /** Типы мест сеттинга: по placeTypeId выбирается иконка жетона. */
+  placeTypes: readonly PlaceType[]
   /** Названия других карт по id — для подписи выхода. */
   linkedMapNames: Record<string, string>
   onOpenMap: (mapId: string) => void
@@ -99,11 +103,12 @@ interface MapGraphProps {
   interactive?: boolean
 }
 
-/** Графическое представление карты: места-прямоугольники и пути-дорожки. */
+/** Графическое представление карты: места-жетоны и пути-дорожки. */
 export function MapGraph({
   mapName,
   paths,
   layout,
+  placeTypes,
   linkedMapNames,
   onOpenMap,
   onMoveNode,
@@ -126,6 +131,7 @@ export function MapGraph({
   }
 
   const nodesById = new Map(layout.nodes.map((node) => [node.id, node]))
+  const placeTypeById = new Map(placeTypes.map((placeType) => [placeType.id, placeType]))
   const edges: { key: string; from: MapNodePosition; to: MapNodePosition }[] = []
 
   for (const path of paths) {
@@ -353,6 +359,9 @@ export function MapGraph({
 
       {layout.nodes.map((node) => {
         const linkedName = node.linkedMapId ? linkedMapNames[node.linkedMapId] : undefined
+        const placeType = node.placeTypeId
+          ? placeTypeById.get(node.placeTypeId)
+          : undefined
         const className = [
           'map-node',
           'map-node--token',
@@ -395,11 +404,18 @@ export function MapGraph({
             onKeyDown={interactive ? (event) => onNodeKeyDown(event, node) : undefined}
           >
             <span className="map-node__token">
-              {node.isExit ? (
+              {placeType ? (
+                <PlaceTypeIcon svg={placeType.iconSvg} size={36} />
+              ) : node.isExit ? (
                 <IconStoneArch width={28} height={28} />
               ) : (
                 <span className="map-node__token-initial">{nodeInitial(node.name)}</span>
               )}
+              {placeType && node.isExit ? (
+                <span className="map-node__exit-badge" aria-hidden="true">
+                  <IconStoneArch width={12} height={12} />
+                </span>
+              ) : null}
             </span>
             <span className="map-node__token-label">{node.name}</span>
 

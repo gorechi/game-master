@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { JSX } from 'react'
 import type { GameMap, MapPath } from '@shared/map'
 import type { Realm } from '@shared/realm'
+import type { PlaceType } from '@shared/placeType'
 import { canonicalMapPath } from '@shared/domain'
 import { api, errorMessage } from '@renderer/lib/api'
 import { pluralize } from '@renderer/lib/format'
@@ -25,6 +26,7 @@ export function MapGraphPage({
   onOpenMap
 }: MapGraphPageProps): JSX.Element {
   const [map, setMap] = useState<GameMap | null | undefined>(undefined)
+  const [placeTypes, setPlaceTypes] = useState<PlaceType[]>([])
   const [linkedMapNames, setLinkedMapNames] = useState<Record<string, string>>({})
   const [positions, setPositions] = useState<Record<string, MapPoint> | null>(null)
   const [draftPaths, setDraftPaths] = useState<MapPath[] | null>(null)
@@ -36,7 +38,11 @@ export function MapGraphPage({
   const load = useCallback(async (): Promise<void> => {
     try {
       const maps = await api.maps.list()
-      setMap(maps.find((item) => item.id === mapId) ?? null)
+      const found = maps.find((item) => item.id === mapId) ?? null
+      const nextPlaceTypes = found ? await api.placeTypes.list(found.realmId) : []
+
+      setMap(found)
+      setPlaceTypes(nextPlaceTypes)
       setLinkedMapNames(Object.fromEntries(maps.map((item) => [item.id, item.name])))
       setPositions(null)
       setDraftPaths(null)
@@ -222,6 +228,7 @@ export function MapGraphPage({
                   mapName={map.name}
                   paths={displayPaths}
                   layout={layout}
+                  placeTypes={placeTypes}
                   linkedMapNames={linkedMapNames}
                   onOpenMap={onOpenMap}
                   onMoveNode={moveNode}

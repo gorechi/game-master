@@ -2825,6 +2825,29 @@ input[type='number'] {
   color: var(--gold-strong);
 }
 
+.map-node__token .place-type-icon {
+  color: var(--gold-strong);
+}
+
+.map-node__token .place-type-icon--broken {
+  color: var(--danger);
+}
+
+.map-node__exit-badge {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  border: 1px solid rgba(216, 178, 92, 0.6);
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--gold-strong);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.28);
+}
+
 .map-node__token-label {
   position: absolute;
   z-index: 1;

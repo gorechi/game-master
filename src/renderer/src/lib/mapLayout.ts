@@ -9,6 +9,7 @@ export interface MapNodePosition {
   name: string
   isExit: boolean
   linkedMapId: string | null
+  placeTypeId: string | null
   x: number
   y: number
 }

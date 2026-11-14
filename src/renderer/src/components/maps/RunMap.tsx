@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import type { JSX, PointerEvent } from 'react'
 import type { GameMap } from '@shared/map'
+import type { PlaceType } from '@shared/placeType'
 import { layoutMap } from '@renderer/lib/mapLayout'
 import { MapGraph } from './MapGraph'
 
 interface RunMapProps {
   map: GameMap
+  placeTypes: readonly PlaceType[]
   linkedMapNames: Record<string, string>
 }
 
@@ -21,7 +23,7 @@ interface PanState {
 }
 
 /** Карта на экране проведения: только чтение, с автомасштабом и перетаскиванием. */
-export function RunMap({ map, linkedMapNames }: RunMapProps): JSX.Element {
+export function RunMap({ map, placeTypes, linkedMapNames }: RunMapProps): JSX.Element {
   const viewportRef = useRef<HTMLDivElement>(null)
   const panRef = useRef<PanState | null>(null)
   const [scale, setScale] = useState(1)
@@ -101,6 +103,7 @@ export function RunMap({ map, linkedMapNames }: RunMapProps): JSX.Element {
           mapName={map.name}
           paths={map.paths}
           layout={layout}
+          placeTypes={placeTypes}
           linkedMapNames={linkedMapNames}
           onOpenMap={() => undefined}
           onMoveNode={() => undefined}
@@ -136,6 +139,7 @@ export function RunMap({ map, linkedMapNames }: RunMapProps): JSX.Element {
             mapName={map.name}
             paths={map.paths}
             layout={layout}
+            placeTypes={placeTypes}
             linkedMapNames={linkedMapNames}
             onOpenMap={() => undefined}
             onMoveNode={() => undefined}

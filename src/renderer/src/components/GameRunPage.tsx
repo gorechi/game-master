@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, JSX } from 'react'
 import type { Game } from '@shared/game'
 import type { GameMap } from '@shared/map'
+import type { PlaceType } from '@shared/placeType'
 import { api, errorMessage } from '@renderer/lib/api'
 import { GameFinishModal } from './games/GameFinishModal'
 import { RunMap } from './maps/RunMap'
@@ -16,6 +17,7 @@ interface GameRunPageProps {
 export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
   const [game, setGame] = useState<Game | null | undefined>(undefined)
   const [maps, setMaps] = useState<GameMap[]>([])
+  const [placeTypes, setPlaceTypes] = useState<PlaceType[]>([])
   const [notes, setNotes] = useState('')
   const [combatFlash, setCombatFlash] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -30,11 +32,13 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
       const games = await api.games.list()
       const loaded = games.find((item) => item.id === gameId) ?? null
       const nextMaps = loaded ? await api.maps.list(loaded.realmId) : []
+      const nextPlaceTypes = loaded ? await api.placeTypes.list(loaded.realmId) : []
 
       if (cancelled) return
 
       setGame(loaded)
       setMaps(nextMaps)
+      setPlaceTypes(nextPlaceTypes)
       setNotes(loaded?.notes ?? '')
     })().catch((caught: unknown) => {
       if (!cancelled) setError(errorMessage(caught))
@@ -131,7 +135,7 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
             </div>
 
             {map ? (
-              <RunMap map={map} linkedMapNames={linkedMapNames} />
+              <RunMap map={map} placeTypes={placeTypes} linkedMapNames={linkedMapNames} />
             ) : (
               <div className="run-map-empty">
                 <p>Карта не выбрана</p>
