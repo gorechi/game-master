@@ -1,6 +1,5 @@
 import type { JSX } from 'react'
 import type { Realm } from '@shared/realm'
-import { IconCheck } from './ui/icons'
 import { PlaceTypesSection } from './placeTypes/PlaceTypesSection'
 
 interface RealmDetailPageProps {
@@ -35,21 +34,13 @@ export function RealmDetailPage({
             <header className="page-head">
               <div>
                 <p className="page-kicker">Сеттинг</p>
-                <div className="realm-detail__title-row">
-                  <h1>{realm.name}</h1>
-                  {active ? (
-                    <span className="realm-badge">
-                      <IconCheck width={11} height={11} />
-                      Активный
-                    </span>
-                  ) : null}
-                </div>
+                <h1>{realm.name}</h1>
                 <p className="muted">{realm.description || 'Без описания'}</p>
               </div>
 
               {!active ? (
                 <button className="button" onClick={onActivate}>
-                  Сделать активным
+                  Выбрать сеттинг
                 </button>
               ) : null}
             </header>

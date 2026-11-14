@@ -3,7 +3,7 @@ import type { JSX } from 'react'
 import type { Realm, RealmInput } from '@shared/realm'
 import { api, errorMessage } from '@renderer/lib/api'
 import { ConfirmDialog } from './ui/ConfirmDialog'
-import { IconCheck, IconGlobe, IconPencil, IconPlus, IconTrash } from './ui/icons'
+import { IconGlobe, IconPencil, IconPlus, IconTrash } from './ui/icons'
 import { RealmFormModal } from './realms/RealmFormModal'
 
 interface RealmsPageProps {
@@ -60,8 +60,8 @@ export function RealmsPage({
           <div>
             <h1>Сеттинги</h1>
             <p className="muted">
-              Миры, между которыми разделены игры, персонажи, монстры и карты. Выберите
-              активный сеттинг в меню слева.
+              Миры, между которыми разделены игры, персонажи, монстры и карты. Сеттинг
+              выбирается в меню слева.
             </p>
           </div>
           <button className="button button--primary" onClick={() => setForm({ mode: 'create' })}>
@@ -86,12 +86,6 @@ export function RealmsPage({
                 <div className="realm-card__identity">
                   <div className="realm-card__title-row">
                     <h3 className="realm-card__name">{realm.name}</h3>
-                    {active ? (
-                      <span className="realm-badge">
-                        <IconCheck width={11} height={11} />
-                        Активный
-                      </span>
-                    ) : null}
                   </div>
                   <p className="realm-card__description">
                     {realm.description || 'Без описания'}

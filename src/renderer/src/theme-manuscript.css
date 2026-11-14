@@ -708,13 +708,6 @@
   border-color: rgba(154, 106, 36, 0.32);
 }
 
-:root[data-theme='light'] .realm-badge {
-  border-color: rgba(63, 107, 65, 0.35);
-  background: rgba(63, 107, 65, 0.08);
-  color: #3f6b41;
-}
-
-/* Типы мест */
 :root[data-theme='light'] .place-type-card,
 :root[data-theme='light'] .place-icon-preview {
   background: rgba(255, 255, 255, 0.4);

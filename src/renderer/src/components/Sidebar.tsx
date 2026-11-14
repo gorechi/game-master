@@ -54,7 +54,7 @@ export function Sidebar({
         <div className="realm-switcher">
           <span className="realm-switcher__label">Сеттинг</span>
           <Select
-            ariaLabel="Активный сеттинг"
+            ariaLabel="Сеттинг"
             value={activeRealmId ?? ''}
             placeholder="Выберите сеттинг"
             options={realms.map((realm) => ({ value: realm.id, label: realm.name }))}
