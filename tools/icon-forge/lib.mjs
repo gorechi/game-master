@@ -1,7 +1,20 @@
-const forbiddenTags = /<(script|style|image|text|foreignObject)\b/i
+const forbiddenTags = /<(script|style|image|text|foreignObject|a)\b/i
 const forbiddenRefs = /\b(href|xlink:href)\s*=/i
+const forbiddenHandlers = /\bon[a-z]+\s*=/i
+const forbiddenStyleAttribute = /\bstyle\s*=/i
 const hardcodedColor = /#[0-9a-f]{3,8}\b|\brgb\s*\(|\bhsl\s*\(/i
 const fillAttribute = /\bfill\s*=\s*"([^"]*)"/gi
+const allowedTags = new Set([
+  'svg',
+  'g',
+  'path',
+  'circle',
+  'ellipse',
+  'rect',
+  'line',
+  'polyline',
+  'polygon'
+])
 
 /** Проверяет SVG по правилам набора. Возвращает список проблем. */
 export function validateSvg(svg) {
@@ -21,10 +34,19 @@ export function validateSvg(svg) {
   }
 
   if (forbiddenTags.test(svg)) {
-    problems.push('запрещённый тег (script/style/image/text/foreignObject)')
+    problems.push('запрещённый тег (script/style/image/text/foreignObject/a)')
   }
   if (forbiddenRefs.test(svg)) problems.push('внешние ссылки href/xlink:href запрещены')
+  if (forbiddenHandlers.test(svg)) problems.push('обработчики событий on* запрещены')
+  if (forbiddenStyleAttribute.test(svg)) problems.push('атрибут style запрещён')
   if (hardcodedColor.test(svg)) problems.push('зашитый цвет: используй currentColor')
+
+  for (const match of svg.matchAll(/<([a-zA-Z][\w:-]*)\b/g)) {
+    const tag = match[1].toLowerCase()
+    if (!allowedTags.has(tag)) {
+      problems.push(`тег <${tag}> запрещён — разрешены только простые фигуры SVG`)
+    }
+  }
 
   for (const match of svg.matchAll(fillAttribute)) {
     if (match[1] !== 'none') {
