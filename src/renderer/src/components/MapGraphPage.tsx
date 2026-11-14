@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { JSX } from 'react'
-import type { GameMap } from '@shared/map'
+import type { GameMap, MapPath } from '@shared/map'
+import { canonicalMapPath } from '@shared/domain'
 import { api, errorMessage } from '@renderer/lib/api'
 import { pluralize } from '@renderer/lib/format'
 import { layoutMap, type MapPoint } from '@renderer/lib/mapLayout'
@@ -19,8 +20,9 @@ export function MapGraphPage({ mapId, onBack, onOpenMap }: MapGraphPageProps): J
   const [map, setMap] = useState<GameMap | null | undefined>(undefined)
   const [linkedMapNames, setLinkedMapNames] = useState<Record<string, string>>({})
   const [positions, setPositions] = useState<Record<string, MapPoint> | null>(null)
-  const [savingPositions, setSavingPositions] = useState(false)
-  const [positionError, setPositionError] = useState<string | null>(null)
+  const [draftPaths, setDraftPaths] = useState<MapPath[] | null>(null)
+  const [savingChanges, setSavingChanges] = useState(false)
+  const [changeError, setChangeError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
 
@@ -30,6 +32,8 @@ export function MapGraphPage({ mapId, onBack, onOpenMap }: MapGraphPageProps): J
       setMap(maps.find((item) => item.id === mapId) ?? null)
       setLinkedMapNames(Object.fromEntries(maps.map((item) => [item.id, item.name])))
       setPositions(null)
+      setDraftPaths(null)
+      setChangeError(null)
       setError(null)
     } catch (caught) {
       setError(errorMessage(caught))
@@ -52,40 +56,60 @@ export function MapGraphPage({ mapId, onBack, onOpenMap }: MapGraphPageProps): J
 
       return { ...base, [placeId]: { x, y } }
     })
-    setPositionError(null)
+    setChangeError(null)
   }
 
-  async function savePositions(): Promise<void> {
-    if (!map || !positions) return
+  function connectNodes(fromId: string, toId: string): void {
+    if (!map || fromId === toId) return
 
-    setSavingPositions(true)
-    setPositionError(null)
+    const current = draftPaths ?? map.paths
+    const exists = current.some(
+      (path) =>
+        (path.a === fromId && path.b === toId) || (path.a === toId && path.b === fromId)
+    )
+
+    if (exists) return
+
+    setDraftPaths([...current, canonicalMapPath(fromId, toId)])
+    setChangeError(null)
+  }
+
+  async function saveChanges(): Promise<void> {
+    if (!map || (!positions && !draftPaths)) return
+
+    setSavingChanges(true)
+    setChangeError(null)
 
     try {
       const updated = await api.maps.update({
         ...map,
         places: map.places.map((place) => ({
           ...place,
-          x: positions[place.id]?.x ?? place.x,
-          y: positions[place.id]?.y ?? place.y
-        }))
+          x: positions?.[place.id]?.x ?? place.x,
+          y: positions?.[place.id]?.y ?? place.y
+        })),
+        paths: draftPaths ?? map.paths
       })
 
       setMap(updated)
       setPositions(null)
+      setDraftPaths(null)
     } catch (caught) {
-      setPositionError(errorMessage(caught))
+      setChangeError(errorMessage(caught))
     } finally {
-      setSavingPositions(false)
+      setSavingChanges(false)
     }
   }
 
-  function resetPositions(): void {
+  function resetChanges(): void {
     setPositions(null)
-    setPositionError(null)
+    setDraftPaths(null)
+    setChangeError(null)
   }
 
   const layout = map ? layoutMap(map, positions ?? undefined) : null
+  const displayPaths = draftPaths ?? map?.paths ?? []
+  const dirty = positions !== null || draftPaths !== null
 
   return (
     <main className="page">
@@ -110,8 +134,8 @@ export function MapGraphPage({ mapId, onBack, onOpenMap }: MapGraphPageProps): J
                       'место',
                       'места',
                       'мест'
-                    )} · ${map.paths.length} ${pluralize(
-                      map.paths.length,
+                    )} · ${displayPaths.length} ${pluralize(
+                      displayPaths.length,
                       'путь',
                       'пути',
                       'путей'
@@ -132,7 +156,7 @@ export function MapGraphPage({ mapId, onBack, onOpenMap }: MapGraphPageProps): J
         </div>
 
         {error ? <p className="notice notice--error">{error}</p> : null}
-        {positionError ? <p className="notice notice--error">{positionError}</p> : null}
+        {changeError ? <p className="notice notice--error">{changeError}</p> : null}
 
         {map === null ? (
           <div className="empty">
@@ -159,25 +183,25 @@ export function MapGraphPage({ mapId, onBack, onOpenMap }: MapGraphPageProps): J
                 </span>
               </div>
 
-              {positions ? (
+              {dirty ? (
                 <div className="map-graph-tools">
                   <button
                     type="button"
                     className="icon-button map-tool map-tool--save"
-                    title="Сохранить расположение"
-                    aria-label="Сохранить расположение карточек"
-                    onClick={() => void savePositions()}
-                    disabled={savingPositions}
+                    title="Сохранить изменения"
+                    aria-label="Сохранить изменения карты"
+                    onClick={() => void saveChanges()}
+                    disabled={savingChanges}
                   >
                     <IconSave width={15} height={15} />
                   </button>
                   <button
                     type="button"
                     className="icon-button map-tool"
-                    title="Сбросить расположение"
-                    aria-label="Вернуть сохранённое расположение карточек"
-                    onClick={resetPositions}
-                    disabled={savingPositions}
+                    title="Сбросить изменения"
+                    aria-label="Вернуть сохранённое состояние карты"
+                    onClick={resetChanges}
+                    disabled={savingChanges}
                   >
                     <IconUndo width={15} height={15} />
                   </button>
@@ -189,11 +213,12 @@ export function MapGraphPage({ mapId, onBack, onOpenMap }: MapGraphPageProps): J
               {layout ? (
                 <MapGraph
                   mapName={map.name}
-                  paths={map.paths}
+                  paths={displayPaths}
                   layout={layout}
                   linkedMapNames={linkedMapNames}
                   onOpenMap={onOpenMap}
                   onMoveNode={moveNode}
+                  onConnect={connectNodes}
                 />
               ) : null}
             </div>
@@ -208,6 +233,8 @@ export function MapGraphPage({ mapId, onBack, onOpenMap }: MapGraphPageProps): J
         onSaved={(saved) => {
           setMap(saved)
           setPositions(null)
+          setDraftPaths(null)
+          setChangeError(null)
           setEditing(false)
           setLinkedMapNames((current) => ({ ...current, [saved.id]: saved.name }))
         }}

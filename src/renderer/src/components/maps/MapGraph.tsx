@@ -23,6 +23,14 @@ interface DragState {
   moved: boolean
 }
 
+interface ConnectionDraft {
+  fromId: string
+  pointerId: number
+  x: number
+  y: number
+  targetId: string | null
+}
+
 function hashPair(path: MapPath): number {
   const key = mapPathKey(path)
   let hash = 0
@@ -71,6 +79,21 @@ function edgePath(from: MapNodePosition, to: MapNodePosition): string {
   return `M ${start.x} ${start.y} Q ${controlX} ${controlY} ${end.x} ${end.y}`
 }
 
+function previewPath(from: MapNodePosition, point: { x: number; y: number }): string {
+  const dx = point.x - from.x
+  const dy = point.y - from.y
+  const halfWidth = MAP_NODE_WIDTH / 2 + 4
+  const halfHeight = MAP_NODE_HEIGHT / 2 + 4
+  const scale = Math.min(
+    Math.abs(dx) < 0.001 ? Number.POSITIVE_INFINITY : halfWidth / Math.abs(dx),
+    Math.abs(dy) < 0.001 ? Number.POSITIVE_INFINITY : halfHeight / Math.abs(dy)
+  )
+  const startX = Number.isFinite(scale) ? from.x + dx * scale : from.x
+  const startY = Number.isFinite(scale) ? from.y + dy * scale : from.y
+
+  return `M ${startX} ${startY} Q ${(startX + point.x) / 2} ${(startY + point.y) / 2} ${point.x} ${point.y}`
+}
+
 interface MapGraphProps {
   mapName: string
   paths: readonly MapPath[]
@@ -79,6 +102,7 @@ interface MapGraphProps {
   linkedMapNames: Record<string, string>
   onOpenMap: (mapId: string) => void
   onMoveNode: (placeId: string, x: number, y: number) => void
+  onConnect: (fromId: string, toId: string) => void
 }
 
 /** Графическое представление карты: места-прямоугольники и пути-дорожки. */
@@ -88,10 +112,14 @@ export function MapGraph({
   layout,
   linkedMapNames,
   onOpenMap,
-  onMoveNode
+  onMoveNode,
+  onConnect
 }: MapGraphProps): JSX.Element {
   const dragRef = useRef<DragState | null>(null)
+  const connectionRef = useRef<ConnectionDraft | null>(null)
+  const graphRef = useRef<HTMLDivElement>(null)
   const [draggingId, setDraggingId] = useState<string | null>(null)
+  const [connection, setConnection] = useState<ConnectionDraft | null>(null)
 
   if (layout.nodes.length === 0) {
     return (
@@ -184,6 +212,105 @@ export function MapGraph({
     }
   }
 
+  function graphPoint(event: PointerEvent<HTMLElement>): { x: number; y: number } | null {
+    const rect = graphRef.current?.getBoundingClientRect()
+    if (!rect) return null
+
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top }
+  }
+
+  function nodeIdAt(clientX: number, clientY: number): string | null {
+    const element = document.elementFromPoint(clientX, clientY)
+    const node = element?.closest<HTMLElement>('[data-map-node-id]')
+    return node?.dataset.mapNodeId ?? null
+  }
+
+  function startConnection(
+    event: PointerEvent<HTMLSpanElement>,
+    node: MapNodePosition
+  ): void {
+    if (event.button !== 0) return
+
+    event.preventDefault()
+    event.stopPropagation()
+
+    const point = graphPoint(event)
+    if (!point) return
+
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId)
+    } catch {
+      // Синтетические события в тестах могут не иметь активного pointer id.
+    }
+
+    const draft: ConnectionDraft = {
+      fromId: node.id,
+      pointerId: event.pointerId,
+      x: point.x,
+      y: point.y,
+      targetId: null
+    }
+
+    connectionRef.current = draft
+    setConnection(draft)
+  }
+
+  function moveConnection(event: PointerEvent<HTMLSpanElement>): void {
+    const draft = connectionRef.current
+    if (!draft || draft.pointerId !== event.pointerId) return
+
+    event.preventDefault()
+    event.stopPropagation()
+
+    const point = graphPoint(event)
+    if (!point) return
+
+    const hovered = nodeIdAt(event.clientX, event.clientY)
+    const next: ConnectionDraft = {
+      ...draft,
+      x: point.x,
+      y: point.y,
+      targetId: hovered && hovered !== draft.fromId ? hovered : null
+    }
+
+    connectionRef.current = next
+    setConnection(next)
+  }
+
+  function finishConnection(event: PointerEvent<HTMLSpanElement>): void {
+    const draft = connectionRef.current
+    if (!draft || draft.pointerId !== event.pointerId) return
+
+    event.preventDefault()
+    event.stopPropagation()
+
+    const targetId = nodeIdAt(event.clientX, event.clientY)
+    if (targetId && targetId !== draft.fromId) {
+      onConnect(draft.fromId, targetId)
+    }
+
+    connectionRef.current = null
+    setConnection(null)
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+  }
+
+  function cancelConnection(event: PointerEvent<HTMLSpanElement>): void {
+    const draft = connectionRef.current
+    if (!draft || draft.pointerId !== event.pointerId) return
+
+    connectionRef.current = null
+    setConnection(null)
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+  }
+
+  const connectionSource = connection ? nodesById.get(connection.fromId) : undefined
+
   function onNodeKeyDown(
     event: KeyboardEvent<HTMLDivElement>,
     node: MapNodePosition
@@ -197,6 +324,7 @@ export function MapGraph({
 
   return (
     <div
+      ref={graphRef}
       className="map-graph"
       style={{ width: layout.width, height: layout.height }}
       role="group"
@@ -219,6 +347,13 @@ export function MapGraph({
             </g>
           )
         })}
+
+        {connectionSource && connection ? (
+          <path
+            className="map-edge map-edge--preview"
+            d={previewPath(connectionSource, { x: connection.x, y: connection.y })}
+          />
+        ) : null}
       </svg>
 
       {layout.nodes.map((node) => {
@@ -227,7 +362,9 @@ export function MapGraph({
           'map-node',
           node.isExit ? 'map-node--exit' : '',
           linkedName ? 'map-node--linked' : '',
-          draggingId === node.id ? 'map-node--dragging' : ''
+          draggingId === node.id ? 'map-node--dragging' : '',
+          connection?.fromId === node.id ? 'map-node--drawing' : '',
+          connection?.targetId === node.id ? 'map-node--target' : ''
         ]
           .filter(Boolean)
           .join(' ')
@@ -237,6 +374,7 @@ export function MapGraph({
             key={node.id}
             className={className}
             style={{ left: node.x, top: node.y }}
+            data-map-node-id={node.id}
             role={linkedName ? 'button' : undefined}
             tabIndex={linkedName ? 0 : undefined}
             aria-label={
@@ -262,6 +400,16 @@ export function MapGraph({
               </span>
             ) : null}
             {linkedName ? <span className="map-node__link">→ {linkedName}</span> : null}
+
+            <span
+              className="map-node__connector"
+              title="Потяните, чтобы провести путь"
+              aria-hidden="true"
+              onPointerDown={(event) => startConnection(event, node)}
+              onPointerMove={moveConnection}
+              onPointerUp={finishConnection}
+              onPointerCancel={cancelConnection}
+            />
           </div>
         )
       })}

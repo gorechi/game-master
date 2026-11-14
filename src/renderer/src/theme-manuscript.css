@@ -570,6 +570,12 @@
   box-shadow: 0 12px 28px rgba(74, 52, 26, 0.18);
 }
 
+:root[data-theme='light'] .map-node--target {
+  box-shadow:
+    0 0 0 3px rgba(143, 58, 44, 0.16),
+    0 16px 34px rgba(74, 52, 26, 0.2);
+}
+
 :root[data-theme='light'] .map-node--exit {
   border-color: rgba(143, 58, 44, 0.5);
 }
