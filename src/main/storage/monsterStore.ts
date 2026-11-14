@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { app } from 'electron'
 import { clampMonsterScore, createMonster, normalizeMonsterInput, MONSTER_SCORE_KEYS } from '@shared/domain'
+import { DEFAULT_REALM_ID } from '@shared/realm'
 import {
   MONSTERS_FILE_SCHEMA_VERSION,
   monstersFileSchema,
@@ -77,16 +78,20 @@ function assertName(input: MonsterInput): ReturnType<typeof normalizeMonsterInpu
   return normalized
 }
 
-export async function listMonsters(): Promise<Monster[]> {
-  return (await readMonstersFile()).monsters
+export async function listMonsters(realmId?: string): Promise<Monster[]> {
+  const monsters = (await readMonstersFile()).monsters
+  return realmId ? monsters.filter((monster) => monster.realmId === realmId) : monsters
 }
 
-export async function addMonster(input: MonsterInput): Promise<Monster> {
+export async function addMonster(
+  input: MonsterInput,
+  realmId: string = DEFAULT_REALM_ID
+): Promise<Monster> {
   const normalized = assertName(input)
 
   return withFileLock(LOCK_KEY, async () => {
     const file = await readMonstersFile()
-    const monster = createMonster(normalized)
+    const monster = createMonster(normalized, realmId)
 
     await writeJsonAtomic(monstersFile(), {
       ...file,

@@ -45,6 +45,13 @@ const api: GameMasterApi = {
     update: (map) => ipcRenderer.invoke(IPC.mapUpdate, map),
     remove: (id) => ipcRenderer.invoke(IPC.mapRemove, id)
   },
+  realms: {
+    list: () => ipcRenderer.invoke(IPC.realmsList),
+    create: (input) => ipcRenderer.invoke(IPC.realmCreate, input),
+    update: (realm) => ipcRenderer.invoke(IPC.realmUpdate, realm),
+    activate: (id) => ipcRenderer.invoke(IPC.realmActivate, id),
+    remove: (id) => ipcRenderer.invoke(IPC.realmRemove, id)
+  },
   settings: {
     get: () => ipcRenderer.invoke(IPC.settingsGet),
     update: (patch) => ipcRenderer.invoke(IPC.settingsUpdate, patch)

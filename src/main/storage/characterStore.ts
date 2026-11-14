@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { app } from 'electron'
 import { createCharacterProfile, normalizeCharacterProfileInput } from '@shared/domain'
+import { DEFAULT_REALM_ID } from '@shared/realm'
 import type { NormalizedCharacterProfileInput } from '@shared/domain'
 import {
   CHARACTERS_FILE_SCHEMA_VERSION,
@@ -49,16 +50,22 @@ function assertName(input: CharacterProfileInput): NormalizedCharacterProfileInp
   return normalized
 }
 
-export async function listCharacters(): Promise<CharacterProfile[]> {
-  return (await readCharactersFile()).characters
+export async function listCharacters(realmId?: string): Promise<CharacterProfile[]> {
+  const characters = (await readCharactersFile()).characters
+  return realmId
+    ? characters.filter((character) => character.realmId === realmId)
+    : characters
 }
 
-export async function addCharacter(input: CharacterProfileInput): Promise<CharacterProfile> {
+export async function addCharacter(
+  input: CharacterProfileInput,
+  realmId: string = DEFAULT_REALM_ID
+): Promise<CharacterProfile> {
   const normalized = assertName(input)
 
   return withFileLock(LOCK_KEY, async () => {
     const file = await readCharactersFile()
-    const character = createCharacterProfile(normalized)
+    const character = createCharacterProfile(normalized, realmId)
 
     await writeJsonAtomic(charactersFile(), {
       ...file,

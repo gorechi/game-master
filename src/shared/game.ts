@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { GAME_STATUSES } from './gameStatus'
 import { monsterAbilitySchema } from './monster'
+import { DEFAULT_REALM_ID } from './realm'
 
 /** Версия формата файла игр. */
 export const GAMES_FILE_SCHEMA_VERSION = 1
@@ -44,6 +45,7 @@ export const gameInputSchema = z.object(gameFields)
 
 export const gameSchema = z.object({
   id: z.string().min(1),
+  realmId: z.string().min(1).default(DEFAULT_REALM_ID),
   ...gameFields,
   status: z.enum(GAME_STATUSES).default('new'),
   createdAt: z.string().min(1),

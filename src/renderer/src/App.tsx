@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { JSX } from 'react'
+import type { Realm } from '@shared/realm'
 import { DEFAULT_SETTINGS, type AppSettings, type ThemeName } from '@shared/settings'
 import { Sidebar } from './components/Sidebar'
 import { GamesPage } from './components/GamesPage'
@@ -11,6 +12,7 @@ import { MonstersPage } from './components/MonstersPage'
 import { SavedMonstersPage } from './components/SavedMonstersPage'
 import { MapsPage } from './components/MapsPage'
 import { MapGraphPage } from './components/MapGraphPage'
+import { RealmsPage } from './components/RealmsPage'
 import { SettingsPage } from './components/SettingsPage'
 import { api } from './lib/api'
 import { applyTheme } from './lib/theme'
@@ -19,16 +21,27 @@ import type { Route } from './lib/routes'
 export default function App(): JSX.Element {
   const [route, setRoute] = useState<Route>({ name: 'games' })
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS)
+  const [realms, setRealms] = useState<Realm[]>([])
 
   useEffect(() => {
     let cancelled = false
 
-    void api.settings
-      .get()
-      .then((loaded) => {
+    void Promise.all([api.settings.get(), api.realms.list()])
+      .then(([loaded, loadedRealms]) => {
         if (cancelled) return
-        setSettings(loaded)
+
+        const active =
+          loadedRealms.find((realm) => realm.id === loaded.activeRealmId) ??
+          loadedRealms[0] ??
+          null
+
+        setSettings({ ...loaded, activeRealmId: active?.id ?? null })
+        setRealms(loadedRealms)
         applyTheme(loaded.theme)
+
+        if (active && active.id !== loaded.activeRealmId) {
+          void api.realms.activate(active.id)
+        }
       })
       .catch(() => {
         // Настройки недоступны — остаёмся на теме из кэша.
@@ -46,11 +59,42 @@ export default function App(): JSX.Element {
     void api.settings.update({ theme }).catch(() => undefined)
   }, [])
 
+  const changeRealm = useCallback((realmId: string): void => {
+    setSettings((previous) => ({ ...previous, activeRealmId: realmId }))
+    void api.realms.activate(realmId)
+    setRoute((current) => (current.name === 'realms' ? current : { name: 'games' }))
+  }, [])
+
+  const refreshRealms = useCallback(async (): Promise<void> => {
+    try {
+      const loaded = await api.realms.list()
+      setRealms(loaded)
+      setSettings((previous) => {
+        const active =
+          loaded.find((realm) => realm.id === previous.activeRealmId) ?? loaded[0] ?? null
+
+        if (!active) return { ...previous, activeRealmId: null }
+        if (active.id !== previous.activeRealmId) void api.realms.activate(active.id)
+        return { ...previous, activeRealmId: active.id }
+      })
+    } catch {
+      // Страница сеттингов покажет ошибку сама.
+    }
+  }, [])
+
   return (
     <div className={`app${route.name === 'game' ? ' app--full' : ''}`}>
-      {route.name !== 'game' ? <Sidebar route={route} onNavigate={setRoute} /> : null}
+      {route.name !== 'game' ? (
+        <Sidebar
+          route={route}
+          onNavigate={setRoute}
+          realms={realms}
+          activeRealmId={settings.activeRealmId}
+          onRealmChange={changeRealm}
+        />
+      ) : null}
 
-      <div className="app__content">
+      <div className="app__content" key={settings.activeRealmId ?? 'loading'}>
         {route.name === 'games' ? (
           <GamesPage onOpenGame={(id) => setRoute({ name: 'game', id })} />
         ) : null}
@@ -97,6 +141,15 @@ export default function App(): JSX.Element {
             mapId={route.id}
             onBack={() => setRoute({ name: 'maps' })}
             onOpenMap={(id) => setRoute({ name: 'map', id })}
+          />
+        ) : null}
+
+        {route.name === 'realms' ? (
+          <RealmsPage
+            realms={realms}
+            activeRealmId={settings.activeRealmId}
+            onActivate={changeRealm}
+            onChanged={() => void refreshRealms()}
           />
         ) : null}
 

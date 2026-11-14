@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { DEFAULT_REALM_ID } from './realm'
 
 /** Версия формата файла базы персонажей. */
 export const CHARACTERS_FILE_SCHEMA_VERSION = 1
@@ -38,6 +39,7 @@ export const characterProfileInputSchema = z.object({
 
 export const characterProfileSchema = z.object({
   id: z.string().min(1),
+  realmId: z.string().min(1).default(DEFAULT_REALM_ID),
   ...profileFields,
   level: levelField,
   createdAt: z.string().min(1),

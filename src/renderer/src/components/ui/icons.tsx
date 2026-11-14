@@ -153,6 +153,16 @@ export function IconBookmark(props: IconProps): JSX.Element {
   )
 }
 
+export function IconGlobe(props: IconProps): JSX.Element {
+  return (
+    <Svg {...props}>
+      <circle cx="12" cy="12" r="8.6" />
+      <path d="M3.4 12h17.2" />
+      <path d="M12 3.4c2.4 2.4 3.6 5.2 3.6 8.6s-1.2 6.2-3.6 8.6M12 3.4C9.6 5.8 8.4 8.6 8.4 12s1.2 6.2 3.6 8.6" />
+    </Svg>
+  )
+}
+
 export function IconGear(props: IconProps): JSX.Element {
   return (
     <Svg {...props}>

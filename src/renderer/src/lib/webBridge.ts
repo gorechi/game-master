@@ -4,6 +4,8 @@ import type { CharacterProfile, CharacterProfileInput } from '@shared/characterP
 import type { Monster, MonsterInput } from '@shared/monster'
 import type { Game, GameInput } from '@shared/game'
 import type { GameMap, GameMapInput } from '@shared/map'
+import type { Realm, RealmInput } from '@shared/realm'
+import { DEFAULT_REALM_ID } from '@shared/realm'
 import {
   canTransitionGame,
   isGameDeletable,
@@ -20,6 +22,7 @@ import {
   createMap,
   createMonster,
   createPlayer,
+  createRealm,
   normalizeCharacterProfileInput,
   normalizeMapInput,
   normalizeMonsterInput,
@@ -47,6 +50,7 @@ const PLAYERS_KEY = 'game-master.preview.players'
 const CHARACTERS_KEY = 'game-master.preview.characters'
 const MONSTERS_KEY = 'game-master.preview.monsters'
 const MAPS_KEY = 'game-master.preview.maps'
+const REALMS_KEY = 'game-master.preview.realms'
 const LEGACY_WORLDS_KEY = 'game-master.preview.worlds'
 const SETTINGS_KEY = 'game-master.preview.settings'
 
@@ -58,6 +62,7 @@ export function resetWebPreview(): void {
   window.localStorage.removeItem(CHARACTERS_KEY)
   window.localStorage.removeItem(MONSTERS_KEY)
   window.localStorage.removeItem(MAPS_KEY)
+  window.localStorage.removeItem(REALMS_KEY)
   window.localStorage.removeItem(LEGACY_WORLDS_KEY)
   window.location.reload()
 }
@@ -88,6 +93,7 @@ function readCharacters(): CharacterProfile[] {
 
     return (parsed as CharacterProfile[]).map((item) => ({
       ...item,
+      realmId: typeof item.realmId === 'string' ? item.realmId : DEFAULT_REALM_ID,
       level: typeof item.level === 'number' ? item.level : 1
     }))
   } catch {
@@ -109,6 +115,7 @@ function readMonsters(): Monster[] {
 
     return (parsed as Monster[]).map((monster) => ({
       ...monster,
+      realmId: typeof monster.realmId === 'string' ? monster.realmId : DEFAULT_REALM_ID,
       strength: clampMonsterScore(monster.strength),
       dexterity: clampMonsterScore(monster.dexterity),
       intelligence: clampMonsterScore(monster.intelligence),
@@ -136,6 +143,7 @@ function readMaps(): GameMap[] {
 
     const maps = (parsed as GameMap[]).map((map) => ({
       ...map,
+      realmId: typeof map.realmId === 'string' ? map.realmId : DEFAULT_REALM_ID,
       places: Array.isArray(map.places)
         ? map.places.map((place) => ({
             ...place,
@@ -168,6 +176,7 @@ function readGames(): Game[] {
 
     return (parsed as Game[]).map((game) => ({
       ...game,
+      realmId: typeof game.realmId === 'string' ? game.realmId : DEFAULT_REALM_ID,
       mapId: typeof game.mapId === 'string' ? game.mapId : null,
       notes: typeof game.notes === 'string' ? game.notes : '',
       characterIds: Array.isArray(game.characterIds) ? game.characterIds : [],
@@ -189,7 +198,11 @@ function readGameMonsters(): GameMonsterEntry[] {
     if (!raw) return []
 
     const parsed: unknown = JSON.parse(raw)
-    return Array.isArray(parsed) ? (parsed as GameMonsterEntry[]) : []
+    if (!Array.isArray(parsed)) return []
+    return (parsed as GameMonsterEntry[]).map((monster) => ({
+      ...monster,
+      realmId: typeof monster.realmId === 'string' ? monster.realmId : DEFAULT_REALM_ID
+    }))
   } catch {
     return []
   }
@@ -199,13 +212,66 @@ function writeGameMonsters(monsters: GameMonsterEntry[]): void {
   window.localStorage.setItem(GAME_MONSTERS_KEY, JSON.stringify(monsters))
 }
 
+function seedRealm(): Realm {
+  const now = new Date().toISOString()
+  return {
+    id: DEFAULT_REALM_ID,
+    name: 'D&D',
+    description: 'Базовый фэнтези-сеттинг. Сюда попадают данные, созданные до появления сеттингов.',
+    createdAt: now,
+    updatedAt: now
+  }
+}
+
+function readRealms(): Realm[] {
+  try {
+    const raw = window.localStorage.getItem(REALMS_KEY)
+    if (raw) {
+      const parsed: unknown = JSON.parse(raw)
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return (parsed as Realm[]).map((realm) => ({
+          ...realm,
+          description: typeof realm.description === 'string' ? realm.description : ''
+        }))
+      }
+    }
+  } catch {
+    // повреждённые данные не должны ломать предпросмотр
+  }
+
+  const realms = [seedRealm()]
+  writeRealms(realms)
+  return realms
+}
+
+function writeRealms(realms: Realm[]): void {
+  window.localStorage.setItem(REALMS_KEY, JSON.stringify(realms))
+}
+
+function getActiveRealmId(): string {
+  const realms = readRealms()
+  const settings = readSettings()
+  const active = realms.find((realm) => realm.id === settings.activeRealmId)
+
+  if (active) return active.id
+
+  const fallback = realms[0]!
+  writeSettings({ ...settings, activeRealmId: fallback.id })
+  return fallback.id
+}
+
 function readSettings(): AppSettings {
   try {
     const raw = window.localStorage.getItem(SETTINGS_KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<AppSettings>
       if (isThemeName(parsed.theme)) {
-        return { schemaVersion: SETTINGS_SCHEMA_VERSION, theme: parsed.theme }
+        return {
+          schemaVersion: SETTINGS_SCHEMA_VERSION,
+          theme: parsed.theme,
+          activeRealmId:
+            typeof parsed.activeRealmId === 'string' ? parsed.activeRealmId : null
+        }
       }
     }
   } catch {
@@ -234,10 +300,13 @@ export function createWebBridge(): GameMasterApi {
     },
 
     games: {
-      list: async (): Promise<Game[]> => readGames(),
+      list: async (): Promise<Game[]> => {
+        const realmId = getActiveRealmId()
+        return readGames().filter((game) => game.realmId === realmId)
+      },
 
       create: async (input: GameInput): Promise<Game> => {
-        const game = createGame(input)
+        const game = createGame(input, getActiveRealmId())
         writeGames([...readGames(), game])
         return game
       },
@@ -316,6 +385,7 @@ export function createWebBridge(): GameMasterApi {
           .filter((monster) => keep.has(monster.id) && !existingIds.has(monster.id))
           .map((monster) => ({
             ...monster,
+            realmId: game.realmId,
             savedFromGameId: game.id,
             savedAt
           }))
@@ -348,10 +418,13 @@ export function createWebBridge(): GameMasterApi {
     },
 
     gameMonsters: {
-      list: async (): Promise<GameMonsterEntry[]> => readGameMonsters(),
+      list: async (): Promise<GameMonsterEntry[]> => {
+        const realmId = getActiveRealmId()
+        return readGameMonsters().filter((monster) => monster.realmId === realmId)
+      },
 
       create: async (input: GameMonsterInput): Promise<GameMonsterEntry> => {
-        const entry = createGameMonsterEntry(input)
+        const entry = createGameMonsterEntry(input, getActiveRealmId())
         writeGameMonsters([...readGameMonsters(), entry])
         return entry
       },
@@ -364,6 +437,7 @@ export function createWebBridge(): GameMasterApi {
 
         const updated: GameMonsterEntry = {
           ...entry,
+          realmId: existing.realmId,
           savedFromGameId: existing.savedFromGameId,
           savedAt: existing.savedAt
         }
@@ -405,17 +479,22 @@ export function createWebBridge(): GameMasterApi {
     },
 
     characters: {
-      list: async (): Promise<CharacterProfile[]> => readCharacters(),
+      list: async (): Promise<CharacterProfile[]> => {
+        const realmId = getActiveRealmId()
+        return readCharacters().filter((character) => character.realmId === realmId)
+      },
 
       create: async (input: CharacterProfileInput): Promise<CharacterProfile> => {
-        const character = createCharacterProfile(input)
+        const character = createCharacterProfile(input, getActiveRealmId())
         writeCharacters([...readCharacters(), character])
         return character
       },
 
       update: async (profile: CharacterProfile): Promise<CharacterProfile> => {
+        const existing = readCharacters().find((item) => item.id === profile.id)
         const updated: CharacterProfile = {
           ...profile,
+          realmId: existing?.realmId ?? DEFAULT_REALM_ID,
           ...normalizeCharacterProfileInput(profile),
           updatedAt: new Date().toISOString()
         }
@@ -430,17 +509,22 @@ export function createWebBridge(): GameMasterApi {
     },
 
     monsters: {
-      list: async (): Promise<Monster[]> => readMonsters(),
+      list: async (): Promise<Monster[]> => {
+        const realmId = getActiveRealmId()
+        return readMonsters().filter((monster) => monster.realmId === realmId)
+      },
 
       create: async (input: MonsterInput): Promise<Monster> => {
-        const monster = createMonster(input)
+        const monster = createMonster(input, getActiveRealmId())
         writeMonsters([...readMonsters(), monster])
         return monster
       },
 
       update: async (monster: Monster): Promise<Monster> => {
+        const existing = readMonsters().find((item) => item.id === monster.id)
         const updated: Monster = {
           ...monster,
+          realmId: existing?.realmId ?? DEFAULT_REALM_ID,
           ...normalizeMonsterInput(monster),
           updatedAt: new Date().toISOString()
         }
@@ -455,18 +539,23 @@ export function createWebBridge(): GameMasterApi {
     },
 
     maps: {
-      list: async (): Promise<GameMap[]> => readMaps(),
+      list: async (): Promise<GameMap[]> => {
+        const realmId = getActiveRealmId()
+        return readMaps().filter((map) => map.realmId === realmId)
+      },
 
       create: async (input: GameMapInput): Promise<GameMap> => {
-        const map = createMap(input)
+        const map = createMap(input, getActiveRealmId())
         writeMaps([...readMaps(), map])
         return map
       },
 
       update: async (map: GameMap): Promise<GameMap> => {
+        const existing = readMaps().find((item) => item.id === map.id)
         const normalized = normalizeMapInput(map)
         const updated: GameMap = {
           ...map,
+          realmId: existing?.realmId ?? DEFAULT_REALM_ID,
           ...normalized,
           places: normalized.places.map((place) =>
             place.linkedMapId === map.id ? { ...place, linkedMapId: null } : place
@@ -508,13 +597,79 @@ export function createWebBridge(): GameMasterApi {
       }
     },
 
+    realms: {
+      list: async (): Promise<Realm[]> => readRealms(),
+
+      create: async (input: RealmInput): Promise<Realm> => {
+        const realm = createRealm(input)
+        writeRealms([...readRealms(), realm])
+        return realm
+      },
+
+      update: async (realm: Realm): Promise<Realm> => {
+        const realms = readRealms()
+        const existing = realms.find((item) => item.id === realm.id)
+        if (!existing) {
+          throw new Error('Сеттинг не найден — возможно, запись уже удалена')
+        }
+
+        const updated: Realm = {
+          ...existing,
+          name: realm.name.trim().slice(0, 100),
+          description: (realm.description ?? '').trim().slice(0, 2000),
+          updatedAt: new Date().toISOString()
+        }
+
+        writeRealms(realms.map((item) => (item.id === realm.id ? updated : item)))
+        return updated
+      },
+
+      activate: async (id: string): Promise<Realm> => {
+        const realm = readRealms().find((item) => item.id === id)
+        if (!realm) {
+          throw new Error('Сеттинг не найден — возможно, запись уже удалена')
+        }
+
+        writeSettings({ ...readSettings(), activeRealmId: realm.id })
+        return realm
+      },
+
+      remove: async (id: string): Promise<void> => {
+        const realms = readRealms()
+        if (realms.length <= 1) {
+          throw new Error('Нельзя удалить последний сеттинг')
+        }
+
+        const hasData =
+          readGames().some((game) => game.realmId === id) ||
+          readCharacters().some((character) => character.realmId === id) ||
+          readMonsters().some((monster) => monster.realmId === id) ||
+          readMaps().some((map) => map.realmId === id) ||
+          readGameMonsters().some((monster) => monster.realmId === id)
+
+        if (hasData) {
+          throw new Error('В сеттинге есть игры, персонажи, монстры или карты — сначала удалите их')
+        }
+
+        const remaining = realms.filter((realm) => realm.id !== id)
+        writeRealms(remaining)
+
+        if (readSettings().activeRealmId === id) {
+          writeSettings({ ...readSettings(), activeRealmId: remaining[0]!.id })
+        }
+      }
+    },
+
     settings: {
       get: async (): Promise<AppSettings> => readSettings(),
 
       update: async (patch: SettingsPatch): Promise<AppSettings> => {
         const next: AppSettings = {
           ...readSettings(),
-          ...(patch.theme ? { theme: patch.theme } : {})
+          ...(patch.theme ? { theme: patch.theme } : {}),
+          ...('activeRealmId' in patch
+            ? { activeRealmId: patch.activeRealmId ?? null }
+            : {})
         }
 
         writeSettings(next)

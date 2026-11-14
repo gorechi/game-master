@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { gameMonsterSchema } from './game'
+import { DEFAULT_REALM_ID } from './realm'
 
 /** Версия формата файла игровых монстров. */
 export const GAME_MONSTERS_FILE_SCHEMA_VERSION = 1
@@ -10,6 +11,7 @@ export const GAME_MONSTERS_FILE_SCHEMA_VERSION = 1
  * В бестиарий такие записи не попадают, это отдельная библиотека.
  */
 export const gameMonsterEntrySchema = gameMonsterSchema.extend({
+  realmId: z.string().min(1).default(DEFAULT_REALM_ID),
   savedFromGameId: z.string().min(1).nullable(),
   savedAt: z.string().min(1)
 })

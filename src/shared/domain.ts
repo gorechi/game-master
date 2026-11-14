@@ -3,6 +3,8 @@ import type { CharacterProfile, CharacterProfileInput } from './characterProfile
 import type { Monster, MonsterAbility, MonsterInput } from './monster'
 import type { Game, GameInput, GameMonster } from './game'
 import type { GameMonsterEntry, GameMonsterInput } from './gameMonster'
+import type { Realm, RealmInput } from './realm'
+import { DEFAULT_REALM_ID } from './realm'
 import type { GameMap, GameMapInput, MapPlace, MapPath } from './map'
 
 /**
@@ -49,6 +51,29 @@ export function playerInitials(player: Pick<Player, 'firstName' | 'lastName'>): 
 }
 
 /* ------------------------------------------------------------------ */
+/* Сеттинги                                                            */
+/* ------------------------------------------------------------------ */
+
+export function normalizeRealmInput(input: RealmInput): { name: string; description: string } {
+  return {
+    name: input.name.trim().slice(0, 100),
+    description: (input.description ?? '').trim().slice(0, 2000)
+  }
+}
+
+export function createRealm(input: RealmInput, id: string = crypto.randomUUID()): Realm {
+  const now = new Date().toISOString()
+  const normalized = normalizeRealmInput(input)
+
+  return {
+    id,
+    ...normalized,
+    createdAt: now,
+    updatedAt: now
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* Персонажи-карточки (герои игроков)                                 */
 /* ------------------------------------------------------------------ */
 
@@ -81,12 +106,14 @@ export function normalizeCharacterProfileInput(
 
 export function createCharacterProfile(
   input: CharacterProfileInput,
+  realmId: string = DEFAULT_REALM_ID,
   id: string = crypto.randomUUID()
 ): CharacterProfile {
   const now = new Date().toISOString()
 
   return {
     id,
+    realmId,
     ...normalizeCharacterProfileInput(input),
     createdAt: now,
     updatedAt: now
@@ -165,12 +192,14 @@ export function normalizeMonsterInput(input: MonsterInput): NormalizedMonsterInp
 
 export function createMonster(
   input: MonsterInput,
+  realmId: string = DEFAULT_REALM_ID,
   id: string = crypto.randomUUID()
 ): Monster {
   const now = new Date().toISOString()
 
   return {
     id,
+    realmId,
     ...normalizeMonsterInput(input),
     createdAt: now,
     updatedAt: now
@@ -264,11 +293,16 @@ export function normalizeMapInput(input: GameMapInput): NormalizedMapInput {
   }
 }
 
-export function createMap(input: GameMapInput, id: string = crypto.randomUUID()): GameMap {
+export function createMap(
+  input: GameMapInput,
+  realmId: string = DEFAULT_REALM_ID,
+  id: string = crypto.randomUUID()
+): GameMap {
   const now = new Date().toISOString()
 
   return {
     id,
+    realmId,
     ...normalizeMapInput(input),
     createdAt: now,
     updatedAt: now
@@ -315,11 +349,16 @@ export function setPlaceConnections(
 /* Игры                                                               */
 /* ------------------------------------------------------------------ */
 
-export function createGame(input: GameInput, id: string = crypto.randomUUID()): Game {
+export function createGame(
+  input: GameInput,
+  realmId: string = DEFAULT_REALM_ID,
+  id: string = crypto.randomUUID()
+): Game {
   const now = new Date().toISOString()
 
   return {
     id,
+    realmId,
     name: input.name.trim().slice(0, 120),
     mapId: input.mapId ?? null,
     notes: input.notes ?? '',
@@ -386,10 +425,12 @@ export function gameMonsterFromEntry(entry: GameMonsterEntry): GameMonster {
 /** Новый уникальный монстр для отдельной библиотеки, созданный вручную. */
 export function createGameMonsterEntry(
   input: GameMonsterInput,
+  realmId: string = DEFAULT_REALM_ID,
   savedFromGameId: string | null = null
 ): GameMonsterEntry {
   return {
     id: crypto.randomUUID(),
+    realmId,
     sourceMonsterId: input.sourceMonsterId,
     name: input.name.trim().slice(0, 100),
     strength: input.strength,

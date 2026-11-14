@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { DEFAULT_REALM_ID } from './realm'
 
 /** Версия формата файла бестиария. */
 export const MONSTERS_FILE_SCHEMA_VERSION = 1
@@ -32,6 +33,7 @@ export const monsterInputSchema = z.object(monsterFields)
 
 export const monsterSchema = z.object({
   id: z.string().min(1),
+  realmId: z.string().min(1).default(DEFAULT_REALM_ID),
   ...monsterFields,
   createdAt: z.string().min(1),
   updatedAt: z.string().min(1)

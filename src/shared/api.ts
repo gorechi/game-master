@@ -5,6 +5,7 @@ import type { Game, GameInput } from './game'
 import type { GameStatus } from './gameStatus'
 import type { GameMonsterEntry, GameMonsterInput } from './gameMonster'
 import type { GameMap, GameMapInput } from './map'
+import type { Realm, RealmInput } from './realm'
 import type { AppSettings, SettingsPatch } from './settings'
 
 /**
@@ -40,6 +41,11 @@ export const IPC = {
   mapCreate: 'map:create',
   mapUpdate: 'map:update',
   mapRemove: 'map:remove',
+  realmsList: 'realms:list',
+  realmCreate: 'realm:create',
+  realmUpdate: 'realm:update',
+  realmActivate: 'realm:activate',
+  realmRemove: 'realm:remove',
   settingsGet: 'settings:get',
   settingsUpdate: 'settings:update'
 } as const
@@ -103,6 +109,14 @@ export interface GameMasterApi {
     list(): Promise<GameMap[]>
     create(input: GameMapInput): Promise<GameMap>
     update(map: GameMap): Promise<GameMap>
+    remove(id: string): Promise<void>
+  }
+  /** Сеттинги: верхнеуровневые миры, к которым привязаны игры и их сущности. */
+  realms: {
+    list(): Promise<Realm[]>
+    create(input: RealmInput): Promise<Realm>
+    update(realm: Realm): Promise<Realm>
+    activate(id: string): Promise<Realm>
     remove(id: string): Promise<void>
   }
   /** Настройки приложения (тема и прочее). */

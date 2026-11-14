@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { DEFAULT_REALM_ID } from './realm'
 
 /** Версия формата файла карт. */
 export const MAPS_FILE_SCHEMA_VERSION = 1
@@ -37,6 +38,7 @@ export const gameMapInputSchema = z.object(mapFields)
 
 export const gameMapSchema = z.object({
   id: z.string().min(1),
+  realmId: z.string().min(1).default(DEFAULT_REALM_ID),
   ...mapFields,
   createdAt: z.string().min(1),
   updatedAt: z.string().min(1)

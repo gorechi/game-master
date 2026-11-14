@@ -7,8 +7,14 @@
 
 ## Что уже работает
 
-- **Боковое меню** — «Игры», «Игроки», «Персонажи», «Монстры», «Карты», «Настройки»;
-  навигация без перезагрузки, приложение открывается на играх.
+- **Боковое меню** — «Игры», «Игроки», «Персонажи», «Монстры», «Игровые монстры»,
+  «Карты», «Сеттинги», «Настройки»; навигация без перезагрузки, приложение открывается
+  на играх. Под логотипом — переключатель активного сеттинга.
+- **Сеттинги** — верхнеуровневые миры (фэнтези, киберпанк, космос, реализм…). Игры,
+  персонажи, монстры, карты и сохранённые уникальные монстры принадлежат одному сеттингу
+  и видны только в нём. Игроки-люди остаются общими для всех миров. Активный сеттинг
+  выбирается в боковом меню; его можно создать, переименовать, описать и удалить,
+  если в нём нет данных. Все старые записи автоматически попадают в сеттинг **D&D**.
 - **Игры** — основная сущность: список партий, которые мастер готовит или проводит.
   У игры четыре статуса: **Новая → Проводится ⇄ На паузе**, из «Проводится» и «На паузе»
   можно перейти в **Закончена**; обратно в «Новую» вернуться нельзя. Новую игру можно
@@ -100,6 +106,7 @@
 │                              storage/characterStore  (JSON)   │
 │                              storage/monsterStore    (JSON)   │
 │                              storage/mapStore      (JSON)   │
+│                              storage/realmStore    (JSON)   │
 │                              storage/settingsStore   (JSON)   │
 └───────────────▲───────────────────────────────┬──────────────┘
                 │ IPC (invoke/handle)           │ fs
@@ -110,7 +117,8 @@
                 │                    │  players.json        │
                 │                    │  characters.json     │
                 │                    │  monsters.json       │
-                │                    │  maps.json         │
+                │                    │  maps.json           │
+                │                    │  realms.json         │
                 │                    │  settings.json       │
 ┌───────────────┴────────────────────┴──────────────────────┐
 │ renderer: React, без доступа к Node и файловой системе    │
@@ -129,6 +137,13 @@
   не оставит полузаписанный JSON. Записи одного файла сериализуются очередью (`storage/jsonFile.ts`).
 - **Версия формата.** В каждом файле есть `schemaVersion`; старые записи дочитываются схемой
   с значениями по умолчанию (например, уровень персонажа).
+- **Сеттинги как область данных.** `realms.json` хранит миры; активный id лежит в
+  `settings.json`. У игр, персонажей, монстров, карт и сохранённых монстров есть `realmId`;
+  операции списка в главном процессе фильтруют их по активному сеттингу, а создание
+  проставляет его автоматически. Поэтому игровая форма видит только персонажей, монстров
+  и карты текущего мира. Игроки-люди — общие. Старые записи без `realmId` читаются как
+  `default`, для них создаётся сеттинг **D&D**. Удалить можно только пустой сеттинг,
+  и всегда остаётся хотя бы один.
 - **Персонажи — карточки игроков.** `characters.json` хранит героев и ссылку `playerId`
   (один игрок → много персонажей). Портрет лежит в той же записи, поэтому бэкап — это один файл.
   Удаление игрока не удаляет героев: карточка показывает «Без игрока», а форма просит
@@ -198,17 +213,19 @@ src/
     storage/characterStore.ts  база персонажей (characters.json)
     storage/monsterStore.ts    бестиарий (monsters.json)
     storage/mapStore.ts        карты: места и пути (maps.json)
+    storage/realmStore.ts      сеттинги и активный мир (realms.json)
     storage/settingsStore.ts   настройки (settings.json)
     storage/jsonFile.ts        атомарная запись, очередь, чтение JSON
   preload/index.ts         contextBridge → window.gameMaster
   renderer/                React-приложение
     src/components/        Sidebar, GamesPage, GameRunPage, PlayersPage, PlayerCharactersPage,
                            CharactersPage, MonstersPage, SavedMonstersPage, MapsPage,
-                           MapGraphPage, SettingsPage
+                           MapGraphPage, RealmsPage, SettingsPage
     src/components/games/      GameFormModal, GameFinishModal
     src/components/character/  CharacterCard, CharacterFormModal
     src/components/monsters/   MonsterCard, MonsterFormModal
     src/components/savedMonsters/ BaseMonsterModal
+    src/components/realms/     RealmFormModal
     src/components/maps/       MapFormModal, PlaceFormModal, MapGraph
     src/components/ui/     Modal, ConfirmDialog, Select, иконки
     src/lib/               доступ к API, веб-адаптер, маршруты, тема, сжатие портретов, форматирование
@@ -225,6 +242,7 @@ src/
     characterProfile.ts    zod-схема персонажа-карточки
     monster.ts             zod-схема монстра и способностей
     map.ts                 zod-схема карты, мест и путей
+    realm.ts               zod-схема сеттинга
     settings.ts            типы настроек и темы
     domain.ts              фабрики, подписи, нормализация
 ```
@@ -350,7 +368,25 @@ npm run pack       # распакованное приложение без ин
 | macOS | `~/Library/Application Support/Game Master/` |
 
 Внутри — `games.json`, `gameMonsters.json`, `players.json`, `characters.json`,
-`monsters.json`, `maps.json` и `settings.json`. Открыть папку можно на странице «Настройки».
+`monsters.json`, `maps.json`, `realms.json` и `settings.json`. Открыть папку можно на
+странице «Настройки».
+
+`realms.json`:
+
+```json
+{
+  "schemaVersion": 1,
+  "realms": [
+    {
+      "id": "default",
+      "name": "D&D",
+      "description": "Базовый фэнтези-сеттинг.",
+      "createdAt": "2026-11-12T10:00:00.000Z",
+      "updatedAt": "2026-11-12T10:00:00.000Z"
+    }
+  ]
+}
+```
 
 `games.json`:
 
@@ -360,6 +396,7 @@ npm run pack       # распакованное приложение без ин
   "games": [
     {
       "id": "5d2a…",
+      "realmId": "default",
       "name": "Проклятие Страда",
       "mapId": "m1",
       "notes": "Герои вошли в таверну.",
@@ -514,7 +551,8 @@ npm run pack       # распакованное приложение без ин
 ```json
 {
   "schemaVersion": 1,
-  "theme": "light"
+  "theme": "light",
+  "activeRealmId": "default"
 }
 ```
 

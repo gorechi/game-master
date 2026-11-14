@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { app } from 'electron'
 import { createGameMonsterEntry } from '@shared/domain'
+import { DEFAULT_REALM_ID } from '@shared/realm'
 import {
   GAME_MONSTERS_FILE_SCHEMA_VERSION,
   gameMonstersFileSchema,
@@ -61,13 +62,17 @@ export async function saveGameMonsters(entries: readonly GameMonsterEntry[]): Pr
   })
 }
 
-export async function listGameMonsters(): Promise<GameMonsterEntry[]> {
-  return (await readGameMonstersFile()).monsters
+export async function listGameMonsters(realmId?: string): Promise<GameMonsterEntry[]> {
+  const monsters = (await readGameMonstersFile()).monsters
+  return realmId ? monsters.filter((monster) => monster.realmId === realmId) : monsters
 }
 
 /** Создаёт уникального монстра вручную (не из завершённой игры). */
-export async function addGameMonster(input: GameMonsterInput): Promise<GameMonsterEntry> {
-  const entry = createGameMonsterEntry(input)
+export async function addGameMonster(
+  input: GameMonsterInput,
+  realmId: string = DEFAULT_REALM_ID
+): Promise<GameMonsterEntry> {
+  const entry = createGameMonsterEntry(input, realmId)
 
   return withFileLock(LOCK_KEY, async () => {
     const file = await readGameMonstersFile()
@@ -90,6 +95,7 @@ export async function updateGameMonster(entry: GameMonsterEntry): Promise<GameMo
 
     const updated: GameMonsterEntry = {
       ...entry,
+      realmId: file.monsters[index]!.realmId,
       savedFromGameId: file.monsters[index]!.savedFromGameId,
       savedAt: file.monsters[index]!.savedAt
     }

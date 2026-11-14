@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { app } from 'electron'
 import { createMap, normalizeMapInput, type NormalizedMapInput } from '@shared/domain'
+import { DEFAULT_REALM_ID } from '@shared/realm'
 import {
   MAPS_FILE_SCHEMA_VERSION,
   mapsFileSchema,
@@ -98,16 +99,20 @@ function sanitizeLinks(map: GameMap, knownIds: ReadonlySet<string>): GameMap {
   }
 }
 
-export async function listMaps(): Promise<GameMap[]> {
-  return (await readMapsFile()).maps
+export async function listMaps(realmId?: string): Promise<GameMap[]> {
+  const maps = (await readMapsFile()).maps
+  return realmId ? maps.filter((map) => map.realmId === realmId) : maps
 }
 
-export async function addMap(input: GameMapInput): Promise<GameMap> {
+export async function addMap(
+  input: GameMapInput,
+  realmId: string = DEFAULT_REALM_ID
+): Promise<GameMap> {
   const normalized = assertMapInput(input)
 
   return withFileLock(LOCK_KEY, async () => {
     const file = await readMapsFile()
-    const created = createMap(normalized)
+    const created = createMap(normalized, realmId)
     const map = sanitizeLinks(created, new Set(file.maps.map((item) => item.id)))
 
     await writeJsonAtomic(mapsFile(), {

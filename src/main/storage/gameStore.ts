@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { app } from 'electron'
 import { createGame } from '@shared/domain'
+import { DEFAULT_REALM_ID } from '@shared/realm'
 import {
   GAMES_FILE_SCHEMA_VERSION,
   gamesFileSchema,
@@ -62,16 +63,20 @@ function assertGame(input: GameInput): GameInput {
   }
 }
 
-export async function listGames(): Promise<Game[]> {
-  return (await readGamesFile()).games
+export async function listGames(realmId?: string): Promise<Game[]> {
+  const games = (await readGamesFile()).games
+  return realmId ? games.filter((game) => game.realmId === realmId) : games
 }
 
-export async function addGame(input: GameInput): Promise<Game> {
+export async function addGame(
+  input: GameInput,
+  realmId: string = DEFAULT_REALM_ID
+): Promise<Game> {
   const normalized = assertGame(input)
 
   return withFileLock(LOCK_KEY, async () => {
     const file = await readGamesFile()
-    const game = createGame(normalized)
+    const game = createGame(normalized, realmId)
 
     await writeJsonAtomic(gamesFile(), { ...file, games: [...file.games, game] })
     return game
@@ -180,6 +185,7 @@ export async function finishGame(
     .filter((monster) => keep.has(monster.id))
     .map((monster) => ({
       ...monster,
+      realmId: game.realmId,
       savedFromGameId: game.id,
       savedAt
     }))
