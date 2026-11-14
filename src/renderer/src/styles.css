@@ -2549,6 +2549,32 @@ input[type='number'] {
   font-variant-numeric: tabular-nums;
 }
 
+.combat-queue-card__hp {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.combat-hp-input {
+  width: 70px;
+  height: 26px;
+  padding: 2px 5px;
+  font-size: 12.5px;
+  text-align: center;
+}
+
+.combat-queue-card--current .combat-hp-input {
+  border-color: rgba(36, 29, 11, 0.35);
+  background: rgba(255, 255, 255, 0.4);
+  color: #241d0b;
+  box-shadow: none;
+}
+
+.combat-queue-card--current .combat-hp-input:focus {
+  border-color: rgba(36, 29, 11, 0.55);
+  box-shadow: 0 0 0 2px rgba(36, 29, 11, 0.12);
+}
+
 .combat-queue-card--current .combat-queue-card__meta {
   color: rgba(36, 29, 11, 0.72);
 }

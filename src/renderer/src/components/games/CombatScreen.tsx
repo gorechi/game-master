@@ -1,13 +1,18 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { JSX } from 'react'
 import { formatChallengeRating } from '@shared/domain'
+import { errorMessage } from '@renderer/lib/api'
 import type { CombatResultEntry, CombatStart } from './CombatModal'
 import { IconSkull } from '../ui/icons'
 
 interface CombatScreenProps {
   initial: CombatStart
   onFinish: () => void
+  onMonsterHpChange: (monsterId: string, hitPoints: number) => Promise<void>
 }
+
+const HP_MIN = 1
+const HP_MAX = 100000
 
 const SCORE_FIELDS = [
   { key: 'strength', label: 'СИЛ' },
@@ -39,7 +44,11 @@ function entryMeta(entry: CombatResultEntry): string {
 }
 
 /** Полноэкранный бой: очередь, текущий атакующий и кладбище. */
-export function CombatScreen({ initial, onFinish }: CombatScreenProps): JSX.Element {
+export function CombatScreen({
+  initial,
+  onFinish,
+  onMonsterHpChange
+}: CombatScreenProps): JSX.Element {
   const [active, setActive] = useState<CombatResultEntry[]>(() =>
     sortEntries(initial.participants)
   )
@@ -50,8 +59,29 @@ export function CombatScreen({ initial, onFinish }: CombatScreenProps): JSX.Elem
   const [currentKey, setCurrentKey] = useState<string | null>(
     () => sortEntries(initial.participants)[0]?.key ?? null
   )
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const current = active.find((entry) => entry.key === currentKey) ?? active[0] ?? null
+
+  function updateHp(key: string, hitPoints: number): void {
+    const patch = (items: CombatResultEntry[]): CombatResultEntry[] =>
+      items.map((entry) =>
+        entry.key === key && entry.monster
+          ? { ...entry, monster: { ...entry.monster, hitPoints } }
+          : entry
+      )
+
+    setActive(patch)
+    setReserves(patch)
+    setCemetery(patch)
+  }
+
+  function commitHp(entry: CombatResultEntry, hitPoints: number): void {
+    setSaveError(null)
+    void onMonsterHpChange(entry.id, hitPoints).catch((caught: unknown) => {
+      setSaveError(errorMessage(caught))
+    })
+  }
 
   function nextTurn(): void {
     if (active.length === 0) return
@@ -105,6 +135,8 @@ export function CombatScreen({ initial, onFinish }: CombatScreenProps): JSX.Elem
         </button>
       </header>
 
+      {saveError ? <p className="notice notice--error combat-screen__save-error">{saveError}</p> : null}
+
       <div className="combat-screen__main">
         <section className="combat-focus" aria-live="polite">
           {current ? (
@@ -141,6 +173,8 @@ export function CombatScreen({ initial, onFinish }: CombatScreenProps): JSX.Elem
                       entry={entry}
                       current={current?.key === entry.key}
                       onDefeat={() => defeat(entry)}
+                      onHpLive={(value) => updateHp(entry.key, value)}
+                      onHpCommit={(value) => commitHp(entry, value)}
                     />
                   </li>
                 ))}
@@ -207,17 +241,33 @@ export function CombatScreen({ initial, onFinish }: CombatScreenProps): JSX.Elem
 function QueueCard({
   entry,
   current,
-  onDefeat
+  onDefeat,
+  onHpLive,
+  onHpCommit
 }: {
   entry: CombatResultEntry
   current: boolean
   onDefeat: () => void
+  onHpLive: (hitPoints: number) => void
+  onHpCommit: (hitPoints: number) => void
 }): JSX.Element {
   return (
     <article className={`combat-queue-card${current ? ' combat-queue-card--current' : ''}`}>
       <span className="combat-queue-card__body">
         <span className="combat-queue-card__name">{entry.name}</span>
-        <span className="combat-queue-card__meta">{entryMeta(entry)}</span>
+        {entry.kind === 'monster' && entry.monster ? (
+          <span className="combat-queue-card__meta combat-queue-card__hp">
+            HP
+            <HpEditor
+              value={entry.monster.hitPoints}
+              label={entry.name}
+              onLive={onHpLive}
+              onCommit={onHpCommit}
+            />
+          </span>
+        ) : (
+          <span className="combat-queue-card__meta">{entryMeta(entry)}</span>
+        )}
       </span>
 
       <span className="combat-queue-card__initiative" title="Инициатива">
@@ -232,6 +282,69 @@ function QueueCard({
         Повержен
       </button>
     </article>
+  )
+}
+
+function HpEditor({
+  value,
+  label,
+  onLive,
+  onCommit
+}: {
+  value: number
+  label: string
+  onLive: (hitPoints: number) => void
+  onCommit: (hitPoints: number) => void
+}): JSX.Element {
+  const [draft, setDraft] = useState(String(value))
+
+  useEffect(() => {
+    setDraft(String(value))
+  }, [value])
+
+  function parse(raw: string): number | null {
+    if (!raw.trim()) return null
+    const parsed = Number(raw)
+    if (!Number.isInteger(parsed)) return null
+    if (parsed < HP_MIN || parsed > HP_MAX) return null
+    return parsed
+  }
+
+  function change(raw: string): void {
+    setDraft(raw)
+    const parsed = parse(raw)
+    if (parsed !== null) onLive(parsed)
+  }
+
+  function commit(): void {
+    const parsed = parse(draft)
+    if (parsed === null) {
+      setDraft(String(value))
+      return
+    }
+    setDraft(String(parsed))
+    onCommit(parsed)
+  }
+
+  return (
+    <input
+      className="input combat-hp-input"
+      type="number"
+      min={HP_MIN}
+      max={HP_MAX}
+      inputMode="numeric"
+      value={draft}
+      aria-label={`HP: ${label}`}
+      onChange={(event) => change(event.target.value)}
+      onBlur={commit}
+      onFocus={(event) => event.currentTarget.select()}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault()
+          event.currentTarget.blur()
+        }
+      }}
+    />
   )
 }
 

@@ -74,6 +74,20 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
     return () => window.clearTimeout(timer)
   }, [notes, game])
 
+  async function saveMonsterHp(monsterId: string, hitPoints: number): Promise<void> {
+    if (!game) return
+
+    const updated = await api.games.update({
+      ...game,
+      monsters: game.monsters.map((monster) =>
+        monster.id === monsterId ? { ...monster, hitPoints } : monster
+      )
+    })
+
+    setGame(updated)
+    setError(null)
+  }
+
   async function finishGame(keepMonsterIds: string[]): Promise<void> {
     if (!game) return
 
@@ -93,7 +107,13 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
   const linkedMapNames = Object.fromEntries(maps.map((item) => [item.id, item.name]))
 
   if (combat) {
-    return <CombatScreen initial={combat} onFinish={() => setCombat(null)} />
+    return (
+      <CombatScreen
+        initial={combat}
+        onFinish={() => setCombat(null)}
+        onMonsterHpChange={saveMonsterHp}
+      />
+    )
   }
 
   return (
