@@ -311,9 +311,16 @@ function HpEditor({
   }
 
   function change(raw: string): void {
+    if (!raw.trim()) {
+      setDraft('')
+      return
+    }
+
+    const parsed = Number(raw)
+    if (!Number.isInteger(parsed) || parsed < HP_MIN || parsed > HP_MAX) return
+
     setDraft(raw)
-    const parsed = parse(raw)
-    if (parsed !== null) onLive(parsed)
+    onLive(parsed)
   }
 
   function commit(): void {
