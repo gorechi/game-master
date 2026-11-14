@@ -165,7 +165,9 @@ export function CombatModal({
   const participants = combatants.filter((combatant) => combatant.participating)
   const initiativeGroups = new Map<number, Combatant[]>()
 
-  for (const combatant of participants) {
+  // Инициатива и совпадения считаются по всем добавленным карточкам:
+  // снятая галочка не блокирует и не прячет поля.
+  for (const combatant of combatants) {
     const initiative = parseInitiative(combatant.initiative)
     if (initiative === null) continue
     const group = initiativeGroups.get(initiative) ?? []
@@ -177,6 +179,12 @@ export function CombatModal({
     [...initiativeGroups.entries()]
       .filter(([, group]) => group.length > 1)
       .map(([value]) => value)
+  )
+
+  const requiredCollisionValues = new Set(
+    [...collisionValues].filter((value) =>
+      (initiativeGroups.get(value) ?? []).some((combatant) => combatant.participating)
+    )
   )
 
   function groupFor(combatant: Combatant): Combatant[] | null {
@@ -195,9 +203,12 @@ export function CombatModal({
   const allInitiativesFilled =
     participants.length > 0 &&
     participants.every((combatant) => parseInitiative(combatant.initiative) !== null)
-  const allCollisionsResolved = [...collisionValues].every((value) => {
+  const allCollisionsResolved = [...requiredCollisionValues].every((value) => {
     const group = initiativeGroups.get(value)
-    return group ? group.every((combatant) => parseInitiative(combatant.tieBreaker) !== null) && tieValuesAreUnique(group) : true
+    return group
+      ? group.every((combatant) => parseInitiative(combatant.tieBreaker) !== null) &&
+          tieValuesAreUnique(group)
+      : true
   })
   const canFight = !loading && !loadError && allInitiativesFilled && allCollisionsResolved
 
@@ -268,10 +279,7 @@ export function CombatModal({
       !tieValuesAreUnique(group)
 
     return (
-      <li
-        key={combatant.key}
-        className={`combat-card${combatant.participating ? '' : ' combat-card--out'}`}
-      >
+      <li key={combatant.key} className="combat-card">
         <span className="combat-card__identity">
           <span className="combat-card__name">{combatant.name}</span>
           <span className="combat-card__meta">
@@ -301,7 +309,6 @@ export function CombatModal({
             min={INITIATIVE_MIN}
             max={INITIATIVE_MAX}
             inputMode="numeric"
-            disabled={!combatant.participating}
             value={combatant.initiative}
             aria-label={`Инициатива: ${combatant.name}`}
             onChange={(event) =>

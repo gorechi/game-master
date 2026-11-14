@@ -2152,10 +2152,6 @@ input[type='number'] {
   background: rgba(255, 255, 255, 0.02);
 }
 
-.combat-card--out {
-  opacity: 0.62;
-}
-
 .combat-card__identity {
   display: flex;
   flex: 1 1 180px;
