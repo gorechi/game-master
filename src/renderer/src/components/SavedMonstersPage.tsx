@@ -156,6 +156,7 @@ export function SavedMonstersPage({ realms }: { realms: readonly Realm[] }): JSX
         initial={formInitial}
         realms={realms}
         lockRealm
+        allowZeroHitPoints
         onClose={() => {
           setBaseMonster(null)
           setEditing(null)

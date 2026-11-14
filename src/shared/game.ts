@@ -25,7 +25,7 @@ export const gameMonsterSchema = z.object({
   charisma: abilityScore,
   challengeRating: z.number().min(0).max(30),
   armorClass: z.number().int().min(0).max(99),
-  hitPoints: z.number().int().min(1).max(100_000),
+  hitPoints: z.number().int().min(0).max(100_000),
   abilities: z.array(monsterAbilitySchema).max(50)
 })
 

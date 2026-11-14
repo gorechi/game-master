@@ -790,6 +790,7 @@ export function GameFormModal({
         title="Монстр в игре"
         description="Экземпляр этой игры. Изменения не затрагивают запись в бестиарии."
         initial={editingMonster}
+        allowZeroHitPoints
         onClose={() => setEditingMonsterId(null)}
         onSubmit={(input) => {
           setInstances((current) =>

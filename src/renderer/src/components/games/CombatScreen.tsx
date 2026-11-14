@@ -11,7 +11,7 @@ interface CombatScreenProps {
   onMonsterHpChange: (monsterId: string, hitPoints: number) => Promise<void>
 }
 
-const HP_MIN = 1
+const HP_MIN = 0
 const HP_MAX = 100000
 
 const SCORE_FIELDS = [

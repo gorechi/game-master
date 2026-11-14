@@ -74,6 +74,8 @@ interface MonsterFormModalProps {
   realms?: readonly Realm[]
   /** Сеттинг уже известен (редактирование или наследство) — выбор заблокирован. */
   lockRealm?: boolean
+  /** Для игровых экземпляров: HP может опуститься до нуля. */
+  allowZeroHitPoints?: boolean
   onClose: () => void
   onSubmit: (input: MonsterInput, realmId: string | null) => Promise<void> | void
 }
@@ -85,9 +87,11 @@ export function MonsterFormModal({
   initial,
   realms,
   lockRealm = false,
+  allowZeroHitPoints = false,
   onClose,
   onSubmit
 }: MonsterFormModalProps): JSX.Element {
+  const minHitPoints = allowZeroHitPoints ? 0 : 1
   const [name, setName] = useState('')
   const [realmId, setRealmId] = useState('')
   const [scores, setScores] = useState<ScoreDraft>(EMPTY_SCORES)
@@ -188,7 +192,7 @@ export function MonsterFormModal({
       charisma: clampNumber(parseIntOr(scores.charisma, 0), -10, 10, 0),
       challengeRating: clampNumber(parseFloatOr(challengeRating, 1), 0, 30, 1),
       armorClass: clampNumber(parseIntOr(armorClass, 10), 0, 99, 10),
-      hitPoints: clampNumber(parseIntOr(hitPoints, 10), 1, 100_000, 10),
+      hitPoints: clampNumber(parseIntOr(hitPoints, 10), minHitPoints, 100_000, 10),
       abilities: filledAbilities.map((ability) => ({
         id: ability.id,
         name: ability.name.trim(),
@@ -337,13 +341,15 @@ export function MonsterFormModal({
               className="input"
               type="number"
               inputMode="numeric"
-              min={1}
+              min={minHitPoints}
               max={100000}
               value={hitPoints}
               onChange={(event) => setHitPoints(event.target.value)}
               onBlur={(event) =>
                 setHitPoints(
-                  String(clampNumber(parseIntOr(event.target.value, 10), 1, 100_000, 10))
+                  String(
+                    clampNumber(parseIntOr(event.target.value, 10), minHitPoints, 100_000, 10)
+                  )
                 )
               }
             />
