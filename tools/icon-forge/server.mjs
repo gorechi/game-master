@@ -12,6 +12,7 @@ const briefsPath = join(here, 'briefs.json')
 const uiPath = join(here, 'ui.html')
 const port = Number(process.env.ICON_FORGE_PORT || 5190)
 const keyConfigured = Boolean(process.env.DEEPSEEK_API_KEY)
+const model = process.env.ICON_FORGE_MODEL || 'deepseek-reasoner'
 
 mkdirSync(iconsDir, { recursive: true })
 
@@ -80,6 +81,7 @@ function readState() {
     title: spec.title,
     viewBox: spec.viewBox,
     keyConfigured,
+    model,
     previewExists: existsSync(join(here, 'preview', 'preview.png')),
     icons
   }

@@ -319,7 +319,9 @@
       [...document.querySelectorAll('details.brief[open]')].map((node) => node.dataset.briefFor)
     )
     $('key-dot').className = `dot ${state.keyConfigured ? '' : 'dot--bad'}`
-    $('key-text').textContent = state.keyConfigured ? 'DeepSeek подключён' : 'Ключ не найден'
+    $('key-text').textContent = state.keyConfigured
+      ? `DeepSeek подключён · ${state.model ?? 'deepseek-reasoner'}`
+      : 'Ключ не найден'
     $('banner').innerHTML = state.keyConfigured
       ? ''
       : `<div class="banner">DEEPSEEK_API_KEY не найден. Создай <code>tools/icon-forge/.env</code> по образцу <code>.env.example</code> и перезапусти сервер.</div>`

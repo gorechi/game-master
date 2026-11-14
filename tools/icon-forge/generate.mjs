@@ -27,7 +27,7 @@ function writeBriefs(briefs) {
 
 const apiKey = process.env.DEEPSEEK_API_KEY
 const baseUrl = (process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com').replace(/\/+$/, '')
-const model = process.env.ICON_FORGE_MODEL || 'deepseek-chat'
+const model = process.env.ICON_FORGE_MODEL || 'deepseek-reasoner'
 
 const args = process.argv.slice(2)
 const idIndex = args.indexOf('--id')
@@ -102,8 +102,9 @@ const systemPrompt = `Ты — senior SVG-иконограф и арт-дире�
   в которых угадывается «что-то», — брак.
 - Не рисуй пустую геометрическую фигуру — куб, квадрат или круг — без
   характерных примет конкретного места.
-- Не повторяй одну и ту же композицию: в каждом запросе указан новый подход,
-  и его нужно соблюдать, пока он не мешает узнаваемости.
+- Если в запросе предложен композиционный подход, соблюдай его, пока он
+  не мешает уточнению и узнаваемости. Без подсказки сам выбери самый
+  узнаваемый ракурс.
 - Уточнение заказчика и список «не изображать» важнее любой композиционной
   подсказки. Если подсказка противоречит уточнению или запрету — отмени её
   и выбери ракурс, который соответствует уточнению.
@@ -148,8 +149,9 @@ ${repair.svg}
   if (brief) {
     lines.push(
       '',
-      'УТОЧНЕНИЕ ЗАКАЗЧИКА (важнее типичных ассоциаций):',
-      brief
+      'УТОЧНЕНИЕ ЗАКАЗЧИКА (главное; нарисуй именно это):',
+      brief,
+      'Следуй уточнению буквально и не добавляй объекты, которых в нём нет.'
     )
   }
 
@@ -183,19 +185,23 @@ function extractSvg(content) {
 }
 
 async function callDeepSeek(messages, temperature) {
+  const payload = {
+    model,
+    messages,
+    max_tokens: model.includes('reasoner') ? 12_000 : 4000,
+    stream: false
+  }
+
+  // deepseek-reasoner не поддерживает temperature.
+  if (!model.includes('reasoner')) payload.temperature = temperature
+
   const response = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`
     },
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature,
-      max_tokens: 4000,
-      stream: false
-    }),
+    body: JSON.stringify(payload),
     signal: AbortSignal.timeout(120_000)
   })
 
@@ -208,7 +214,12 @@ async function callDeepSeek(messages, temperature) {
   const content = data?.choices?.[0]?.message?.content
 
   if (typeof content !== 'string' || !content.trim()) {
-    throw new Error('DeepSeek вернул пустой ответ')
+    const reason = data?.choices?.[0]?.finish_reason
+    throw new Error(
+      reason === 'length'
+        ? 'DeepSeek обрезал ответ по лимиту токенов и не вернул SVG'
+        : 'DeepSeek вернул пустой ответ'
+    )
   }
 
   return content
@@ -239,6 +250,17 @@ function detectKinds(entry, brief) {
   }
 
   return []
+}
+
+function rememberBrief(id, brief, avoid) {
+  const briefs = readBriefs()
+  briefs[id] = {
+    ...briefs[id],
+    brief,
+    avoid,
+    updatedAt: new Date().toISOString()
+  }
+  writeBriefs(briefs)
 }
 
 function rememberDirection(id, direction, brief, avoid, resetIds) {
@@ -272,13 +294,21 @@ async function generateIcon(entry) {
   const brief = cleanText(briefOverride ?? stored.brief)
   const avoid = cleanText(avoidOverride ?? stored.avoid)
   const used = Array.isArray(stored.directions) ? stored.directions : []
-  const kinds = detectKinds(entry, brief)
-  const { direction, resetIds } = pickDirection(used, kinds)
   const isVariant = variant || (existsSync(file) && force)
 
-  rememberDirection(entry.id, direction, brief, avoid, resetIds)
+  // Если заказчик описал сцену словами, его описание и есть композиция.
+  // Случайная подсказка здесь только мешает и перебивает уточнение.
+  let direction = null
 
-  console.log(`GEN   ${entry.id}: подход «${direction.text}»`)
+  if (brief) {
+    rememberBrief(entry.id, brief, avoid)
+    console.log(`GEN   ${entry.id}: по уточнению заказчика`)
+  } else {
+    const picked = pickDirection(used, detectKinds(entry, brief))
+    direction = picked.direction
+    rememberDirection(entry.id, direction, brief, avoid, picked.resetIds)
+    console.log(`GEN   ${entry.id}: подход «${direction.text}»`)
+  }
 
   let messages = [
     { role: 'system', content: systemPrompt },
