@@ -185,12 +185,23 @@ function extractSvg(content) {
   return match ? match[0].trim() : null
 }
 
-async function callDeepSeek(messages, temperature) {
+async function callDeepSeek(messages, options = {}) {
+  const {
+    temperature = 0.5,
+    effort = process.env.ICON_FORGE_EFFORT || 'low',
+    thinking = 'enabled'
+  } = options
+  const supportsThinking = !model.includes('chat')
   const payload = {
     model,
     messages,
-    max_tokens: 12_000,
+    max_tokens: thinking === 'disabled' ? 8_000 : 12_000,
     stream: false
+  }
+
+  if (supportsThinking) {
+    payload.reasoning_effort = effort
+    payload.thinking = { type: thinking }
   }
 
   // У legacy-модели deepseek-reasoner temperature не поддерживается.
@@ -203,7 +214,7 @@ async function callDeepSeek(messages, temperature) {
       Authorization: `Bearer ${apiKey}`
     },
     body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(120_000)
+    signal: AbortSignal.timeout(180_000)
   })
 
   if (!response.ok) {
@@ -212,19 +223,19 @@ async function callDeepSeek(messages, temperature) {
   }
 
   const data = await response.json()
-  lastUsage = data?.usage ?? null
-  const content = data?.choices?.[0]?.message?.content
+  const usage = data?.usage ?? null
+  lastUsage = usage
 
-  if (typeof content !== 'string' || !content.trim()) {
-    const reason = data?.choices?.[0]?.finish_reason
-    throw new Error(
-      reason === 'length'
-        ? 'DeepSeek обрезал ответ по лимиту токенов и не вернул SVG'
-        : 'DeepSeek вернул пустой ответ'
-    )
+  const choice = data?.choices?.[0]
+  const content = choice?.message?.content
+  const finishReason = choice?.finish_reason ?? null
+
+  return {
+    content: typeof content === 'string' ? content : '',
+    finishReason,
+    truncated: finishReason === 'length',
+    usage
   }
-
-  return content
 }
 
 function detectKinds(entry, brief) {
@@ -319,26 +330,49 @@ async function generateIcon(entry) {
 
   let lastSvg = null
   let lastProblems = []
-  const usage = { input: 0, output: 0 }
+  const usage = { input: 0, output: 0, reasoning: 0 }
+  let thinking = 'enabled'
 
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     console.log(`GEN   ${entry.id}: попытка ${attempt}/3…`)
-    const content = await callDeepSeek(messages, isVariant ? 0.85 : 0.5)
+    const response = await callDeepSeek(messages, {
+      temperature: isVariant ? 0.85 : 0.5,
+      thinking
+    })
     usage.input += lastUsage?.prompt_tokens ?? 0
     usage.output += lastUsage?.completion_tokens ?? 0
-    const svg = extractSvg(content)
+    usage.reasoning += lastUsage?.completion_tokens_details?.reasoning_tokens ?? 0
+    const svg = extractSvg(response.content)
 
     if (!svg) {
-      lastProblems = ['ответ не содержит <svg>...</svg>']
-      messages = [
-        ...messages,
-        { role: 'assistant', content },
-        {
-          role: 'user',
-          content:
-            'В ответе нет SVG. Верни только один SVG в блоке ```svg ... ```, без пояснений.'
-        }
+      lastProblems = [
+        response.truncated
+          ? 'ответ обрезан по лимиту токенов'
+          : 'ответ не содержит <svg>...</svg>'
       ]
+
+      // Обрезанный ответ бесполезно дополнять: начинаем попытку заново,
+      // отключаем размышление и просим сразу вернуть SVG.
+      if (response.truncated) {
+        thinking = 'disabled'
+        messages = [
+          { role: 'system', content: systemPrompt },
+          {
+            role: 'user',
+            content: `${buildUserPrompt(entry, { brief, avoid, direction })}\n\nВАЖНО: не рассуждай. Сразу верни готовый SVG.`
+          }
+        ]
+      } else {
+        messages = [
+          ...messages,
+          { role: 'assistant', content: response.content || ' ' },
+          {
+            role: 'user',
+            content:
+              'В ответе нет SVG. Верни только один SVG в блоке ```svg ... ```, без пояснений.'
+          }
+        ]
+      }
       continue
     }
 
@@ -347,8 +381,9 @@ async function generateIcon(entry) {
     if (problems.length === 0) {
       writeFileSync(file, `${svg}\n`)
       console.log(`OK    ${entry.id}: сохранено в icons/${entry.id}.svg`)
+      const reasoning = usage.reasoning > 0 ? `, рассуждения ${usage.reasoning}` : ''
       console.log(
-        `TOKENS ${entry.id}: вход ${usage.input}, выход ${usage.output}`
+        `TOKENS ${entry.id}: вход ${usage.input}, выход ${usage.output}${reasoning}`
       )
       return true
     }
@@ -371,6 +406,16 @@ async function generateIcon(entry) {
   }
   console.error(`\nНе удалось получить валидную иконку ${entry.id}.`)
   console.error(`Проблемы: ${lastProblems.join('; ')}`)
+  const reasoning = usage.reasoning > 0 ? `, рассуждения ${usage.reasoning}` : ''
+  console.error(
+    `Потрачено: вход ${usage.input}, выход ${usage.output}${reasoning} токенов.`
+  )
+
+  if (lastProblems.some((problem) => problem.includes('токенов'))) {
+    console.error(
+      'Модель ушла в долгие рассуждения. Попробуй перегенерировать или упростить уточнение.'
+    )
+  }
   return false
 }
 
