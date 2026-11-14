@@ -56,6 +56,7 @@ function assertGame(input: GameInput): GameInput {
   return {
     name,
     mapId: input.mapId ?? null,
+    notes: input.notes ?? '',
     characterIds: [...new Set(input.characterIds)],
     monsters: input.monsters
   }
@@ -98,6 +99,7 @@ export async function updateGame(game: Game): Promise<Game> {
       ...existing,
       name: normalized.name,
       mapId: normalized.mapId,
+      notes: normalized.notes ?? '',
       characterIds: normalized.characterIds,
       monsters: normalized.monsters,
       updatedAt: new Date().toISOString()

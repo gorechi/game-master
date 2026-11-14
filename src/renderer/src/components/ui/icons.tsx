@@ -116,6 +116,35 @@ export function IconStoneArch(props: IconProps): JSX.Element {
   )
 }
 
+export function IconSwords(props: IconProps): JSX.Element {
+  return (
+    <Svg {...props}>
+      <path d="M4.5 3.5 15 14M4.5 3.5v3.2M4.5 3.5h3.2" />
+      <path d="M19.5 3.5 9 14M19.5 3.5v3.2M19.5 3.5h-3.2" />
+      <path d="M6 20l2.5-2.5M18 20l-2.5-2.5" />
+      <path d="M5 19.2 6.8 21M19 19.2 17.2 21" />
+    </Svg>
+  )
+}
+
+export function IconArrowLeft(props: IconProps): JSX.Element {
+  return (
+    <Svg {...props}>
+      <path d="M19 12H5" />
+      <path d="m11 6-6 6 6 6" />
+    </Svg>
+  )
+}
+
+export function IconFlag(props: IconProps): JSX.Element {
+  return (
+    <Svg {...props}>
+      <path d="M6 21V4" />
+      <path d="M6 5h10.5l-2 3.2 2 3.2H6" />
+    </Svg>
+  )
+}
+
 export function IconGear(props: IconProps): JSX.Element {
   return (
     <Svg {...props}>

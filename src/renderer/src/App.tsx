@@ -46,8 +46,8 @@ export default function App(): JSX.Element {
   }, [])
 
   return (
-    <div className="app">
-      <Sidebar route={route} onNavigate={setRoute} />
+    <div className={`app${route.name === 'game' ? ' app--full' : ''}`}>
+      {route.name !== 'game' ? <Sidebar route={route} onNavigate={setRoute} /> : null}
 
       <div className="app__content">
         {route.name === 'games' ? (

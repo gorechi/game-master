@@ -103,6 +103,8 @@ interface MapGraphProps {
   onOpenMap: (mapId: string) => void
   onMoveNode: (placeId: string, x: number, y: number) => void
   onConnect: (fromId: string, toId: string) => void
+  /** В режиме проведения карта только для чтения. */
+  interactive?: boolean
 }
 
 /** Графическое представление карты: места-прямоугольники и пути-дорожки. */
@@ -113,7 +115,8 @@ export function MapGraph({
   linkedMapNames,
   onOpenMap,
   onMoveNode,
-  onConnect
+  onConnect,
+  interactive = true
 }: MapGraphProps): JSX.Element {
   const dragRef = useRef<DragState | null>(null)
   const connectionRef = useRef<ConnectionDraft | null>(null)
@@ -364,7 +367,8 @@ export function MapGraph({
           linkedName ? 'map-node--linked' : '',
           draggingId === node.id ? 'map-node--dragging' : '',
           connection?.fromId === node.id ? 'map-node--drawing' : '',
-          connection?.targetId === node.id ? 'map-node--target' : ''
+          connection?.targetId === node.id ? 'map-node--target' : '',
+          !interactive ? 'map-node--static' : ''
         ]
           .filter(Boolean)
           .join(' ')
@@ -375,23 +379,27 @@ export function MapGraph({
             className={className}
             style={{ left: node.x, top: node.y }}
             data-map-node-id={node.id}
-            role={linkedName ? 'button' : undefined}
-            tabIndex={linkedName ? 0 : undefined}
+            role={interactive && linkedName ? 'button' : undefined}
+            tabIndex={interactive && linkedName ? 0 : undefined}
             aria-label={
-              linkedName
+              interactive && linkedName
                 ? `${node.name}: перейти на карту «${linkedName}»`
                 : undefined
             }
             title={
-              linkedName
-                ? `Перетащите, чтобы сдвинуть. Нажмите, чтобы перейти на «${linkedName}»`
-                : 'Перетащите, чтобы сдвинуть'
+              interactive
+                ? linkedName
+                  ? `Перетащите, чтобы сдвинуть. Нажмите, чтобы перейти на «${linkedName}»`
+                  : 'Перетащите, чтобы сдвинуть'
+                : node.name
             }
-            onPointerDown={(event) => onPointerDown(event, node)}
-            onPointerMove={onPointerMove}
-            onPointerUp={(event) => finishDrag(event, node)}
-            onPointerCancel={cancelDrag}
-            onKeyDown={(event) => onNodeKeyDown(event, node)}
+            onPointerDown={
+              interactive ? (event) => onPointerDown(event, node) : undefined
+            }
+            onPointerMove={interactive ? onPointerMove : undefined}
+            onPointerUp={interactive ? (event) => finishDrag(event, node) : undefined}
+            onPointerCancel={interactive ? cancelDrag : undefined}
+            onKeyDown={interactive ? (event) => onNodeKeyDown(event, node) : undefined}
           >
             <span className="map-node__name">{node.name}</span>
             {node.isExit ? (
@@ -401,15 +409,17 @@ export function MapGraph({
             ) : null}
             {linkedName ? <span className="map-node__link">→ {linkedName}</span> : null}
 
-            <span
-              className="map-node__connector"
-              title="Потяните, чтобы провести путь"
-              aria-hidden="true"
-              onPointerDown={(event) => startConnection(event, node)}
-              onPointerMove={moveConnection}
-              onPointerUp={finishConnection}
-              onPointerCancel={cancelConnection}
-            />
+            {interactive ? (
+              <span
+                className="map-node__connector"
+                title="Потяните, чтобы провести путь"
+                aria-hidden="true"
+                onPointerDown={(event) => startConnection(event, node)}
+                onPointerMove={moveConnection}
+                onPointerUp={finishConnection}
+                onPointerCancel={cancelConnection}
+              />
+            ) : null}
           </div>
         )
       })}

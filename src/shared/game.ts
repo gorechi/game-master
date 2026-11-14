@@ -34,6 +34,8 @@ const gameFields = {
   name: z.string().min(1).max(120),
   /** Карта, на которой проходит игра; null — карта не выбрана. */
   mapId: z.string().min(1).nullable().default(null),
+  /** Заметки мастера по ходу игры. */
+  notes: z.string().max(20000).default(''),
   characterIds: z.array(z.string().min(1)).max(200).default([]),
   monsters: z.array(gameMonsterSchema).max(200).default([])
 }
@@ -53,6 +55,7 @@ export type Game = z.infer<typeof gameSchema>
 export interface GameInput {
   name: string
   mapId: string | null
+  notes?: string
   characterIds: string[]
   monsters: GameMonster[]
 }

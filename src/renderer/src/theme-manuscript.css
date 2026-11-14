@@ -576,6 +576,16 @@
     0 16px 34px rgba(74, 52, 26, 0.2);
 }
 
+:root[data-theme='light'] .run-screen__map {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(143, 58, 44, 0.05), transparent 56%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.45), transparent 60%);
+}
+
+:root[data-theme='light'] .run-notes__input {
+  background: rgba(255, 255, 255, 0.4);
+}
+
 :root[data-theme='light'] .map-node--exit {
   border-color: rgba(143, 58, 44, 0.5);
 }

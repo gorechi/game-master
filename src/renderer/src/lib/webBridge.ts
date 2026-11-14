@@ -168,6 +168,7 @@ function readGames(): Game[] {
     return (parsed as Game[]).map((game) => ({
       ...game,
       mapId: typeof game.mapId === 'string' ? game.mapId : null,
+      notes: typeof game.notes === 'string' ? game.notes : '',
       characterIds: Array.isArray(game.characterIds) ? game.characterIds : [],
       monsters: Array.isArray(game.monsters) ? game.monsters : [],
       status: isGameStatus(game.status) ? game.status : 'new'
@@ -255,6 +256,7 @@ export function createWebBridge(): GameMasterApi {
           ...existing,
           name: game.name.trim().slice(0, 120),
           mapId: game.mapId ?? null,
+          notes: game.notes ?? existing.notes ?? '',
           characterIds: game.characterIds,
           monsters: game.monsters,
           updatedAt: new Date().toISOString()

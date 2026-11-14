@@ -322,6 +322,7 @@ export function createGame(input: GameInput, id: string = crypto.randomUUID()): 
     id,
     name: input.name.trim().slice(0, 120),
     mapId: input.mapId ?? null,
+    notes: input.notes ?? '',
     characterIds: [...new Set(input.characterIds)],
     monsters: input.monsters,
     status: 'new',
