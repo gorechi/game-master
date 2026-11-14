@@ -3,6 +3,7 @@ import { playerSchema, type PlayerInput } from '@shared/player'
 import { characterProfileInputSchema, characterProfileSchema } from '@shared/characterProfile'
 import { monsterInputSchema, monsterSchema } from '@shared/monster'
 import { gameInputSchema, gameSchema } from '@shared/game'
+import { gameMonsterEntrySchema, gameMonsterInputSchema } from '@shared/gameMonster'
 import { gameMapInputSchema, gameMapSchema } from '@shared/map'
 import { isGameStatus } from '@shared/gameStatus'
 import { isThemeName, type SettingsPatch } from '@shared/settings'
@@ -25,7 +26,12 @@ import {
   setGameStatus,
   updateGame
 } from './storage/gameStore'
-import { listGameMonsters } from './storage/gameMonsterStore'
+import {
+  addGameMonster,
+  listGameMonsters,
+  removeGameMonster,
+  updateGameMonster
+} from './storage/gameMonsterStore'
 import { getSettings, updateSettings } from './storage/settingsStore'
 
 function assertId(value: unknown): string {
@@ -116,6 +122,18 @@ export function registerIpcHandlers(): void {
   })
 
   ipcMain.handle(IPC.gameMonstersList, () => listGameMonsters())
+
+  ipcMain.handle(IPC.gameMonsterCreate, (_event, input: unknown) =>
+    addGameMonster(gameMonsterInputSchema.parse(input))
+  )
+
+  ipcMain.handle(IPC.gameMonsterUpdate, (_event, input: unknown) =>
+    updateGameMonster(gameMonsterEntrySchema.parse(input))
+  )
+
+  ipcMain.handle(IPC.gameMonsterRemove, (_event, id: unknown): Promise<void> =>
+    removeGameMonster(assertId(id))
+  )
 
   ipcMain.handle(IPC.playersList, () => listPlayers())
 

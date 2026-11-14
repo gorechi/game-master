@@ -13,13 +13,32 @@ const STATS = [
 ] as const
 
 interface MonsterCardProps {
-  monster: Monster
+  monster: Pick<
+    Monster,
+    | 'name'
+    | 'strength'
+    | 'dexterity'
+    | 'intelligence'
+    | 'wisdom'
+    | 'constitution'
+    | 'charisma'
+    | 'challengeRating'
+    | 'armorClass'
+    | 'hitPoints'
+    | 'abilities'
+  >
+  badge?: string
   onEdit: () => void
   onDelete: () => void
 }
 
 /** Горизонтальная карточка монстра — как у игроков. */
-export function MonsterCard({ monster, onEdit, onDelete }: MonsterCardProps): JSX.Element {
+export function MonsterCard({
+  monster,
+  badge,
+  onEdit,
+  onDelete
+}: MonsterCardProps): JSX.Element {
   return (
     <li className="monster-card">
       <div className="monster-card__identity">
@@ -30,6 +49,7 @@ export function MonsterCard({ monster, onEdit, onDelete }: MonsterCardProps): JS
         <div className="monster-card__titles">
           <h3 className="monster-card__name">{monster.name}</h3>
           <div className="monster-card__chips">
+            {badge ? <span className="monster-chip monster-chip--unique">{badge}</span> : null}
             <span className="monster-chip monster-chip--cr">
               КО {formatChallengeRating(monster.challengeRating)}
             </span>

@@ -2,7 +2,7 @@ import type { Player, PlayerInput } from './player'
 import type { CharacterProfile, CharacterProfileInput } from './characterProfile'
 import type { Monster, MonsterAbility, MonsterInput } from './monster'
 import type { Game, GameInput, GameMonster } from './game'
-import type { GameMonsterEntry } from './gameMonster'
+import type { GameMonsterEntry, GameMonsterInput } from './gameMonster'
 import type { GameMap, GameMapInput, MapPlace, MapPath } from './map'
 
 /**
@@ -380,5 +380,29 @@ export function gameMonsterFromEntry(entry: GameMonsterEntry): GameMonster {
     armorClass: entry.armorClass,
     hitPoints: entry.hitPoints,
     abilities: entry.abilities
+  }
+}
+
+/** Новый уникальный монстр для отдельной библиотеки, созданный вручную. */
+export function createGameMonsterEntry(
+  input: GameMonsterInput,
+  savedFromGameId: string | null = null
+): GameMonsterEntry {
+  return {
+    id: crypto.randomUUID(),
+    sourceMonsterId: input.sourceMonsterId,
+    name: input.name.trim().slice(0, 100),
+    strength: input.strength,
+    dexterity: input.dexterity,
+    intelligence: input.intelligence,
+    wisdom: input.wisdom,
+    constitution: input.constitution,
+    charisma: input.charisma,
+    challengeRating: input.challengeRating,
+    armorClass: input.armorClass,
+    hitPoints: input.hitPoints,
+    abilities: input.abilities.map((ability) => ({ ...ability })),
+    savedFromGameId,
+    savedAt: new Date().toISOString()
   }
 }

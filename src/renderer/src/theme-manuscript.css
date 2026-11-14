@@ -396,6 +396,12 @@
   color: var(--rubric);
 }
 
+:root[data-theme='light'] .monster-chip--unique {
+  border-color: rgba(154, 106, 36, 0.35);
+  background: rgba(154, 106, 36, 0.1);
+  color: #7a4f12;
+}
+
 :root[data-theme='light'] .monster-stat {
   background: rgba(255, 255, 255, 0.45);
 }

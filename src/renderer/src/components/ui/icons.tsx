@@ -145,6 +145,14 @@ export function IconFlag(props: IconProps): JSX.Element {
   )
 }
 
+export function IconBookmark(props: IconProps): JSX.Element {
+  return (
+    <Svg {...props}>
+      <path d="M6.5 3.5h11V21l-5.5-4-5.5 4V3.5Z" />
+    </Svg>
+  )
+}
+
 export function IconGear(props: IconProps): JSX.Element {
   return (
     <Svg {...props}>

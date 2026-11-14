@@ -8,6 +8,7 @@ import { PlayersPage } from './components/PlayersPage'
 import { PlayerCharactersPage } from './components/PlayerCharactersPage'
 import { CharactersPage } from './components/CharactersPage'
 import { MonstersPage } from './components/MonstersPage'
+import { SavedMonstersPage } from './components/SavedMonstersPage'
 import { MapsPage } from './components/MapsPage'
 import { MapGraphPage } from './components/MapGraphPage'
 import { SettingsPage } from './components/SettingsPage'
@@ -84,6 +85,8 @@ export default function App(): JSX.Element {
         ) : null}
 
         {route.name === 'monsters' ? <MonstersPage /> : null}
+
+        {route.name === 'savedMonsters' ? <SavedMonstersPage /> : null}
 
         {route.name === 'maps' ? (
           <MapsPage onOpenMap={(id) => setRoute({ name: 'map', id })} />

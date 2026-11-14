@@ -5,7 +5,8 @@ import { gameMonsterSchema } from './game'
 export const GAME_MONSTERS_FILE_SCHEMA_VERSION = 1
 
 /**
- * «Игровой монстр» — экземпляр, сохранённый из удалённой игры для будущих партий.
+ * «Игровой монстр» — уникальный экземпляр для будущих партий:
+ * сохранённый из игры или созданный вручную на основе бестиария.
  * В бестиарий такие записи не попадают, это отдельная библиотека.
  */
 export const gameMonsterEntrySchema = gameMonsterSchema.extend({
@@ -14,6 +15,10 @@ export const gameMonsterEntrySchema = gameMonsterSchema.extend({
 })
 
 export type GameMonsterEntry = z.infer<typeof gameMonsterEntrySchema>
+
+/** Поля, которые задаёт мастер при создании уникального монстра. */
+export const gameMonsterInputSchema = gameMonsterSchema.omit({ id: true })
+export type GameMonsterInput = z.input<typeof gameMonsterInputSchema>
 
 export const gameMonstersFileSchema = z.object({
   schemaVersion: z.number().int().min(1),

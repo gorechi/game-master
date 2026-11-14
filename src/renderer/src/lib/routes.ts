@@ -5,6 +5,7 @@ export type Route =
   | { name: 'player'; id: string; from: 'players' | 'characters' }
   | { name: 'characters' }
   | { name: 'monsters' }
+  | { name: 'savedMonsters' }
   | { name: 'maps' }
   | { name: 'map'; id: string }
   | { name: 'settings' }

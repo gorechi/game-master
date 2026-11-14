@@ -11,11 +11,12 @@ import {
   isGameStatus,
   type GameStatus
 } from '@shared/gameStatus'
-import type { GameMonsterEntry } from '@shared/gameMonster'
+import type { GameMonsterEntry, GameMonsterInput } from '@shared/gameMonster'
 import {
   clampMonsterScore,
   createCharacterProfile,
   createGame,
+  createGameMonsterEntry,
   createMap,
   createMonster,
   createPlayer,
@@ -347,7 +348,35 @@ export function createWebBridge(): GameMasterApi {
     },
 
     gameMonsters: {
-      list: async (): Promise<GameMonsterEntry[]> => readGameMonsters()
+      list: async (): Promise<GameMonsterEntry[]> => readGameMonsters(),
+
+      create: async (input: GameMonsterInput): Promise<GameMonsterEntry> => {
+        const entry = createGameMonsterEntry(input)
+        writeGameMonsters([...readGameMonsters(), entry])
+        return entry
+      },
+
+      update: async (entry: GameMonsterEntry): Promise<GameMonsterEntry> => {
+        const existing = readGameMonsters().find((monster) => monster.id === entry.id)
+        if (!existing) {
+          throw new Error('Сохранённый монстр не найден — возможно, запись уже удалена')
+        }
+
+        const updated: GameMonsterEntry = {
+          ...entry,
+          savedFromGameId: existing.savedFromGameId,
+          savedAt: existing.savedAt
+        }
+
+        writeGameMonsters(
+          readGameMonsters().map((monster) => (monster.id === entry.id ? updated : monster))
+        )
+        return updated
+      },
+
+      remove: async (id: string): Promise<void> => {
+        writeGameMonsters(readGameMonsters().filter((monster) => monster.id !== id))
+      }
     },
 
     players: {

@@ -3,7 +3,7 @@ import type { CharacterProfile, CharacterProfileInput } from './characterProfile
 import type { Monster, MonsterInput } from './monster'
 import type { Game, GameInput } from './game'
 import type { GameStatus } from './gameStatus'
-import type { GameMonsterEntry } from './gameMonster'
+import type { GameMonsterEntry, GameMonsterInput } from './gameMonster'
 import type { GameMap, GameMapInput } from './map'
 import type { AppSettings, SettingsPatch } from './settings'
 
@@ -21,6 +21,9 @@ export const IPC = {
   gameFinish: 'game:finish',
   gameSetStatus: 'game:set-status',
   gameMonstersList: 'game-monsters:list',
+  gameMonsterCreate: 'game-monsters:create',
+  gameMonsterUpdate: 'game-monsters:update',
+  gameMonsterRemove: 'game-monsters:remove',
   playersList: 'players:list',
   playerCreate: 'player:create',
   playerUpdate: 'player:update',
@@ -67,9 +70,12 @@ export interface GameMasterApi {
     /** Меняет статус игры с проверкой допустимого перехода. */
     setStatus(id: string, status: GameStatus): Promise<Game>
   }
-  /** Готовые игровые монстры, сохранённые из удалённых игр. */
+  /** Уникальные игровые монстры: сохранённые из игр и созданные вручную. */
   gameMonsters: {
     list(): Promise<GameMonsterEntry[]>
+    create(input: GameMonsterInput): Promise<GameMonsterEntry>
+    update(entry: GameMonsterEntry): Promise<GameMonsterEntry>
+    remove(id: string): Promise<void>
   }
   /** Общая база игроков-людей. */
   players: {

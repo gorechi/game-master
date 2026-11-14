@@ -1138,6 +1138,27 @@ input[type='number'] {
   color: var(--gold-strong);
 }
 
+.monster-chip--unique {
+  border-color: rgba(143, 120, 200, 0.45);
+  background: rgba(143, 120, 200, 0.12);
+  color: #c7b8f5;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.base-monster-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.base-monster-picker__hint {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
 .monster-card__stats {
   flex: 0 1 auto;
   display: grid;
