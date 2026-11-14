@@ -7,6 +7,7 @@ export type Route =
   | { name: 'monsters' }
   | { name: 'savedMonsters' }
   | { name: 'realms' }
+  | { name: 'realm'; id: string }
   | { name: 'maps' }
   | { name: 'map'; id: string }
   | { name: 'settings' }

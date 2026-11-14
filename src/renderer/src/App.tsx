@@ -13,6 +13,7 @@ import { SavedMonstersPage } from './components/SavedMonstersPage'
 import { MapsPage } from './components/MapsPage'
 import { MapGraphPage } from './components/MapGraphPage'
 import { RealmsPage } from './components/RealmsPage'
+import { RealmDetailPage } from './components/RealmDetailPage'
 import { SettingsPage } from './components/SettingsPage'
 import { api } from './lib/api'
 import { applyTheme } from './lib/theme'
@@ -149,7 +150,17 @@ export default function App(): JSX.Element {
             realms={realms}
             activeRealmId={settings.activeRealmId}
             onActivate={changeRealm}
+            onOpenRealm={(id) => setRoute({ name: 'realm', id })}
             onChanged={() => void refreshRealms()}
+          />
+        ) : null}
+
+        {route.name === 'realm' ? (
+          <RealmDetailPage
+            realm={realms.find((realm) => realm.id === route.id) ?? null}
+            active={settings.activeRealmId === route.id}
+            onActivate={() => changeRealm(route.id)}
+            onBack={() => setRoute({ name: 'realms' })}
           />
         ) : null}
 

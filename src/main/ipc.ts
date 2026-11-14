@@ -5,6 +5,7 @@ import { monsterInputSchema, monsterSchema } from '@shared/monster'
 import { gameInputSchema, gameSchema } from '@shared/game'
 import { gameMonsterEntrySchema, gameMonsterInputSchema } from '@shared/gameMonster'
 import { realmInputSchema, realmSchema } from '@shared/realm'
+import { placeTypeInputSchema, placeTypeSchema } from '@shared/placeType'
 import { gameMapInputSchema, gameMapSchema } from '@shared/map'
 import { isGameStatus } from '@shared/gameStatus'
 import { isThemeName, type SettingsPatch } from '@shared/settings'
@@ -41,6 +42,12 @@ import {
   removeRealm,
   updateRealm
 } from './storage/realmStore'
+import {
+  addPlaceType,
+  listPlaceTypes,
+  removePlaceType,
+  updatePlaceType
+} from './storage/placeTypeStore'
 import { getSettings, updateSettings } from './storage/settingsStore'
 
 function assertId(value: unknown): string {
@@ -48,6 +55,11 @@ function assertId(value: unknown): string {
     throw new Error('Некорректный идентификатор')
   }
   return value
+}
+
+/** Типы мест можно смотреть и создавать для любого сеттинга, не только активного. */
+async function resolveRealmId(value: unknown): Promise<string> {
+  return typeof value === 'string' && value.length > 0 ? assertId(value) : getActiveRealmId()
 }
 
 function parsePlayerInput(value: unknown): PlayerInput {
@@ -217,6 +229,22 @@ export function registerIpcHandlers(): void {
     activateRealm(assertId(id))
   )
 
+  ipcMain.handle(IPC.placeTypesList, async (_event, realmId: unknown) =>
+    listPlaceTypes(await resolveRealmId(realmId))
+  )
+
+  ipcMain.handle(IPC.placeTypeCreate, async (_event, input: unknown, realmId: unknown) =>
+    addPlaceType(placeTypeInputSchema.parse(input), await resolveRealmId(realmId))
+  )
+
+  ipcMain.handle(IPC.placeTypeUpdate, (_event, input: unknown) =>
+    updatePlaceType(placeTypeSchema.parse(input))
+  )
+
+  ipcMain.handle(IPC.placeTypeRemove, (_event, id: unknown): Promise<void> =>
+    removePlaceType(assertId(id))
+  )
+
   ipcMain.handle(IPC.realmRemove, async (_event, id: unknown): Promise<void> => {
     const realmId = assertId(id)
     const realms = await listRealms()
@@ -226,12 +254,13 @@ export function registerIpcHandlers(): void {
       throw new Error('Нельзя удалить последний сеттинг')
     }
 
-    const [games, characters, monsters, maps, savedMonsters] = await Promise.all([
+    const [games, characters, monsters, maps, savedMonsters, placeTypes] = await Promise.all([
       listGames(),
       listCharacters(),
       listMonsters(),
       listMaps(),
-      listGameMonsters()
+      listGameMonsters(),
+      listPlaceTypes()
     ])
 
     const hasData =
@@ -239,10 +268,13 @@ export function registerIpcHandlers(): void {
       characters.some((character) => character.realmId === realmId) ||
       monsters.some((monster) => monster.realmId === realmId) ||
       maps.some((map) => map.realmId === realmId) ||
-      savedMonsters.some((monster) => monster.realmId === realmId)
+      savedMonsters.some((monster) => monster.realmId === realmId) ||
+      placeTypes.some((placeType) => placeType.realmId === realmId)
 
     if (hasData) {
-      throw new Error('В сеттинге есть игры, персонажи, монстры или карты — сначала удалите их')
+      throw new Error(
+        'В сеттинге есть игры, персонажи, монстры, карты или типы мест — сначала удалите их'
+      )
     }
 
     await removeRealm(realmId)

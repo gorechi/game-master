@@ -704,6 +704,54 @@
   color: #3f6b41;
 }
 
+/* Типы мест */
+:root[data-theme='light'] .place-type-card,
+:root[data-theme='light'] .place-icon-preview {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+:root[data-theme='light'] .place-types-empty {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+:root[data-theme='light'] .place-type-card__icon,
+:root[data-theme='light'] .place-icon-preview__token {
+  color: #7a4f12;
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.35), transparent 42%),
+    linear-gradient(160deg, #fdf6e6, #e8d8b8);
+  box-shadow: 0 8px 18px rgba(74, 52, 26, 0.16);
+}
+
+:root[data-theme='light'] .place-type-card__icon--broken {
+  color: #8c3423;
+  border-color: rgba(140, 52, 35, 0.5);
+}
+
+:root[data-theme='light'] .place-icon-drop {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+:root[data-theme='light'] .place-icon-drop:hover,
+:root[data-theme='light'] .place-icon-drop--active {
+  background: rgba(154, 106, 36, 0.08);
+}
+
+:root[data-theme='light'] .place-icon-library__item {
+  background: #fdf6e6;
+  border-color: var(--border-strong);
+  color: #7a4f12;
+}
+
+:root[data-theme='light'] .place-icon-library__item:hover {
+  background: #fffaf0;
+}
+
+:root[data-theme='light'] .place-icon-library__item--active {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(154, 106, 36, 0.16);
+}
+
 :root[data-theme='light'] .map-node__token {
   box-shadow: 0 9px 20px rgba(74, 52, 26, 0.16);
 }

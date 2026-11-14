@@ -5,7 +5,9 @@ import type { Monster, MonsterInput } from '@shared/monster'
 import type { Game, GameInput } from '@shared/game'
 import type { GameMap, GameMapInput } from '@shared/map'
 import type { Realm, RealmInput } from '@shared/realm'
+import type { PlaceType, PlaceTypeInput } from '@shared/placeType'
 import { DEFAULT_REALM_ID } from '@shared/realm'
+import { validatePlaceIcon } from '@shared/placeIcon'
 import {
   canTransitionGame,
   isGameDeletable,
@@ -22,6 +24,7 @@ import {
   createMap,
   createMonster,
   createPlayer,
+  createPlaceType,
   createRealm,
   normalizeCharacterProfileInput,
   normalizeMapInput,
@@ -51,6 +54,7 @@ const CHARACTERS_KEY = 'game-master.preview.characters'
 const MONSTERS_KEY = 'game-master.preview.monsters'
 const MAPS_KEY = 'game-master.preview.maps'
 const REALMS_KEY = 'game-master.preview.realms'
+const PLACE_TYPES_KEY = 'game-master.preview.placeTypes'
 const LEGACY_WORLDS_KEY = 'game-master.preview.worlds'
 const SETTINGS_KEY = 'game-master.preview.settings'
 
@@ -63,6 +67,7 @@ export function resetWebPreview(): void {
   window.localStorage.removeItem(MONSTERS_KEY)
   window.localStorage.removeItem(MAPS_KEY)
   window.localStorage.removeItem(REALMS_KEY)
+  window.localStorage.removeItem(PLACE_TYPES_KEY)
   window.localStorage.removeItem(LEGACY_WORLDS_KEY)
   window.location.reload()
 }
@@ -246,6 +251,34 @@ function readRealms(): Realm[] {
 
 function writeRealms(realms: Realm[]): void {
   window.localStorage.setItem(REALMS_KEY, JSON.stringify(realms))
+}
+
+function readPlaceTypes(): PlaceType[] {
+  try {
+    const raw = window.localStorage.getItem(PLACE_TYPES_KEY)
+    if (!raw) return []
+
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+
+    return (parsed as PlaceType[]).map((placeType) => ({
+      ...placeType,
+      realmId: typeof placeType.realmId === 'string' ? placeType.realmId : DEFAULT_REALM_ID
+    }))
+  } catch {
+    return []
+  }
+}
+
+function writePlaceTypes(placeTypes: PlaceType[]): void {
+  window.localStorage.setItem(PLACE_TYPES_KEY, JSON.stringify(placeTypes))
+}
+
+function assertPlaceTypeIcon(svg: string): void {
+  const check = validatePlaceIcon(svg)
+  if (!check.ok) {
+    throw new Error(`Иконка не соответствует требованиям: ${check.problems.join(' ')}`)
+  }
 }
 
 function getActiveRealmId(): string {
@@ -599,7 +632,6 @@ export function createWebBridge(): GameMasterApi {
 
     realms: {
       list: async (): Promise<Realm[]> => readRealms(),
-
       create: async (input: RealmInput): Promise<Realm> => {
         const realm = createRealm(input)
         writeRealms([...readRealms(), realm])
@@ -645,10 +677,13 @@ export function createWebBridge(): GameMasterApi {
           readCharacters().some((character) => character.realmId === id) ||
           readMonsters().some((monster) => monster.realmId === id) ||
           readMaps().some((map) => map.realmId === id) ||
-          readGameMonsters().some((monster) => monster.realmId === id)
+          readGameMonsters().some((monster) => monster.realmId === id) ||
+          readPlaceTypes().some((placeType) => placeType.realmId === id)
 
         if (hasData) {
-          throw new Error('В сеттинге есть игры, персонажи, монстры или карты — сначала удалите их')
+          throw new Error(
+            'В сеттинге есть игры, персонажи, монстры, карты или типы мест — сначала удалите их'
+          )
         }
 
         const remaining = realms.filter((realm) => realm.id !== id)
@@ -657,6 +692,45 @@ export function createWebBridge(): GameMasterApi {
         if (readSettings().activeRealmId === id) {
           writeSettings({ ...readSettings(), activeRealmId: remaining[0]!.id })
         }
+      }
+    },
+
+    placeTypes: {
+      list: async (realmId?: string): Promise<PlaceType[]> => {
+        const id = realmId ?? getActiveRealmId()
+        return readPlaceTypes().filter((placeType) => placeType.realmId === id)
+      },
+
+      create: async (input: PlaceTypeInput, realmId?: string): Promise<PlaceType> => {
+        assertPlaceTypeIcon(input.iconSvg)
+        const placeType = createPlaceType(input, realmId ?? getActiveRealmId())
+        writePlaceTypes([...readPlaceTypes(), placeType])
+        return placeType
+      },
+
+      update: async (placeType: PlaceType): Promise<PlaceType> => {
+        const existing = readPlaceTypes().find((item) => item.id === placeType.id)
+        if (!existing) {
+          throw new Error('Тип места не найден — возможно, запись уже удалена')
+        }
+
+        assertPlaceTypeIcon(placeType.iconSvg)
+
+        const updated: PlaceType = {
+          ...existing,
+          name: placeType.name.trim().slice(0, 100),
+          iconSvg: placeType.iconSvg.trim(),
+          updatedAt: new Date().toISOString()
+        }
+
+        writePlaceTypes(
+          readPlaceTypes().map((item) => (item.id === placeType.id ? updated : item))
+        )
+        return updated
+      },
+
+      remove: async (id: string): Promise<void> => {
+        writePlaceTypes(readPlaceTypes().filter((placeType) => placeType.id !== id))
       }
     },
 

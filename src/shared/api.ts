@@ -6,6 +6,7 @@ import type { GameStatus } from './gameStatus'
 import type { GameMonsterEntry, GameMonsterInput } from './gameMonster'
 import type { GameMap, GameMapInput } from './map'
 import type { Realm, RealmInput } from './realm'
+import type { PlaceType, PlaceTypeInput } from './placeType'
 import type { AppSettings, SettingsPatch } from './settings'
 
 /**
@@ -46,6 +47,10 @@ export const IPC = {
   realmUpdate: 'realm:update',
   realmActivate: 'realm:activate',
   realmRemove: 'realm:remove',
+  placeTypesList: 'place-types:list',
+  placeTypeCreate: 'place-types:create',
+  placeTypeUpdate: 'place-types:update',
+  placeTypeRemove: 'place-types:remove',
   settingsGet: 'settings:get',
   settingsUpdate: 'settings:update'
 } as const
@@ -117,6 +122,13 @@ export interface GameMasterApi {
     create(input: RealmInput): Promise<Realm>
     update(realm: Realm): Promise<Realm>
     activate(id: string): Promise<Realm>
+    remove(id: string): Promise<void>
+  }
+  /** Типы мест конкретного сеттинга: у каждого свой набор. */
+  placeTypes: {
+    list(realmId?: string): Promise<PlaceType[]>
+    create(input: PlaceTypeInput, realmId?: string): Promise<PlaceType>
+    update(placeType: PlaceType): Promise<PlaceType>
     remove(id: string): Promise<void>
   }
   /** Настройки приложения (тема и прочее). */

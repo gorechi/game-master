@@ -37,7 +37,9 @@ export function Sidebar({
         ? 'maps'
         : route.name === 'player'
           ? 'players'
-          : route.name
+          : route.name === 'realm'
+            ? 'realms'
+            : route.name
 
   return (
     <aside className="sidebar">

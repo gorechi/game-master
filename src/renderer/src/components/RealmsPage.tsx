@@ -10,6 +10,7 @@ interface RealmsPageProps {
   realms: readonly Realm[]
   activeRealmId: string | null
   onActivate: (realmId: string) => void
+  onOpenRealm: (realmId: string) => void
   onChanged: () => void
 }
 
@@ -20,6 +21,7 @@ export function RealmsPage({
   realms,
   activeRealmId,
   onActivate,
+  onOpenRealm,
   onChanged
 }: RealmsPageProps): JSX.Element {
   const [form, setForm] = useState<RealmFormState | null>(null)
@@ -97,6 +99,13 @@ export function RealmsPage({
                 </div>
 
                 <div className="realm-card__actions">
+                  <button
+                    type="button"
+                    className="button button--tiny"
+                    onClick={() => onOpenRealm(realm.id)}
+                  >
+                    Открыть
+                  </button>
                   {!active ? (
                     <button
                       type="button"
@@ -151,7 +160,7 @@ export function RealmsPage({
         title="Удалить сеттинг?"
         description={
           deleting
-            ? `«${deleting.name}» будет удалён. Удалить можно только пустой сеттинг — сначала удалите из него игры, персонажей, монстров и карты.`
+            ? `«${deleting.name}» будет удалён. Удалить можно только пустой сеттинг — сначала удалите из него игры, персонажей, монстров, карты и типы мест.`
             : undefined
         }
         onCancel={() => setDeleting(null)}

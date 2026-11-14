@@ -52,6 +52,12 @@ const api: GameMasterApi = {
     activate: (id) => ipcRenderer.invoke(IPC.realmActivate, id),
     remove: (id) => ipcRenderer.invoke(IPC.realmRemove, id)
   },
+  placeTypes: {
+    list: (realmId) => ipcRenderer.invoke(IPC.placeTypesList, realmId),
+    create: (input, realmId) => ipcRenderer.invoke(IPC.placeTypeCreate, input, realmId),
+    update: (placeType) => ipcRenderer.invoke(IPC.placeTypeUpdate, placeType),
+    remove: (id) => ipcRenderer.invoke(IPC.placeTypeRemove, id)
+  },
   settings: {
     get: () => ipcRenderer.invoke(IPC.settingsGet),
     update: (patch) => ipcRenderer.invoke(IPC.settingsUpdate, patch)

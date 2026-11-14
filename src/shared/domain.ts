@@ -6,6 +6,7 @@ import type { GameMonsterEntry, GameMonsterInput } from './gameMonster'
 import type { Realm, RealmInput } from './realm'
 import { DEFAULT_REALM_ID } from './realm'
 import type { GameMap, GameMapInput, MapPlace, MapPath } from './map'
+import type { PlaceType, PlaceTypeInput } from './placeType'
 
 /**
  * Доменный слой без зависимостей: фабрики, подписи и сводки.
@@ -68,6 +69,36 @@ export function createRealm(input: RealmInput, id: string = crypto.randomUUID())
   return {
     id,
     ...normalized,
+    createdAt: now,
+    updatedAt: now
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Типы мест                                                          */
+/* ------------------------------------------------------------------ */
+
+export function normalizePlaceTypeInput(input: PlaceTypeInput): {
+  name: string
+  iconSvg: string
+} {
+  return {
+    name: input.name.trim().slice(0, 100),
+    iconSvg: input.iconSvg.trim()
+  }
+}
+
+export function createPlaceType(
+  input: PlaceTypeInput,
+  realmId: string = DEFAULT_REALM_ID,
+  id: string = crypto.randomUUID()
+): PlaceType {
+  const now = new Date().toISOString()
+
+  return {
+    id,
+    realmId,
+    ...normalizePlaceTypeInput(input),
     createdAt: now,
     updatedAt: now
   }
