@@ -1914,18 +1914,55 @@ input[type='number'] {
 
 .run-map-tool {
   pointer-events: auto;
-  background: var(--panel);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 238, 196, 0.55);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 22% 48%, rgba(255, 255, 255, 0.35), transparent 38%),
+    linear-gradient(135deg, #e8c97f 0%, #d8b25c 44%, #b98533 100%);
+  color: #241a0a;
+  font: inherit;
+  font-family: var(--font-display);
+  font-size: 17px;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+.run-map-tool:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.run-map-tool:active {
+  transform: translateY(1px);
+}
+
+.run-map-tool svg {
+  flex: none;
 }
 
 .run-map-tool--finish {
-  color: var(--danger);
-  border-color: rgba(209, 88, 79, 0.35);
+  border-color: rgba(255, 218, 208, 0.55);
+  background:
+    radial-gradient(circle at 22% 48%, rgba(255, 255, 255, 0.26), transparent 38%),
+    linear-gradient(135deg, #df7a67 0%, #b84233 52%, #8c2b21 100%);
+  color: #fff4e8;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
 }
 
 .run-map-tool--finish:hover {
-  color: #ff9c93;
-  border-color: rgba(209, 88, 79, 0.5);
+  filter: brightness(1.07);
 }
 
 .run-map-viewport {

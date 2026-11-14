@@ -153,23 +153,25 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
             <div className="run-map-tools">
               <button
                 type="button"
-                className="icon-button run-map-tool"
+                className="run-map-tool run-map-tool--back"
                 title="Вернуться к играм"
                 aria-label="Вернуться к играм"
                 onClick={handleBack}
               >
-                <IconArrowLeft />
+                <IconArrowLeft width={16} height={16} />
+                <span>К играм</span>
               </button>
 
               {game.status === 'running' || game.status === 'paused' ? (
                 <button
                   type="button"
-                  className="icon-button run-map-tool run-map-tool--finish"
+                  className="run-map-tool run-map-tool--finish"
                   title="Закончить игру"
                   aria-label="Закончить игру"
                   onClick={() => setConfirmFinish(true)}
                 >
-                  <IconFlag />
+                  <IconFlag width={16} height={16} />
+                  <span>Закончить</span>
                 </button>
               ) : null}
             </div>

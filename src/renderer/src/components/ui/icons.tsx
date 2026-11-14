@@ -119,10 +119,14 @@ export function IconStoneArch(props: IconProps): JSX.Element {
 export function IconSwords(props: IconProps): JSX.Element {
   return (
     <Svg {...props}>
-      <path d="M4.5 3.5 15 14M4.5 3.5v3.2M4.5 3.5h3.2" />
-      <path d="M19.5 3.5 9 14M19.5 3.5v3.2M19.5 3.5h-3.2" />
-      <path d="M6 20l2.5-2.5M18 20l-2.5-2.5" />
-      <path d="M5 19.2 6.8 21M19 19.2 17.2 21" />
+      <path d="M4 4l11 11" />
+      <path d="M12.9 17.5l4.6-4.6" />
+      <path d="M15.2 15.2l3.6 3.6" />
+      <circle cx="19.4" cy="19.4" r=".9" />
+      <path d="M20 4 9 15" />
+      <path d="M11.1 17.5 6.5 12.9" />
+      <path d="M8.8 15.2 5.2 18.8" />
+      <circle cx="4.6" cy="19.4" r=".9" />
     </Svg>
   )
 }
