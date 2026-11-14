@@ -1,7 +1,7 @@
 import type { GameMap } from '@shared/map'
 
-export const MAP_NODE_WIDTH = 190
-export const MAP_NODE_HEIGHT = 64
+export const MAP_NODE_WIDTH = 96
+export const MAP_NODE_HEIGHT = 96
 export const MAP_GRAPH_PADDING = 70
 
 export interface MapNodePosition {

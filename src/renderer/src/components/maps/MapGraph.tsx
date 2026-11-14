@@ -13,6 +13,10 @@ import { IconStoneArch } from '../ui/icons'
 
 const DRAG_THRESHOLD = 4
 
+function nodeInitial(name: string): string {
+  return name.trim().charAt(0).toUpperCase() || '?'
+}
+
 interface DragState {
   id: string
   pointerId: number
@@ -42,26 +46,24 @@ function hashPair(path: MapPath): number {
   return hash
 }
 
-/** Точка на границе прямоугольника места в сторону соседа. */
-function anchorPoint(from: MapNodePosition, to: MapNodePosition): { x: number; y: number } {
-  const dx = to.x - from.x
-  const dy = to.y - from.y
-  const halfWidth = MAP_NODE_WIDTH / 2 + 4
-  const halfHeight = MAP_NODE_HEIGHT / 2 + 4
+function edgeAnchor(from: MapNodePosition, point: { x: number; y: number }): { x: number; y: number } {
+  const dx = point.x - from.x
+  const dy = point.y - from.y
+  const length = Math.hypot(dx, dy)
 
-  const scale = Math.min(
-    Math.abs(dx) < 0.001 ? Number.POSITIVE_INFINITY : halfWidth / Math.abs(dx),
-    Math.abs(dy) < 0.001 ? Number.POSITIVE_INFINITY : halfHeight / Math.abs(dy)
-  )
-
-  if (!Number.isFinite(scale)) {
+  if (length < 0.001) {
     return { x: from.x, y: from.y }
   }
 
+  const radius = MAP_NODE_WIDTH / 2 - 8
   return {
-    x: from.x + dx * scale,
-    y: from.y + dy * scale
+    x: from.x + (dx / length) * radius,
+    y: from.y + (dy / length) * radius
   }
+}
+
+function anchorPoint(from: MapNodePosition, to: MapNodePosition): { x: number; y: number } {
+  return edgeAnchor(from, to)
 }
 
 function edgePath(from: MapNodePosition, to: MapNodePosition): string {
@@ -80,18 +82,8 @@ function edgePath(from: MapNodePosition, to: MapNodePosition): string {
 }
 
 function previewPath(from: MapNodePosition, point: { x: number; y: number }): string {
-  const dx = point.x - from.x
-  const dy = point.y - from.y
-  const halfWidth = MAP_NODE_WIDTH / 2 + 4
-  const halfHeight = MAP_NODE_HEIGHT / 2 + 4
-  const scale = Math.min(
-    Math.abs(dx) < 0.001 ? Number.POSITIVE_INFINITY : halfWidth / Math.abs(dx),
-    Math.abs(dy) < 0.001 ? Number.POSITIVE_INFINITY : halfHeight / Math.abs(dy)
-  )
-  const startX = Number.isFinite(scale) ? from.x + dx * scale : from.x
-  const startY = Number.isFinite(scale) ? from.y + dy * scale : from.y
-
-  return `M ${startX} ${startY} Q ${(startX + point.x) / 2} ${(startY + point.y) / 2} ${point.x} ${point.y}`
+  const start = edgeAnchor(from, point)
+  return `M ${start.x} ${start.y} Q ${(start.x + point.x) / 2} ${(start.y + point.y) / 2} ${point.x} ${point.y}`
 }
 
 interface MapGraphProps {
@@ -363,6 +355,7 @@ export function MapGraph({
         const linkedName = node.linkedMapId ? linkedMapNames[node.linkedMapId] : undefined
         const className = [
           'map-node',
+          'map-node--token',
           node.isExit ? 'map-node--exit' : '',
           linkedName ? 'map-node--linked' : '',
           draggingId === node.id ? 'map-node--dragging' : '',
@@ -401,13 +394,14 @@ export function MapGraph({
             onPointerCancel={interactive ? cancelDrag : undefined}
             onKeyDown={interactive ? (event) => onNodeKeyDown(event, node) : undefined}
           >
-            <span className="map-node__name">{node.name}</span>
-            {node.isExit ? (
-              <span className="map-exit-mark" title="Выход на другую карту">
-                <IconStoneArch width={13} height={13} />
-              </span>
-            ) : null}
-            {linkedName ? <span className="map-node__link">→ {linkedName}</span> : null}
+            <span className="map-node__token">
+              {node.isExit ? (
+                <IconStoneArch width={28} height={28} />
+              ) : (
+                <span className="map-node__token-initial">{nodeInitial(node.name)}</span>
+              )}
+            </span>
+            <span className="map-node__token-label">{node.name}</span>
 
             {interactive ? (
               <span

@@ -2694,6 +2694,97 @@ input[type='number'] {
   -webkit-line-clamp: 2;
 }
 
+/* Компактные жетоны мест: монограмма или арка выхода. */
+.map-node--token {
+  width: 96px;
+  min-height: 96px;
+  gap: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.map-node--token:hover,
+.map-node--token.map-node--linked:hover,
+.map-node--token.map-node--dragging {
+  border: 0;
+  box-shadow: none;
+  filter: none;
+}
+
+.map-node__token {
+  position: relative;
+  display: grid;
+  width: 76px;
+  height: 76px;
+  place-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.2), transparent 42%),
+    linear-gradient(160deg, var(--panel-raised), var(--panel));
+  color: var(--ink);
+  box-shadow: 0 9px 20px rgba(0, 0, 0, 0.26);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.map-node--exit .map-node__token {
+  border-color: rgba(216, 178, 92, 0.6);
+  color: var(--gold-strong);
+}
+
+.map-node--token:hover .map-node__token {
+  border-color: var(--gold);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.32);
+  transform: translateY(-1px);
+}
+
+.map-node--token.map-node--target .map-node__token {
+  border-color: var(--gold);
+  box-shadow:
+    0 0 0 4px rgba(216, 178, 92, 0.2),
+    0 12px 24px rgba(0, 0, 0, 0.32);
+}
+
+.map-node--token.map-node--dragging .map-node__token {
+  cursor: grabbing;
+  border-color: var(--gold);
+  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.4);
+}
+
+.map-node__token-initial {
+  font-family: var(--font-display);
+  font-size: 30px;
+  line-height: 1;
+  color: var(--gold-strong);
+}
+
+.map-node__token-label {
+  position: absolute;
+  z-index: 1;
+  top: calc(100% + 4px);
+  left: 50%;
+  max-width: 160px;
+  overflow: hidden;
+  padding: 2px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.map-node--token .map-node__connector {
+  right: 3px;
+}
+
 .map-exit-mark {
   display: inline-flex;
   align-items: center;
