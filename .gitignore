@@ -10,3 +10,4 @@ Thumbs.db
 .idea/
 *.tsbuildinfo
 tools/icon-forge/preview/
+tools/icon-forge/.env

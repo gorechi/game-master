@@ -20,6 +20,7 @@
     "icons": "node scripts/generate-icon.mjs",
     "icons:validate": "node tools/icon-forge/validate.mjs",
     "icons:preview": "node tools/icon-forge/preview.mjs",
+    "icons:generate": "node --env-file-if-exists=tools/icon-forge/.env tools/icon-forge/generate.mjs",
     "pack": "npm run build && electron-builder --dir --publish never",
     "dist:win": "npm run build && electron-builder --win --publish never",
     "dist:mac": "npm run build && electron-builder --mac --publish never"

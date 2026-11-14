@@ -18,12 +18,56 @@
 ```bash
 npm run icons:validate
 npm run icons:preview
+npm run icons:generate -- --id swamp
 ```
 
 `icons:validate` проверяет все файлы из `icons/`, сверяет их со `spec.json`
 и обновляет `manifest.json`.
 
 `icons:preview` собирает `preview/preview.png` — общий лист для просмотра.
+
+`icons:generate` просит SVG у DeepSeek, проверяет его и только при успехе
+сохраняет в `icons/`. Если модель нарисовала залитое пятно, иконка не попадёт
+в набор.
+
+## Генерация через DeepSeek
+
+1. Скопируй `.env.example` в `.env`:
+   ```bash
+   cp tools/icon-forge/.env.example tools/icon-forge/.env
+   ```
+2. Открой `tools/icon-forge/.env` и вставь свой ключ:
+   ```text
+   DEEPSEEK_API_KEY=sk-...
+   ```
+   Ключ остаётся локально: `.env` в `.gitignore`. В чат его присылать не нужно.
+3. Добавь будущую иконку в `spec.json`:
+   ```json
+   { "id": "swamp", "title": "Болото", "tags": ["swamp", "marsh"] }
+   ```
+4. Сгенерируй:
+   ```bash
+   npm run icons:generate -- --id swamp
+   ```
+   Или сгенерировать все отсутствующие:
+   ```bash
+   npm run icons:generate -- --all-missing
+   ```
+   Перезаписать существующую:
+   ```bash
+   npm run icons:generate -- --id forest --force
+   ```
+5. Проверь и посмотри превью:
+   ```bash
+   npm run icons:validate
+   npm run icons:preview
+   ```
+
+DeepSeek — текстовая модель, поэтому он не может сам посмотреть на
+`preview.png` и сказать «иконка плохо читается». Визуальную приёмку пока
+делает человек. При желании следующий шаг — подключить мультимодальную
+модель для автоматической визуальной критики.
+
 
 ## Как добавить иконку
 
