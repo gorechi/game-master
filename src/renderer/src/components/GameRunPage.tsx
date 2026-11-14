@@ -5,8 +5,9 @@ import type { GameMap } from '@shared/map'
 import type { PlaceType } from '@shared/placeType'
 import { api, errorMessage } from '@renderer/lib/api'
 import { GameFinishModal } from './games/GameFinishModal'
+import { CombatModal, type CombatResultEntry } from './games/CombatModal'
 import { RunMap } from './maps/RunMap'
-import { IconArrowLeft, IconFlag, IconSwords } from './ui/icons'
+import { IconArrowLeft, IconClose, IconFlag, IconSwords } from './ui/icons'
 
 interface GameRunPageProps {
   gameId: string
@@ -19,7 +20,8 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
   const [maps, setMaps] = useState<GameMap[]>([])
   const [placeTypes, setPlaceTypes] = useState<PlaceType[]>([])
   const [notes, setNotes] = useState('')
-  const [combatFlash, setCombatFlash] = useState(false)
+  const [combatOpen, setCombatOpen] = useState(false)
+  const [combatOrder, setCombatOrder] = useState<CombatResultEntry[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [confirmFinish, setConfirmFinish] = useState(false)
   const notesRef = useRef(notes)
@@ -48,13 +50,6 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
       cancelled = true
     }
   }, [gameId])
-
-  useEffect(() => {
-    if (!combatFlash) return
-
-    const timer = window.setTimeout(() => setCombatFlash(false), 2600)
-    return () => window.clearTimeout(timer)
-  }, [combatFlash])
 
   async function persistNotes(value: string): Promise<void> {
     if (!game || game.status === 'finished' || value === game.notes) return
@@ -141,6 +136,40 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
                 <p>Карта не выбрана</p>
               </div>
             )}
+
+            {combatOrder ? (
+              <div className="run-combat-order" role="status" aria-label="Порядок схватки">
+                <div className="run-combat-order__head">
+                  <span>Порядок схватки</span>
+                  <button
+                    type="button"
+                    className="icon-button run-combat-order__close"
+                    title="Скрыть порядок"
+                    aria-label="Скрыть порядок схватки"
+                    onClick={() => setCombatOrder(null)}
+                  >
+                    <IconClose width={14} height={14} />
+                  </button>
+                </div>
+                <ol>
+                  {combatOrder.map((entry, index) => (
+                    <li
+                      key={`${entry.kind}:${entry.id}`}
+                      className={
+                        entry.kind === 'monster' ? 'run-combat-order__row--monster' : undefined
+                      }
+                    >
+                      <span className="run-combat-order__index">{index + 1}</span>
+                      <span className="run-combat-order__name">{entry.name}</span>
+                      <span className="run-combat-order__score">
+                        {entry.initiative}
+                        {entry.tieBreaker !== null ? ` · ${entry.tieBreaker}` : ''}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ) : null}
           </section>
 
           <section className="run-screen__bottom">
@@ -158,10 +187,10 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
 
             <button
               type="button"
-              className={`combat-button${combatFlash ? ' combat-button--flash' : ''}`}
+              className="combat-button"
               disabled={game.status !== 'running'}
               title="Схватка"
-              onClick={() => setCombatFlash(true)}
+              onClick={() => setCombatOpen(true)}
             >
               <span className="combat-button__sheen" aria-hidden="true" />
               <span className="combat-button__icon" aria-hidden="true">
@@ -183,6 +212,18 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
         onClose={() => setConfirmFinish(false)}
         onFinish={finishGame}
       />
+
+      {game ? (
+        <CombatModal
+          open={combatOpen}
+          game={game}
+          onClose={() => setCombatOpen(false)}
+          onStart={(order) => {
+            setCombatOrder(order)
+            setCombatOpen(false)
+          }}
+        />
+      ) : null}
     </main>
   )
 }

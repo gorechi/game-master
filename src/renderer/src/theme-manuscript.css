@@ -497,6 +497,17 @@
   border-color: #fdf3e0;
 }
 
+/* Схватка */
+:root[data-theme='light'] .combat-section,
+:root[data-theme='light'] .combat-card {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+:root[data-theme='light'] .run-combat-order {
+  background: rgba(251, 244, 229, 0.96);
+  box-shadow: 0 12px 28px rgba(74, 52, 26, 0.22);
+}
+
 :root[data-theme='light'] .game-monster-row {
   background: rgba(255, 255, 255, 0.4);
 }
