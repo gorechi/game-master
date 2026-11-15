@@ -25,44 +25,56 @@ export interface MapPoint {
   y: number
 }
 
-/** Размер рабочего поля редактора: с большим запасом для расстановки мест. */
+/** Размер рабочего поля редактора. */
 export const MAP_WORKSPACE_WIDTH = 4000
 export const MAP_WORKSPACE_HEIGHT = 3000
 
-/** Начало координат рабочего поля: центрирует существующую расстановку. */
-export interface EditorOrigin {
-  x: number
-  y: number
-}
-
-export function createEditorOrigin(tight: MapLayout): EditorOrigin {
-  return {
-    x: Math.max(0, Math.round((MAP_WORKSPACE_WIDTH - tight.width) / 2)),
-    y: Math.max(0, Math.round((MAP_WORKSPACE_HEIGHT - tight.height) / 2))
-  }
-}
-
 /**
- * Раскладка редактора. Поле фиксировано и велико; вьюпорт лишь показывает его
- * часть. Переданные вручную позиции уже заданы в координатах поля.
+ * Раскладка редактора. Координаты мест — это координаты самого поля.
+ * Новые места без сохранённых координат автоматически ставятся в центр.
  */
 export function editorLayout(
   map: GameMap,
-  overrides: Record<string, MapPoint> | undefined,
-  origin: EditorOrigin
+  overrides: Record<string, MapPoint> | undefined
 ): MapLayout {
-  const tight = layoutMap(map)
+  if (map.places.length === 0) {
+    return { width: MAP_WORKSPACE_WIDTH, height: MAP_WORKSPACE_HEIGHT, nodes: [] }
+  }
+
+  const autoMap: GameMap = {
+    ...map,
+    places: map.places.map((place) => ({ ...place, x: null, y: null }))
+  }
+  const auto = layoutMap(autoMap)
+  const autoOffsetX = Math.max(
+    0,
+    Math.round((MAP_WORKSPACE_WIDTH - auto.width) / 2)
+  )
+  const autoOffsetY = Math.max(
+    0,
+    Math.round((MAP_WORKSPACE_HEIGHT - auto.height) / 2)
+  )
+  const autoById = new Map(auto.nodes.map((node) => [node.id, node]))
 
   return {
     width: MAP_WORKSPACE_WIDTH,
     height: MAP_WORKSPACE_HEIGHT,
-    nodes: tight.nodes.map((node) => {
-      const override = overrides?.[node.id]
+    nodes: map.places.map((place) => {
+      const override = overrides?.[place.id]
+      const saved =
+        place.x !== null && place.y !== null ? { x: place.x, y: place.y } : null
+      const autoNode = autoById.get(place.id)
+      const position =
+        override ??
+        saved ??
+        (autoNode
+          ? { x: autoNode.x + autoOffsetX, y: autoNode.y + autoOffsetY }
+          : { x: MAP_WORKSPACE_WIDTH / 2, y: MAP_WORKSPACE_HEIGHT / 2 })
 
       return {
-        ...node,
-        x: override ? override.x : node.x + origin.x,
-        y: override ? override.y : node.y + origin.y
+        ...place,
+        x: position.x,
+        y: position.y
       }
     })
   }
@@ -151,16 +163,22 @@ export function layoutMap(
     }
   })
 
+  const minX = Math.min(...nodes.map((node) => node.x))
+  const minY = Math.min(...nodes.map((node) => node.y))
   const maxX = Math.max(...nodes.map((node) => node.x))
   const maxY = Math.max(...nodes.map((node) => node.y))
-  const width = Math.max(
-    base.width,
-    Math.ceil(maxX + MAP_NODE_WIDTH / 2 + MAP_GRAPH_PADDING)
-  )
-  const height = Math.max(
-    base.height,
-    Math.ceil(maxY + MAP_NODE_HEIGHT / 2 + MAP_GRAPH_PADDING)
-  )
+  const shiftX = MAP_NODE_WIDTH / 2 + MAP_GRAPH_PADDING - minX
+  const shiftY = MAP_NODE_HEIGHT / 2 + MAP_GRAPH_PADDING - minY
+  const width = Math.ceil(maxX - minX + MAP_NODE_WIDTH + MAP_GRAPH_PADDING * 2)
+  const height = Math.ceil(maxY - minY + MAP_NODE_HEIGHT + MAP_GRAPH_PADDING * 2)
 
-  return { width, height, nodes }
+  return {
+    width,
+    height,
+    nodes: nodes.map((node) => ({
+      ...node,
+      x: node.x + shiftX,
+      y: node.y + shiftY
+    }))
+  }
 }

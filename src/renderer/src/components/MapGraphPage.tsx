@@ -6,13 +6,7 @@ import type { PlaceType } from '@shared/placeType'
 import { canonicalMapPath } from '@shared/domain'
 import { api, errorMessage } from '@renderer/lib/api'
 import { pluralize } from '@renderer/lib/format'
-import {
-  createEditorOrigin,
-  editorLayout,
-  layoutMap,
-  type EditorOrigin,
-  type MapPoint
-} from '@renderer/lib/mapLayout'
+import { editorLayout, type MapPoint } from '@renderer/lib/mapLayout'
 import { IconPencil, IconSave, IconUndo } from './ui/icons'
 import { MapExitFrame } from './maps/MapExitFrame'
 import { MapFormModal } from './maps/MapFormModal'
@@ -53,6 +47,25 @@ function centerScrollElement(element: HTMLDivElement): void {
   element.scrollTop = Math.max(0, (element.scrollHeight - element.clientHeight) / 2)
 }
 
+function centerScrollOnNodes(
+  element: HTMLDivElement,
+  nodes: readonly { x: number; y: number }[],
+  zoom: number
+): void {
+  if (nodes.length === 0) {
+    centerScrollElement(element)
+    return
+  }
+
+  const xs = nodes.map((node) => node.x)
+  const ys = nodes.map((node) => node.y)
+  const centerX = (Math.min(...xs) + Math.max(...xs)) / 2
+  const centerY = (Math.min(...ys) + Math.max(...ys)) / 2
+
+  element.scrollLeft = Math.max(0, centerX * zoom - element.clientWidth / 2)
+  element.scrollTop = Math.max(0, centerY * zoom - element.clientHeight / 2)
+}
+
 /** Просмотр и редактирование карты: большое рабочее поле с масштабом. */
 export function MapGraphPage({
   mapId,
@@ -69,16 +82,19 @@ export function MapGraphPage({
   const [changeError, setChangeError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
-  const [origin, setOrigin] = useState<EditorOrigin | null>(null)
   const [zoom, setZoom] = useState(1)
   const [panning, setPanning] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const zoomRef = useRef(1)
   const targetZoomRef = useRef(1)
   const zoomCommitScheduledRef = useRef(false)
-  const centerZoomRef = useRef(false)
+  const centerTargetRef = useRef<{
+    nodes: readonly { x: number; y: number }[]
+    zoom: number
+  } | null>(null)
   const panRef = useRef<PanState | null>(null)
   const zoomAnchorRef = useRef<ZoomAnchor | null>(null)
+  const centeredMapRef = useRef<string | null>(null)
 
   const load = useCallback(async (): Promise<void> => {
     try {
@@ -87,7 +103,6 @@ export function MapGraphPage({
       const nextPlaceTypes = found ? await api.placeTypes.list(found.realmId) : []
 
       setMap(found)
-      setOrigin(found ? createEditorOrigin(layoutMap(found)) : null)
       setPlaceTypes(nextPlaceTypes)
       setLinkedMapNames(Object.fromEntries(maps.map((item) => [item.id, item.name])))
       setPositions(null)
@@ -103,19 +118,7 @@ export function MapGraphPage({
     void load()
   }, [load])
 
-  // При открытии карты показываем центр большого рабочего поля.
-  useLayoutEffect(() => {
-    const element = scrollRef.current
-    if (!element || !origin || !map) return
 
-    if (map.places.length === 0) {
-      element.scrollLeft = 0
-      element.scrollTop = 0
-      return
-    }
-
-    centerScrollElement(element)
-  }, [map?.id, origin])
 
   useEffect(() => {
     zoomRef.current = 1
@@ -174,10 +177,11 @@ export function MapGraphPage({
     const element = scrollRef.current
     if (!element) return
 
-    if (centerZoomRef.current) {
-      centerZoomRef.current = false
+    const centerTarget = centerTargetRef.current
+    if (centerTarget) {
+      centerTargetRef.current = null
       zoomAnchorRef.current = null
-      centerScrollElement(element)
+      centerScrollOnNodes(element, centerTarget.nodes, zoom)
       return
     }
 
@@ -190,12 +194,19 @@ export function MapGraphPage({
   }, [zoom])
 
 
-  const layout =
-    map && origin
-      ? editorLayout(map, positions ?? undefined, origin)
-      : null
+  const layout = map ? editorLayout(map, positions ?? undefined) : null
   const displayPaths = draftPaths ?? map?.paths ?? []
   const dirty = positions !== null || draftPaths !== null
+
+  // Один раз при открытии карты показываем её содержимое, а не пустой угол поля.
+  useLayoutEffect(() => {
+    const element = scrollRef.current
+    if (!element || !map || !layout) return
+    if (centeredMapRef.current === map.id) return
+
+    centeredMapRef.current = map.id
+    centerScrollOnNodes(element, layout.nodes, zoomRef.current)
+  }, [layout, map])
 
   function moveNode(placeId: string, x: number, y: number): void {
     if (!layout) return
@@ -232,9 +243,6 @@ export function MapGraphPage({
     setChangeError(null)
 
     try {
-      const offsetX = origin?.x ?? 0
-      const offsetY = origin?.y ?? 0
-
       const updated = await api.maps.update({
         ...map,
         places: map.places.map((place) => {
@@ -242,8 +250,8 @@ export function MapGraphPage({
 
           return {
             ...place,
-            x: position ? Math.max(0, Math.round(position.x - offsetX)) : place.x,
-            y: position ? Math.max(0, Math.round(position.y - offsetY)) : place.y
+            x: position ? Math.max(0, Math.round(position.x)) : place.x,
+            y: position ? Math.max(0, Math.round(position.y)) : place.y
           }
         }),
         paths: draftPaths ?? map.paths
@@ -267,18 +275,19 @@ export function MapGraphPage({
 
   function resetZoom(): void {
     const wasZoom = zoomRef.current
+    const nodes = layout?.nodes ?? []
     zoomRef.current = 1
     targetZoomRef.current = 1
     zoomAnchorRef.current = null
 
     if (wasZoom !== 1) {
-      centerZoomRef.current = true
+      centerTargetRef.current = { nodes, zoom: 1 }
       setZoom(1)
       return
     }
 
     const element = scrollRef.current
-    if (element) centerScrollElement(element)
+    if (element) centerScrollOnNodes(element, nodes, 1)
   }
 
   function startPan(event: ReactPointerEvent<HTMLDivElement>): void {
@@ -448,7 +457,7 @@ export function MapGraphPage({
               onPointerUp={endPan}
               onPointerCancel={endPan}
             >
-              {layout && origin ? (
+              {layout ? (
                 <div
                   className="map-graph-fit"
                   style={{
@@ -475,7 +484,6 @@ export function MapGraphPage({
                       onConnect={connectNodes}
                       scale={zoom}
                       showCanvas
-                      dragInset={{ x: origin.x, y: origin.y }}
                     />
                   </div>
                   <div className="map-graph-boundary" aria-hidden="true" />
