@@ -18,7 +18,7 @@ export function RealmDetailPage({
   onBack,
   onChanged
 }: RealmDetailPageProps): JSX.Element {
-  const [tab, setTab] = useState<RealmTab>('icons')
+  const [tab, setTab] = useState<RealmTab>('about')
   const [name, setName] = useState(realm?.name ?? '')
   const [description, setDescription] = useState(realm?.description ?? '')
   const [saving, setSaving] = useState(false)
@@ -81,17 +81,6 @@ export function RealmDetailPage({
                 <button
                   type="button"
                   role="tab"
-                  id="realm-tab-icons"
-                  aria-selected={tab === 'icons'}
-                  aria-controls="realm-panel-icons"
-                  className={`realm-tab${tab === 'icons' ? ' realm-tab--active' : ''}`}
-                  onClick={() => setTab('icons')}
-                >
-                  Иконки
-                </button>
-                <button
-                  type="button"
-                  role="tab"
                   id="realm-tab-about"
                   aria-selected={tab === 'about'}
                   aria-controls="realm-panel-about"
@@ -99,6 +88,17 @@ export function RealmDetailPage({
                   onClick={() => setTab('about')}
                 >
                   Основное
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  id="realm-tab-icons"
+                  aria-selected={tab === 'icons'}
+                  aria-controls="realm-panel-icons"
+                  className={`realm-tab${tab === 'icons' ? ' realm-tab--active' : ''}`}
+                  onClick={() => setTab('icons')}
+                >
+                  Иконки
                 </button>
               </div>
 
