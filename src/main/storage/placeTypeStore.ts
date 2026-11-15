@@ -64,6 +64,11 @@ export async function listPlaceTypes(realmId?: string): Promise<PlaceType[]> {
   return realmId ? placeTypes.filter((placeType) => placeType.realmId === realmId) : placeTypes
 }
 
+/** Полное состояние файла иконок: нужно для бэкапа вместе с ключами пресетов. */
+export async function getPlaceTypesState(): Promise<PlaceTypesFile> {
+  return readPlaceTypesFile()
+}
+
 /** Добавляет/обновляет встроенные иконки в сеттинге, не трогая пользовательские правки. */
 export async function applyPresetIcons(
   catalog: readonly PresetPlaceIcon[],

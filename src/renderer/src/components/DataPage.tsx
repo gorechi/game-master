@@ -21,15 +21,17 @@ import {
   type DataPackCounts
 } from '@shared/dataPack'
 import { api, errorMessage } from '@renderer/lib/api'
+import { BackupPanel } from './BackupPanel'
 import { Modal } from './ui/Modal'
 import { Select } from './ui/Select'
 
-type DataTab = 'games' | 'maps' | 'monsters' | 'uniqueMonsters' | 'realms'
-type ExchangeTab = DataTab
+type ExchangeTab = 'games' | 'maps' | 'monsters' | 'uniqueMonsters' | 'realms'
+type DataTab = ExchangeTab | 'backup'
 
 interface DataPageProps {
   realms: Realm[]
   onRealmsChanged: () => Promise<void> | void
+  onAppDataRestored: () => Promise<void> | void
 }
 
 interface DataSources {
@@ -77,7 +79,8 @@ const TAB_LABELS: Record<DataTab, string> = {
   maps: 'Карты',
   monsters: 'Монстры',
   uniqueMonsters: 'Уникальные существа',
-  realms: 'Сеттинги'
+  realms: 'Сеттинги',
+  backup: 'Бэкап'
 }
 
 const TAB_DESCRIPTIONS: Record<ExchangeTab, string> = {
@@ -109,10 +112,11 @@ const TABS: DataTab[] = [
   'maps',
   'monsters',
   'uniqueMonsters',
-  'realms'
+  'realms',
+  'backup'
 ]
 
-function kindForTab(tab: DataTab): DataExportKind {
+function kindForTab(tab: ExchangeTab): DataExportKind {
   return tab === 'realms' ? 'realm' : tab
 }
 
@@ -161,7 +165,11 @@ function parsePackText(text: string): DataPack {
   )
 }
 
-export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Element {
+export function DataPage({
+  realms,
+  onRealmsChanged,
+  onAppDataRestored
+}: DataPageProps): JSX.Element {
   const [activeTab, setActiveTab] = useState<DataTab>('games')
   const [sources, setSources] = useState<DataSources>(EMPTY_SOURCES)
   const [selection, setSelection] = useState<Partial<Record<ExchangeTab, Set<string>>>>({})
@@ -237,6 +245,7 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
   }, [])
 
   const exportItems = useMemo((): ExportItem[] => {
+    if (activeTab === 'backup') return []
     if (activeTab === 'games') {
       return sources.games.map((game) => ({
         id: game.id,
@@ -309,16 +318,18 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
     })
   }, [activeTab, realmNames, realms, sources])
 
-  const realmFilter = realmFilters[activeTab] ?? 'all'
+  const realmFilter =
+    activeTab === 'backup' ? 'all' : (realmFilters[activeTab] ?? 'all')
   const filteredExportItems = useMemo(() => {
     if (activeTab === 'realms' || realmFilter === 'all') return exportItems
     return exportItems.filter((item) => item.realmId === realmFilter)
   }, [activeTab, exportItems, realmFilter])
 
-  const selectedSet = selection[activeTab] ?? new Set<string>()
+  const selectedSet =
+    activeTab === 'backup' ? new Set<string>() : (selection[activeTab] ?? new Set())
   const selectedItems = filteredExportItems.filter((item) => selectedSet.has(item.id))
   const selectedIds = selectedItems.map((item) => item.id)
-  const exportKind = kindForTab(activeTab)
+  const exportKind = activeTab === 'backup' ? null : kindForTab(activeTab)
   const selectedIdSet = new Set(selectedIds)
   const mapExportHasLinks =
     activeTab === 'maps' &&
@@ -329,7 +340,7 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
     )
 
   const exportPreview = useMemo((): ExportPreview | null => {
-    if (selectedIds.length === 0) return null
+    if (!exportKind || selectedIds.length === 0) return null
 
     try {
       const pack = createDataPack(
@@ -362,6 +373,7 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
   }, [activeTab, mapExportHasLinks, realms, selectedIds, sources])
 
   function toggleItem(id: string): void {
+    if (activeTab === 'backup') return
     const tab = activeTab
 
     setSelection((previous) => {
@@ -385,7 +397,7 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
   }
 
   function selectAll(): void {
-    if (activeTab === 'realms') return
+    if (activeTab === 'realms' || activeTab === 'backup') return
     setSelection((previous) => ({
       ...previous,
       [activeTab]: new Set(filteredExportItems.map((item) => item.id))
@@ -393,17 +405,18 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
   }
 
   function clearSelection(): void {
+    if (activeTab === 'backup') return
     setSelection((previous) => ({ ...previous, [activeTab]: new Set() }))
   }
 
   function changeRealmFilter(value: string): void {
-    if (activeTab === 'realms') return
+    if (activeTab === 'realms' || activeTab === 'backup') return
 
     setRealmFilters((previous) => ({ ...previous, [activeTab]: value }))
   }
 
   async function handleExport(mapLinks?: DataMapLinkMode): Promise<void> {
-    if (selectedIds.length === 0) return
+    if (!exportKind || selectedIds.length === 0) return
 
     setExporting(true)
     setExportNotice(null)
@@ -442,6 +455,7 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
   }
 
   function acceptImport(draft: DataImportFile): void {
+    if (activeTab === 'backup') return
     const expectedKind = kindForTab(activeTab)
 
     if (expectedKind !== draft.pack.kind) {
@@ -583,275 +597,286 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
           ))}
         </div>
 
-        <div className="data-tab-intro">
-          <h2>{TAB_LABELS[activeTab]}</h2>
-          <p className="muted">{TAB_DESCRIPTIONS[activeTab]}</p>
-        </div>
-
-        {loadError ? <p className="notice notice--error">{loadError}</p> : null}
-
-        <div className="data-layout">
-          <section className="data-panel" aria-labelledby="data-export-title">
-            <div className="data-panel__head">
-              <div>
-                <h2 id="data-export-title">Экспорт</h2>
-                <p className="muted">{TAB_EXPORT_HINTS[activeTab]}</p>
-              </div>
-              <span className="data-counter">
-                {selectedItems.length} из {filteredExportItems.length}
-              </span>
+        {activeTab === 'backup' ? (
+          <BackupPanel
+            onRestored={async () => {
+              await onAppDataRestored()
+              reload()
+            }}
+          />
+        ) : (
+          <>
+            <div className="data-tab-intro">
+              <h2>{TAB_LABELS[activeTab]}</h2>
+              <p className="muted">{TAB_DESCRIPTIONS[activeTab]}</p>
             </div>
 
-            {activeTab !== 'realms' ? (
-              <label className="field data-filter">
-                <span className="field__label">Фильтр по сеттингу</span>
-                <Select<string>
-                  value={realmFilter}
-                  options={realmFilterOptions}
-                  onChange={changeRealmFilter}
-                  ariaLabel="Фильтр по сеттингу"
-                  placeholder="Все сеттинги"
-                  searchable={realmFilterOptions.length > 9}
-                />
-              </label>
-            ) : null}
+            {loadError ? <p className="notice notice--error">{loadError}</p> : null}
 
-            <div className="data-toolbar">
-              {activeTab !== 'realms' ? (
-                <button
-                  type="button"
-                  className="button button--tiny button--ghost"
-                  onClick={selectAll}
-                  disabled={filteredExportItems.length === 0}
-                >
-                  Выбрать все
-                </button>
-              ) : (
-                <span className="muted data-toolbar__hint">Выберите один сеттинг</span>
-              )}
-              <button
-                type="button"
-                className="button button--tiny button--ghost"
-                onClick={clearSelection}
-                disabled={selectedItems.length === 0}
-              >
-                Снять выбор
-              </button>
-            </div>
-
-            {loading ? (
-              <p className="muted">Загрузка данных…</p>
-            ) : filteredExportItems.length === 0 ? (
-              <div className="empty">
-                {activeTab === 'realms'
-                  ? 'Сеттингов пока нет.'
-                  : realmFilter !== 'all'
-                    ? 'В выбранном сеттинге пока нечего экспортировать.'
-                    : 'Здесь пока нечего экспортировать.'}
-              </div>
-            ) : (
-              <ul className="data-choice-list">
-                {filteredExportItems.map((item) => (
-                  <li key={item.id}>
-                    <label
-                      className={`data-choice${
-                        selectedSet.has(item.id) ? ' data-choice--on' : ''
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        className="checkbox"
-                        checked={selectedSet.has(item.id)}
-                        onChange={() => toggleItem(item.id)}
-                      />
-                      <span className="data-choice__body">
-                        <span className="data-choice__title">{item.title}</span>
-                        <span className="data-choice__meta">{item.meta}</span>
-                        {item.detail ? (
-                          <span className="data-choice__detail">{item.detail}</span>
-                        ) : null}
-                      </span>
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            {exportPreview ? (
-              <div className="data-summary">
-                {exportPreview.error ? (
-                  <p className="notice notice--error">{exportPreview.error}</p>
-                ) : exportPreview.counts ? (
-                  activeTab === 'maps' && mapExportHasLinks ? (
-                    <>
-                      <span className="data-summary__title">Со связанными картами</span>
-                      <span className="data-summary__counts">
-                        {describeCounts(exportPreview.counts)}
-                      </span>
-                      {selectedOnlyPreview ? (
-                        <>
-                          <span className="data-summary__title">Только выбранные карты</span>
-                          <span className="data-summary__counts">
-                            {describeCounts(selectedOnlyPreview)}
-                          </span>
-                        </>
-                      ) : null}
-                    </>
-                  ) : (
-                    <>
-                      <span className="data-summary__title">В пакет войдёт</span>
-                      <span className="data-summary__counts">
-                        {describeCounts(exportPreview.counts)}
-                      </span>
-                    </>
-                  )
-                ) : null}
-              </div>
-            ) : null}
-
-            {exportError ? <p className="notice notice--error">{exportError}</p> : null}
-            {exportNotice ? <p className="notice notice--success">{exportNotice}</p> : null}
-
-            <div className="data-panel__actions">
-              <button
-                type="button"
-                className="button button--primary"
-                onClick={requestExport}
-                disabled={
-                  exporting ||
-                  mapExportPromptOpen ||
-                  selectedIds.length === 0 ||
-                  Boolean(exportPreview?.error)
-                }
-              >
-                {exporting ? 'Экспорт…' : 'Экспортировать'}
-              </button>
-            </div>
-          </section>
-
-          <section className="data-panel data-panel--import" aria-labelledby="data-import-title">
-            <div className="data-panel__head">
-              <div>
-                <h2 id="data-import-title">Импорт</h2>
-                <p className="muted">
-                  Пакет проверяется до записи. Все идентификаторы создаются заново,
-                  связи внутри пакета сохраняются.
-                </p>
-              </div>
-            </div>
-
-            {importError ? <p className="notice notice--error">{importError}</p> : null}
-            {importSuccess ? (
-              <p className="notice notice--success">
-                {importSuccess.result.counts.games > 0 ||
-                importSuccess.result.counts.maps > 0 ||
-                importSuccess.result.counts.monsters > 0 ||
-                importSuccess.result.counts.uniqueMonsters > 0 ||
-                importSuccess.result.counts.placeTypes > 0
-                  ? `Импортировано в «${importSuccess.realmName}»: ${describeCounts(
-                      importSuccess.result.counts
-                    )}.`
-                  : `Сеттинг «${importSuccess.realmName}» создан без сущностей.`}
-              </p>
-            ) : null}
-
-            {!importDraft ? (
-              <button
-                type="button"
-                className={`data-drop${dragging ? ' data-drop--active' : ''}`}
-                onClick={() => void chooseFile()}
-                onDragOver={(event) => {
-                  event.preventDefault()
-                  setDragging(true)
-                }}
-                onDragLeave={() => setDragging(false)}
-                onDrop={(event) => void handleDrop(event)}
-              >
-                <strong className="data-drop__title">Выберите файл .gmpack</strong>
-                <span className="data-drop__hint">или перетащите его сюда</span>
-              </button>
-            ) : (
-              <div className="data-import">
-                <div className="data-import__file">
+            <div className="data-layout">
+              <section className="data-panel" aria-labelledby="data-export-title">
+                <div className="data-panel__head">
                   <div>
-                    <strong>{importDraft.fileName}</strong>
-                    <p className="muted">
-                      Пакет «{DATA_EXPORT_KIND_LABELS[importDraft.pack.kind]}» ·{' '}
-                      {describeCounts(importDraft.counts)}
-                    </p>
+                    <h2 id="data-export-title">Экспорт</h2>
+                    <p className="muted">{TAB_EXPORT_HINTS[activeTab]}</p>
                   </div>
+                  <span className="data-counter">
+                    {selectedItems.length} из {filteredExportItems.length}
+                  </span>
+                </div>
+
+                {activeTab !== 'realms' ? (
+                  <label className="field data-filter">
+                    <span className="field__label">Фильтр по сеттингу</span>
+                    <Select<string>
+                      value={realmFilter}
+                      options={realmFilterOptions}
+                      onChange={changeRealmFilter}
+                      ariaLabel="Фильтр по сеттингу"
+                      placeholder="Все сеттинги"
+                      searchable={realmFilterOptions.length > 9}
+                    />
+                  </label>
+                ) : null}
+
+                <div className="data-toolbar">
+                  {activeTab !== 'realms' ? (
+                    <button
+                      type="button"
+                      className="button button--tiny button--ghost"
+                      onClick={selectAll}
+                      disabled={filteredExportItems.length === 0}
+                    >
+                      Выбрать все
+                    </button>
+                  ) : (
+                    <span className="muted data-toolbar__hint">Выберите один сеттинг</span>
+                  )}
                   <button
                     type="button"
                     className="button button--tiny button--ghost"
-                    onClick={() => {
-                      setImportDraft(null)
-                      setImportError(null)
-                    }}
-                    disabled={importing}
+                    onClick={clearSelection}
+                    disabled={selectedItems.length === 0}
                   >
-                    Убрать
+                    Снять выбор
                   </button>
                 </div>
 
-                {isRealmPackage ? (
-                  <div className="data-import__fields">
-                    <p className="muted">
-                      Будет создан новый сеттинг. Его название можно изменить.
-                    </p>
-                    <label className="field">
-                      <span className="field__label">Название сеттинга</span>
-                      <input
-                        className="input"
-                        value={realmName}
-                        maxLength={100}
-                        onChange={(event) => setRealmName(event.target.value)}
-                      />
-                    </label>
-                    <label className="field">
-                      <span className="field__label">Описание</span>
-                      <textarea
-                        className="input"
-                        value={realmDescription}
-                        maxLength={2000}
-                        rows={3}
-                        onChange={(event) => setRealmDescription(event.target.value)}
-                      />
-                    </label>
+                {loading ? (
+                  <p className="muted">Загрузка данных…</p>
+                ) : filteredExportItems.length === 0 ? (
+                  <div className="empty">
+                    {activeTab === 'realms'
+                      ? 'Сеттингов пока нет.'
+                      : realmFilter !== 'all'
+                        ? 'В выбранном сеттинге пока нечего экспортировать.'
+                        : 'Здесь пока нечего экспортировать.'}
                   </div>
                 ) : (
-                  <div className="data-import__fields">
-                    <label className="field">
-                      <span className="field__label">Сеттинг для импорта</span>
-                      <Select<string>
-                        value={targetRealmId}
-                        options={realmOptions}
-                        onChange={setTargetRealmId}
-                        ariaLabel="Сеттинг для импорта"
-                        placeholder="Выберите сеттинг"
-                        searchable={realmOptions.length > 8}
-                      />
-                    </label>
-                    <p className="muted">
-                      Импортированные записи будут привязаны только к выбранному
-                      сеттингу.
-                    </p>
-                  </div>
+                  <ul className="data-choice-list">
+                    {filteredExportItems.map((item) => (
+                      <li key={item.id}>
+                        <label
+                          className={`data-choice${
+                            selectedSet.has(item.id) ? ' data-choice--on' : ''
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            className="checkbox"
+                            checked={selectedSet.has(item.id)}
+                            onChange={() => toggleItem(item.id)}
+                          />
+                          <span className="data-choice__body">
+                            <span className="data-choice__title">{item.title}</span>
+                            <span className="data-choice__meta">{item.meta}</span>
+                            {item.detail ? (
+                              <span className="data-choice__detail">{item.detail}</span>
+                            ) : null}
+                          </span>
+                        </label>
+                      </li>
+                    ))}
+                  </ul>
                 )}
+
+                {exportPreview ? (
+                  <div className="data-summary">
+                    {exportPreview.error ? (
+                      <p className="notice notice--error">{exportPreview.error}</p>
+                    ) : exportPreview.counts ? (
+                      activeTab === 'maps' && mapExportHasLinks ? (
+                        <>
+                          <span className="data-summary__title">Со связанными картами</span>
+                          <span className="data-summary__counts">
+                            {describeCounts(exportPreview.counts)}
+                          </span>
+                          {selectedOnlyPreview ? (
+                            <>
+                              <span className="data-summary__title">Только выбранные карты</span>
+                              <span className="data-summary__counts">
+                                {describeCounts(selectedOnlyPreview)}
+                              </span>
+                            </>
+                          ) : null}
+                        </>
+                      ) : (
+                        <>
+                          <span className="data-summary__title">В пакет войдёт</span>
+                          <span className="data-summary__counts">
+                            {describeCounts(exportPreview.counts)}
+                          </span>
+                        </>
+                      )
+                    ) : null}
+                  </div>
+                ) : null}
+
+                {exportError ? <p className="notice notice--error">{exportError}</p> : null}
+                {exportNotice ? <p className="notice notice--success">{exportNotice}</p> : null}
 
                 <div className="data-panel__actions">
                   <button
                     type="button"
                     className="button button--primary"
-                    onClick={() => void handleImport()}
-                    disabled={importDisabled}
+                    onClick={requestExport}
+                    disabled={
+                      exporting ||
+                      mapExportPromptOpen ||
+                      selectedIds.length === 0 ||
+                      Boolean(exportPreview?.error)
+                    }
                   >
-                    {importing ? 'Импорт…' : 'Импортировать'}
+                    {exporting ? 'Экспорт…' : 'Экспортировать'}
                   </button>
                 </div>
-              </div>
-            )}
-          </section>
-        </div>
+              </section>
+
+              <section className="data-panel data-panel--import" aria-labelledby="data-import-title">
+                <div className="data-panel__head">
+                  <div>
+                    <h2 id="data-import-title">Импорт</h2>
+                    <p className="muted">
+                      Пакет проверяется до записи. Все идентификаторы создаются заново,
+                      связи внутри пакета сохраняются.
+                    </p>
+                  </div>
+                </div>
+
+                {importError ? <p className="notice notice--error">{importError}</p> : null}
+                {importSuccess ? (
+                  <p className="notice notice--success">
+                    {importSuccess.result.counts.games > 0 ||
+                    importSuccess.result.counts.maps > 0 ||
+                    importSuccess.result.counts.monsters > 0 ||
+                    importSuccess.result.counts.uniqueMonsters > 0 ||
+                    importSuccess.result.counts.placeTypes > 0
+                      ? `Импортировано в «${importSuccess.realmName}»: ${describeCounts(
+                          importSuccess.result.counts
+                        )}.`
+                      : `Сеттинг «${importSuccess.realmName}» создан без сущностей.`}
+                  </p>
+                ) : null}
+
+                {!importDraft ? (
+                  <button
+                    type="button"
+                    className={`data-drop${dragging ? ' data-drop--active' : ''}`}
+                    onClick={() => void chooseFile()}
+                    onDragOver={(event) => {
+                      event.preventDefault()
+                      setDragging(true)
+                    }}
+                    onDragLeave={() => setDragging(false)}
+                    onDrop={(event) => void handleDrop(event)}
+                  >
+                    <strong className="data-drop__title">Выберите файл .gmpack</strong>
+                    <span className="data-drop__hint">или перетащите его сюда</span>
+                  </button>
+                ) : (
+                  <div className="data-import">
+                    <div className="data-import__file">
+                      <div>
+                        <strong>{importDraft.fileName}</strong>
+                        <p className="muted">
+                          Пакет «{DATA_EXPORT_KIND_LABELS[importDraft.pack.kind]}» ·{' '}
+                          {describeCounts(importDraft.counts)}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className="button button--tiny button--ghost"
+                        onClick={() => {
+                          setImportDraft(null)
+                          setImportError(null)
+                        }}
+                        disabled={importing}
+                      >
+                        Убрать
+                      </button>
+                    </div>
+
+                    {isRealmPackage ? (
+                      <div className="data-import__fields">
+                        <p className="muted">
+                          Будет создан новый сеттинг. Его название можно изменить.
+                        </p>
+                        <label className="field">
+                          <span className="field__label">Название сеттинга</span>
+                          <input
+                            className="input"
+                            value={realmName}
+                            maxLength={100}
+                            onChange={(event) => setRealmName(event.target.value)}
+                          />
+                        </label>
+                        <label className="field">
+                          <span className="field__label">Описание</span>
+                          <textarea
+                            className="input"
+                            value={realmDescription}
+                            maxLength={2000}
+                            rows={3}
+                            onChange={(event) => setRealmDescription(event.target.value)}
+                          />
+                        </label>
+                      </div>
+                    ) : (
+                      <div className="data-import__fields">
+                        <label className="field">
+                          <span className="field__label">Сеттинг для импорта</span>
+                          <Select<string>
+                            value={targetRealmId}
+                            options={realmOptions}
+                            onChange={setTargetRealmId}
+                            ariaLabel="Сеттинг для импорта"
+                            placeholder="Выберите сеттинг"
+                            searchable={realmOptions.length > 8}
+                          />
+                        </label>
+                        <p className="muted">
+                          Импортированные записи будут привязаны только к выбранному
+                          сеттингу.
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="data-panel__actions">
+                      <button
+                        type="button"
+                        className="button button--primary"
+                        onClick={() => void handleImport()}
+                        disabled={importDisabled}
+                      >
+                        {importing ? 'Импорт…' : 'Импортировать'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </section>
+            </div>
+          </>
+        )}
       </div>
 
       <Modal

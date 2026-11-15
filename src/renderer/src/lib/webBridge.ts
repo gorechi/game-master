@@ -24,6 +24,21 @@ import {
   type DataPack
 } from '@shared/dataPack'
 import {
+  BACKUP_EXTENSION,
+  BACKUP_FORMAT,
+  BACKUP_SCHEMA_VERSION,
+  backupFileSchema,
+  backupSettingsSchema,
+  countBackup,
+  type BackupFile,
+  type BackupFileSelection,
+  type BackupManualResult,
+  type BackupRestoreRequest,
+  type BackupRestoreResult,
+  type BackupSettings,
+  type BackupSettingsPatch
+} from '@shared/backup'
+import {
   canTransitionGame,
   isGameDeletable,
   isGameEditable,
@@ -73,6 +88,8 @@ const REALMS_KEY = 'game-master.preview.realms'
 const PLACE_TYPES_KEY = 'game-master.preview.placeTypes'
 const PRESET_STATE_KEY = 'game-master.preview.presetIcons'
 const LEGACY_WORLDS_KEY = 'game-master.preview.worlds'
+const BACKUP_SETTINGS_KEY = 'game-master.preview.backupSettings'
+const PRE_RESTORE_BACKUP_KEY = 'game-master.preview.preRestoreBackup'
 const SETTINGS_KEY = 'game-master.preview.settings'
 
 function readPlayers(): Player[] {
@@ -422,8 +439,8 @@ function previewPackFileName(kind: DataExportRequest['kind']): string {
   return `game-master-${kind}-${date}.${DATA_PACK_EXTENSION}`
 }
 
-function downloadPreviewPack(fileName: string, pack: DataPack): void {
-  const blob = new Blob([`${JSON.stringify(pack, null, 2)}\n`], {
+function downloadJsonFile(fileName: string, value: unknown): void {
+  const blob = new Blob([`${JSON.stringify(value, null, 2)}\n`], {
     type: 'application/json'
   })
   const url = URL.createObjectURL(blob)
@@ -493,6 +510,169 @@ function choosePreviewImportFile(): Promise<DataImportFile | null> {
 
     input.click()
   })
+}
+
+function parsePreviewBackup(value: unknown): BackupFile {
+  const parsed = backupFileSchema.safeParse(value)
+  if (parsed.success) return parsed.data
+
+  const first = parsed.error.issues[0]
+  const where = first?.path.length ? ` (${first.path.join('.')})` : ''
+  throw new Error(
+    `Файл не является корректным бэкапом Game Master${where}: ${first?.message ?? 'неизвестная ошибка'}`
+  )
+}
+
+function createPreviewBackup(): BackupFile {
+  const presetState = readPreviewPresetState()
+
+  return backupFileSchema.parse({
+    format: BACKUP_FORMAT,
+    schemaVersion: BACKUP_SCHEMA_VERSION,
+    createdAt: new Date().toISOString(),
+    appVersion: 'web-preview',
+    data: {
+      games: readGames(),
+      gameMonsters: readGameMonsters(),
+      players: readPlayers(),
+      characters: readCharacters(),
+      monsters: readMonsters(),
+      maps: readMaps(),
+      realms: readRealms(),
+      placeTypes: readPlaceTypes(),
+      presetCatalogVersion: presetState.catalogVersion,
+      seededPresetKeys: presetState.seededKeys,
+      settings: { theme: readSettings().theme }
+    }
+  })
+}
+
+function previewBackupFileName(): string {
+  const date = new Date().toISOString().replace(/[:.]/g, '-')
+  return `game-master-backup-${date}.${BACKUP_EXTENSION}`
+}
+
+function choosePreviewBackupFile(): Promise<BackupFileSelection | null> {
+  return new Promise((resolve, reject) => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = `.${BACKUP_EXTENSION},.json,application/json`
+    input.style.display = 'none'
+    document.body.appendChild(input)
+
+    const cleanup = (): void => {
+      input.remove()
+    }
+
+    input.addEventListener(
+      'cancel',
+      () => {
+        cleanup()
+        resolve(null)
+      },
+      { once: true }
+    )
+
+    input.addEventListener(
+      'change',
+      () => {
+        const file = input.files?.[0]
+        cleanup()
+        if (!file) {
+          resolve(null)
+          return
+        }
+
+        if (file.size > 512 * 1024 * 1024) {
+          reject(new Error('Файл бэкапа слишком большой'))
+          return
+        }
+
+        void file
+          .text()
+          .then((text) => {
+            let json: unknown
+            try {
+              json = JSON.parse(text) as unknown
+            } catch {
+              throw new Error('Файл повреждён: внутри не JSON')
+            }
+
+            const backup = parsePreviewBackup(json)
+            resolve({
+              fileName: file.name,
+              backup,
+              createdAt: backup.createdAt,
+              ...(backup.appVersion ? { appVersion: backup.appVersion } : {}),
+              theme: backup.data.settings.theme,
+              counts: countBackup(backup)
+            })
+          })
+          .catch((error: unknown) => reject(error))
+      },
+      { once: true }
+    )
+
+    input.click()
+  })
+}
+
+function readPreviewBackupSettings(): BackupSettings {
+  const base: BackupSettings = {
+    schemaVersion: BACKUP_SCHEMA_VERSION,
+    folderPath: 'localStorage браузера',
+    frequency: 'off',
+    lastBackupAt: null,
+    lastError: null
+  }
+
+  try {
+    const raw = window.localStorage.getItem(BACKUP_SETTINGS_KEY)
+    if (!raw) return base
+    const stored = JSON.parse(raw) as Record<string, unknown>
+    const parsed = backupSettingsSchema.safeParse({
+      ...base,
+      ...stored
+    })
+    return parsed.success ? parsed.data : base
+  } catch {
+    return base
+  }
+}
+
+function writePreviewBackupSettings(settings: BackupSettings): void {
+  window.localStorage.setItem(BACKUP_SETTINGS_KEY, JSON.stringify(settings))
+}
+
+function restorePreviewBackup(
+  request: BackupRestoreRequest
+): BackupRestoreResult {
+  const backup = parsePreviewBackup(request.backup)
+  const safety = createPreviewBackup()
+  window.localStorage.setItem(PRE_RESTORE_BACKUP_KEY, JSON.stringify(safety))
+
+  writeGames(backup.data.games)
+  writeGameMonsters(backup.data.gameMonsters)
+  writePlayers(backup.data.players)
+  writeCharacters(backup.data.characters)
+  writeMonsters(backup.data.monsters)
+  writeMaps(backup.data.maps)
+  writeRealms(backup.data.realms)
+  writePlaceTypes(backup.data.placeTypes)
+  writePreviewPresetState({
+    catalogVersion: backup.data.presetCatalogVersion,
+    seededKeys: backup.data.seededPresetKeys
+  })
+  writeSettings({
+    schemaVersion: SETTINGS_SCHEMA_VERSION,
+    theme: backup.data.settings.theme
+  })
+
+  return {
+    restoredAt: new Date().toISOString(),
+    safetyBackupFileName: `localStorage:${PRE_RESTORE_BACKUP_KEY}`,
+    counts: countBackup(backup)
+  }
 }
 
 export function createWebBridge(): GameMasterApi {
@@ -941,7 +1121,7 @@ export function createWebBridge(): GameMasterApi {
           'web-preview'
         )
         const fileName = previewPackFileName(request.kind)
-        downloadPreviewPack(fileName, pack)
+        downloadJsonFile(fileName, pack)
         return { fileName, counts: countDataPack(pack) }
       },
 
@@ -984,6 +1164,42 @@ export function createWebBridge(): GameMasterApi {
         writeGames([...readGames(), ...remapped.games])
 
         return { realmId, counts: countDataPack(pack) }
+      }
+    },
+
+    backup: {
+      saveManual: async (): Promise<BackupManualResult | null> => {
+        const backup = createPreviewBackup()
+        const fileName = previewBackupFileName()
+        downloadJsonFile(fileName, backup)
+        return {
+          fileName,
+          createdAt: backup.createdAt,
+          counts: countBackup(backup)
+        }
+      },
+
+      chooseFile: (): Promise<BackupFileSelection | null> => choosePreviewBackupFile(),
+
+      restore: async (request: BackupRestoreRequest): Promise<BackupRestoreResult> =>
+        restorePreviewBackup(request),
+
+      getSettings: async (): Promise<BackupSettings> => readPreviewBackupSettings(),
+
+      chooseFolder: async (): Promise<string | null> => null,
+
+      updateSettings: async (patch: BackupSettingsPatch): Promise<BackupSettings> => {
+        const current = readPreviewBackupSettings()
+        const next: BackupSettings = {
+          ...current,
+          ...(patch.folderPath !== undefined ? { folderPath: patch.folderPath } : {}),
+          ...(patch.frequency !== undefined ? { frequency: patch.frequency } : {}),
+          ...(patch.folderPath !== undefined || patch.frequency !== undefined
+            ? { lastError: null }
+            : {})
+        }
+        writePreviewBackupSettings(next)
+        return next
       }
     },
 

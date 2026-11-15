@@ -68,6 +68,16 @@ export default function App(): JSX.Element {
     }
   }, [])
 
+  const refreshAppData = useCallback(async (): Promise<void> => {
+    const [loadedSettings, loadedRealms] = await Promise.all([
+      api.settings.get(),
+      api.realms.list()
+    ])
+    setSettings(loadedSettings)
+    setRealms(loadedRealms)
+    applyTheme(loadedSettings.theme)
+  }, [])
+
   return (
     <div
       className={`app-shell${IS_WINDOWS ? ' app-shell--win' : ''}${
@@ -155,7 +165,11 @@ export default function App(): JSX.Element {
         ) : null}
 
         {route.name === 'data' ? (
-          <DataPage realms={realms} onRealmsChanged={refreshRealms} />
+          <DataPage
+            realms={realms}
+            onRealmsChanged={refreshRealms}
+            onAppDataRestored={refreshAppData}
+          />
         ) : null}
 
         {route.name === 'settings' ? (

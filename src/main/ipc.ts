@@ -49,6 +49,14 @@ import {
 } from './storage/placeTypeStore'
 import { getSettings, updateSettings } from './storage/settingsStore'
 import { chooseDataImportFile, exportDataPack, importDataPack } from './dataExchange'
+import {
+  chooseBackupFile,
+  chooseBackupFolder,
+  getBackupConfig,
+  restoreBackup,
+  saveManualBackup,
+  updateBackupConfig
+} from './backupService'
 
 function assertId(value: unknown): string {
   if (typeof value !== 'string' || value.length === 0 || value.length > 64) {
@@ -268,6 +276,20 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.dataChooseImportFile, () => chooseDataImportFile())
 
   ipcMain.handle(IPC.dataImport, (_event, request: unknown) => importDataPack(request))
+
+  ipcMain.handle(IPC.backupSave, () => saveManualBackup())
+
+  ipcMain.handle(IPC.backupChooseFile, () => chooseBackupFile())
+
+  ipcMain.handle(IPC.backupRestore, (_event, request: unknown) => restoreBackup(request))
+
+  ipcMain.handle(IPC.backupGetSettings, () => getBackupConfig())
+
+  ipcMain.handle(IPC.backupChooseFolder, () => chooseBackupFolder())
+
+  ipcMain.handle(IPC.backupUpdateSettings, (_event, patch: unknown) =>
+    updateBackupConfig(patch)
+  )
 
   ipcMain.handle(IPC.realmRemove, async (_event, id: unknown): Promise<void> => {
     const realmId = assertId(id)

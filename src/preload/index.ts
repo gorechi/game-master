@@ -62,6 +62,14 @@ const api: GameMasterApi = {
     chooseImportFile: () => ipcRenderer.invoke(IPC.dataChooseImportFile),
     importPackage: (request) => ipcRenderer.invoke(IPC.dataImport, request)
   },
+  backup: {
+    saveManual: () => ipcRenderer.invoke(IPC.backupSave),
+    chooseFile: () => ipcRenderer.invoke(IPC.backupChooseFile),
+    restore: (request) => ipcRenderer.invoke(IPC.backupRestore, request),
+    getSettings: () => ipcRenderer.invoke(IPC.backupGetSettings),
+    chooseFolder: () => ipcRenderer.invoke(IPC.backupChooseFolder),
+    updateSettings: (patch) => ipcRenderer.invoke(IPC.backupUpdateSettings, patch)
+  },
   settings: {
     get: () => ipcRenderer.invoke(IPC.settingsGet),
     update: (patch) => ipcRenderer.invoke(IPC.settingsUpdate, patch)

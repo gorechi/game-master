@@ -15,6 +15,14 @@ import type {
   DataImportRequest,
   DataImportResult
 } from './dataPack'
+import type {
+  BackupFileSelection,
+  BackupManualResult,
+  BackupRestoreRequest,
+  BackupRestoreResult,
+  BackupSettings,
+  BackupSettingsPatch
+} from './backup'
 
 /**
  * Контракт между renderer и main. Единственный источник правды для
@@ -60,6 +68,12 @@ export const IPC = {
   dataExport: 'data:export',
   dataChooseImportFile: 'data:choose-import-file',
   dataImport: 'data:import',
+  backupSave: 'backup:save',
+  backupChooseFile: 'backup:choose-file',
+  backupRestore: 'backup:restore',
+  backupGetSettings: 'backup:get-settings',
+  backupChooseFolder: 'backup:choose-folder',
+  backupUpdateSettings: 'backup:update-settings',
   settingsGet: 'settings:get',
   settingsUpdate: 'settings:update'
 } as const
@@ -148,6 +162,18 @@ export interface GameMasterApi {
     chooseImportFile(): Promise<DataImportFile | null>
     /** Импортирует проверенный пакет в выбранный или новый сеттинг. */
     importPackage(request: DataImportRequest): Promise<DataImportResult>
+  }
+  /** Полный бэкап пользовательских данных и автобэкап. */
+  backup: {
+    /** Создаёт полный бэкап и предлагает сохранить его через системный диалог. */
+    saveManual(): Promise<BackupManualResult | null>
+    /** Открывает файл бэкапа и возвращает проверенные данные для подтверждения. */
+    chooseFile(): Promise<BackupFileSelection | null>
+    /** Заменяет текущие данные содержимым проверенного бэкапа. */
+    restore(request: BackupRestoreRequest): Promise<BackupRestoreResult>
+    getSettings(): Promise<BackupSettings>
+    chooseFolder(): Promise<string | null>
+    updateSettings(patch: BackupSettingsPatch): Promise<BackupSettings>
   }
   /** Настройки приложения (тема и прочее). */
   settings: {

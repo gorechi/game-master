@@ -2,6 +2,7 @@ import { app, BrowserWindow, session, shell } from 'electron'
 import path from 'node:path'
 import { bootstrapUserData } from './bootstrap'
 import { registerIpcHandlers } from './ipc'
+import { registerAutoBackupOnQuit, runAutoBackupIfDue } from './backupService'
 import { getSettings } from './storage/settingsStore'
 import { createMainWindow, getMainWindow } from './window'
 
@@ -70,6 +71,7 @@ if (!app.requestSingleInstanceLock()) {
     }
 
     registerIpcHandlers()
+    registerAutoBackupOnQuit()
 
     try {
       await bootstrapUserData()
@@ -80,6 +82,11 @@ if (!app.requestSingleInstanceLock()) {
 
     const settings = await getSettings()
     createMainWindow(settings.theme)
+
+    // Бэкап не должен задерживать появление окна.
+    void runAutoBackupIfDue('startup').catch((error: unknown) => {
+      console.error('Не удалось проверить автоматический бэкап:', error)
+    })
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length > 0) return
