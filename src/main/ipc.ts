@@ -10,6 +10,7 @@ import { gameMapInputSchema, gameMapSchema } from '@shared/map'
 import { isGameStatus } from '@shared/gameStatus'
 import { isThemeName, type SettingsPatch } from '@shared/settings'
 import { IPC, type AppInfo } from '@shared/api'
+import { applyWindowTheme } from './window'
 import { addPlayer, listPlayers, removePlayer, updatePlayer } from './storage/playerStore'
 import {
   addCharacter,
@@ -298,7 +299,9 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(IPC.settingsGet, () => getSettings())
 
-  ipcMain.handle(IPC.settingsUpdate, (_event, patch: unknown) =>
-    updateSettings(parseSettingsPatch(patch))
-  )
+  ipcMain.handle(IPC.settingsUpdate, async (_event, patch: unknown) => {
+    const next = await updateSettings(parseSettingsPatch(patch))
+    applyWindowTheme(next.theme)
+    return next
+  })
 }

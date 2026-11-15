@@ -15,9 +15,16 @@ import { MapGraphPage } from './components/MapGraphPage'
 import { RealmsPage } from './components/RealmsPage'
 import { RealmDetailPage } from './components/RealmDetailPage'
 import { SettingsPage } from './components/SettingsPage'
-import { api } from './lib/api'
+import { WindowTitleBar } from './components/WindowTitleBar'
+import { api, isWebPreview } from './lib/api'
 import { applyTheme } from './lib/theme'
 import type { Route } from './lib/routes'
+
+const USER_AGENT = typeof navigator === 'undefined' ? '' : navigator.userAgent
+const IS_MAC = /Mac/.test(USER_AGENT)
+const IS_WINDOWS = /Windows/.test(USER_AGENT)
+const IS_LINUX = /Linux/.test(USER_AGENT) && !/Android/.test(USER_AGENT)
+const SHOW_WINDOW_TITLEBAR = !isWebPreview && !IS_LINUX
 
 export default function App(): JSX.Element {
   const [route, setRoute] = useState<Route>({ name: 'games' })
@@ -60,8 +67,15 @@ export default function App(): JSX.Element {
   }, [])
 
   return (
-    <div className={`app${route.name === 'game' ? ' app--full' : ''}`}>
-      {route.name !== 'game' ? <Sidebar route={route} onNavigate={setRoute} /> : null}
+    <div
+      className={`app-shell${IS_WINDOWS ? ' app-shell--win' : ''}${
+        IS_MAC ? ' app-shell--mac' : ''
+      }`}
+    >
+      {SHOW_WINDOW_TITLEBAR ? <WindowTitleBar /> : null}
+
+      <div className={`app${route.name === 'game' ? ' app--full' : ''}`}>
+        {route.name !== 'game' ? <Sidebar route={route} onNavigate={setRoute} /> : null}
 
       <div className="app__content">
         {route.name === 'games' ? (
@@ -141,6 +155,7 @@ export default function App(): JSX.Element {
         {route.name === 'settings' ? (
           <SettingsPage settings={settings} onThemeChange={changeTheme} />
         ) : null}
+      </div>
       </div>
     </div>
   )

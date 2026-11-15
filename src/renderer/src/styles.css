@@ -365,10 +365,54 @@ input[type='number'] {
 /* Каркас: боковое меню и контент                                      */
 /* ------------------------------------------------------------------ */
 
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.window-titlebar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+.window-titlebar__mark {
+  display: grid;
+  place-items: center;
+  color: var(--gold-strong);
+}
+
+.window-titlebar__title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  letter-spacing: 0.01em;
+}
+
+.app-shell--win .window-titlebar {
+  /* Справа нативные кнопки свернуть/развернуть/закрыть. */
+  padding-right: 150px;
+}
+
+.app-shell--mac .window-titlebar {
+  /* Слева нативные «светофоры» macOS. */
+  padding-left: 82px;
+}
+
 .app {
   display: grid;
   grid-template-columns: 236px minmax(0, 1fr);
-  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .app__content {

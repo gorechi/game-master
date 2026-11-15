@@ -1,6 +1,7 @@
 import { app, BrowserWindow, session, shell } from 'electron'
 import path from 'node:path'
 import { registerIpcHandlers } from './ipc'
+import { getSettings } from './storage/settingsStore'
 import { createMainWindow, getMainWindow } from './window'
 
 const isDev = !app.isPackaged
@@ -52,7 +53,7 @@ if (!app.requestSingleInstanceLock()) {
     })
   })
 
-  app.whenReady().then(() => {
+  app.whenReady().then(async () => {
     // CSP только для собранного приложения — dev-серверу нужен HMR/wss.
     if (!isDev) {
       session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
@@ -68,10 +69,13 @@ if (!app.requestSingleInstanceLock()) {
     }
 
     registerIpcHandlers()
-    createMainWindow()
+
+    const settings = await getSettings()
+    createMainWindow(settings.theme)
 
     app.on('activate', () => {
-      if (BrowserWindow.getAllWindows().length === 0) createMainWindow()
+      if (BrowserWindow.getAllWindows().length > 0) return
+      void getSettings().then((loaded) => createMainWindow(loaded.theme))
     })
   })
 

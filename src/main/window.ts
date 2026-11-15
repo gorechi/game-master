@@ -1,22 +1,67 @@
-import { BrowserWindow } from 'electron'
+import { BrowserWindow, nativeTheme } from 'electron'
 import path from 'node:path'
+import type { ThemeName } from '@shared/settings'
 
 let mainWindow: BrowserWindow | null = null
+
+const WINDOW_CHROME: Record<ThemeName, { background: string; symbol: string }> = {
+  dark: { background: '#121016', symbol: '#f2cd7a' },
+  light: { background: '#ece0c7', symbol: '#7a4f12' }
+}
+
+const TITLEBAR_HEIGHT = 38
 
 export function getMainWindow(): BrowserWindow | null {
   return mainWindow
 }
 
-export function createMainWindow(): BrowserWindow {
+/** Синхронизирует нативную рамку окна с темой приложения. */
+export function applyWindowTheme(theme: ThemeName): void {
+  const chrome = WINDOW_CHROME[theme]
+  nativeTheme.themeSource = theme
+
+  const win = mainWindow
+  if (!win) return
+
+  win.setBackgroundColor(chrome.background)
+
+  if (process.platform === 'win32') {
+    win.setTitleBarOverlay({
+      color: chrome.background,
+      symbolColor: chrome.symbol,
+      height: TITLEBAR_HEIGHT
+    })
+  }
+}
+
+export function createMainWindow(theme: ThemeName = 'dark'): BrowserWindow {
+  const chrome = WINDOW_CHROME[theme]
+  nativeTheme.themeSource = theme
+
   const win = new BrowserWindow({
     width: 1320,
     height: 880,
     minWidth: 960,
     minHeight: 620,
     show: false,
-    backgroundColor: '#14121a',
+    backgroundColor: chrome.background,
     title: 'Game Master',
     autoHideMenuBar: true,
+    titleBarStyle:
+      process.platform === 'darwin'
+        ? 'hiddenInset'
+        : process.platform === 'win32'
+          ? 'hidden'
+          : 'default',
+    ...(process.platform === 'win32'
+      ? {
+          titleBarOverlay: {
+            color: chrome.background,
+            symbolColor: chrome.symbol,
+            height: TITLEBAR_HEIGHT
+          }
+        }
+      : {}),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
