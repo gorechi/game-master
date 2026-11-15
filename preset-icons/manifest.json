@@ -1,17 +1,4 @@
 {
-  "catalogVersion": 1,
-  "icons": [
-    {
-      "key": "test-circle",
-      "title": "Тестовый круг",
-      "revision": 1,
-      "file": "test-circle.svg"
-    },
-    {
-      "key": "test-square",
-      "title": "Тестовый квадрат",
-      "revision": 1,
-      "file": "test-square.svg"
-    }
-  ]
+  "catalogVersion": 2,
+  "icons": []
 }

@@ -1,7 +1,69 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { validateSvg } from '../tools/icon-forge/lib.mjs'
+
+const forbiddenTags = /<(script|style|image|text|foreignObject|a)\b/i
+const forbiddenRefs = /\b(href|xlink:href)\s*=/i
+const forbiddenHandlers = /\bon[a-z]+\s*=/i
+const forbiddenStyleAttribute = /\bstyle\s*=/i
+const hardcodedColor = /#[0-9a-f]{3,8}\b|\brgb\s*\(|\bhsl\s*\(/i
+const fillAttribute = /\bfill\s*=\s*"([^"]*)"/gi
+const allowedTags = new Set([
+  'svg',
+  'g',
+  'path',
+  'circle',
+  'ellipse',
+  'rect',
+  'line',
+  'polyline',
+  'polygon'
+])
+
+/** Проверяет SVG по правилам набора стандартных иконок. */
+function validateSvg(svg) {
+  const problems = []
+  const root = svg.match(/<svg\b[^>]*>/i)?.[0] ?? ''
+
+  if (!root) problems.push('нет корневого <svg>')
+  if (!/viewBox\s*=\s*"0 0 24 24"/.test(root)) problems.push('viewBox должен быть 0 0 24 24')
+  if (!/fill\s*=\s*"none"/.test(root)) problems.push('у <svg> должен быть fill="none"')
+  if (!/stroke\s*=\s*"currentColor"/.test(root)) {
+    problems.push('нет stroke="currentColor"')
+  }
+
+  const width = root.match(/stroke-width\s*=\s*"([^"]+)"/)?.[1]
+  if (!width || !Number.isFinite(Number(width)) || Number(width) < 1.2 || Number(width) > 2) {
+    problems.push('stroke-width должен быть числом 1.2–2')
+  }
+
+  if (forbiddenTags.test(svg)) {
+    problems.push('запрещённый тег (script/style/image/text/foreignObject/a)')
+  }
+  if (forbiddenRefs.test(svg)) problems.push('внешние ссылки href/xlink:href запрещены')
+  if (forbiddenHandlers.test(svg)) problems.push('обработчики событий on* запрещены')
+  if (forbiddenStyleAttribute.test(svg)) problems.push('атрибут style запрещён')
+  if (hardcodedColor.test(svg)) problems.push('зашитый цвет: используй currentColor')
+
+  for (const match of svg.matchAll(/<([a-zA-Z][\w:-]*)\b/g)) {
+    const tag = match[1].toLowerCase()
+    if (!allowedTags.has(tag)) {
+      problems.push(`тег <${tag}> запрещён — разрешены только простые фигуры SVG`)
+    }
+  }
+
+  for (const match of svg.matchAll(fillAttribute)) {
+    if (match[1] !== 'none') {
+      problems.push(`недопустимый fill="${match[1]}" — разрешён только fill="none"`)
+    }
+  }
+
+  if (!/<(path|circle|rect|line|polyline|polygon)\b/i.test(svg)) {
+    problems.push('в иконке нет графических элементов')
+  }
+
+  return problems
+}
 
 const here = dirname(fileURLToPath(import.meta.url))
 const root = dirname(here)
