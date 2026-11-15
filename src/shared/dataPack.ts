@@ -33,6 +33,10 @@ export const DATA_EXPORT_KINDS = [
 
 export type DataExportKind = (typeof DATA_EXPORT_KINDS)[number]
 
+/** Что делать со связями карт при экспорте. */
+export const DATA_MAP_LINK_MODES = ['includeLinked', 'selectedOnly'] as const
+export type DataMapLinkMode = (typeof DATA_MAP_LINK_MODES)[number]
+
 export const DATA_EXPORT_KIND_LABELS: Record<DataExportKind, string> = {
   games: 'Игры',
   maps: 'Карты',
@@ -256,6 +260,8 @@ export interface DataPackSources {
 export interface DataExportRequest {
   kind: DataExportKind
   ids: string[]
+  /** Только для карт: тянуть связанные карты или оставить только выбранные. */
+  mapLinks?: DataMapLinkMode
 }
 
 export interface DataPackCounts {
@@ -355,7 +361,11 @@ function packPlaceTypes(placeTypes: readonly PlaceType[]): PackPlaceType[] {
   }))
 }
 
-function packMaps(maps: readonly GameMap[], iconIds: ReadonlySet<string>): PackMap[] {
+function packMaps(
+  maps: readonly GameMap[],
+  iconIds: ReadonlySet<string>,
+  stripLinkedMaps = false
+): PackMap[] {
   const mapIds = new Set(maps.map((map) => map.id))
 
   return maps.map((map) => {
@@ -367,6 +377,7 @@ function packMaps(maps: readonly GameMap[], iconIds: ReadonlySet<string>): PackM
       places: map.places.map((place) => ({
         ...place,
         linkedMapId:
+          !stripLinkedMaps &&
           place.isExit &&
           place.linkedMapId &&
           place.linkedMapId !== map.id &&
@@ -564,10 +575,13 @@ export function createDataPack(
 
   if (request.kind === 'maps') {
     const selected = findSelected(sources.maps, ids, 'Карта')
-    const maps = expandLinkedMaps(
-      selected.map((map) => map.id),
-      sources.maps
-    )
+    const selectedOnly = request.mapLinks === 'selectedOnly'
+    const maps = selectedOnly
+      ? selected
+      : expandLinkedMaps(
+          selected.map((map) => map.id),
+          sources.maps
+        )
     const usedIconIds = new Set(
       maps.flatMap((map) =>
         map.places
@@ -585,7 +599,11 @@ export function createDataPack(
         placeTypes: packPlaceTypes(placeTypes),
         monsters: [],
         uniqueMonsters: [],
-        maps: packMaps(maps, new Set(placeTypes.map((placeType) => placeType.id))),
+        maps: packMaps(
+          maps,
+          new Set(placeTypes.map((placeType) => placeType.id)),
+          selectedOnly
+        ),
         games: []
       },
       appVersion,

@@ -31,16 +31,25 @@ function parseExportRequest(value: unknown): DataExportRequest {
     throw new Error('Некорректный запрос экспорта')
   }
 
-  const { kind, ids } = value as Record<string, unknown>
+  const { kind, ids, mapLinks } = value as Record<string, unknown>
   const knownKind = DATA_EXPORT_KINDS.find((item) => item === kind)
   if (!knownKind) throw new Error('Неизвестный тип экспорта')
   if (!Array.isArray(ids)) throw new Error('Некорректный список для экспорта')
+
+  if (
+    mapLinks !== undefined &&
+    mapLinks !== 'includeLinked' &&
+    mapLinks !== 'selectedOnly'
+  ) {
+    throw new Error('Некорректный режим экспорта карт')
+  }
 
   return {
     kind: knownKind,
     ids: ids.filter(
       (id): id is string => typeof id === 'string' && id.length > 0 && id.length <= 64
-    )
+    ),
+    mapLinks
   }
 }
 

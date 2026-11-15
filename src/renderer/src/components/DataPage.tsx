@@ -16,10 +16,12 @@ import {
   type DataExportKind,
   type DataImportFile,
   type DataImportResult,
+  type DataMapLinkMode,
   type DataPack,
   type DataPackCounts
 } from '@shared/dataPack'
 import { api, errorMessage } from '@renderer/lib/api'
+import { Modal } from './ui/Modal'
 import { Select } from './ui/Select'
 
 type DataTab = 'games' | 'maps' | 'monsters' | 'uniqueMonsters' | 'realms'
@@ -80,7 +82,7 @@ const TAB_LABELS: Record<DataTab, string> = {
 
 const TAB_DESCRIPTIONS: Record<ExchangeTab, string> = {
   games: 'Выберите игры. В пакет войдут их карты, связанные карты, иконки и монстры внутри игр.',
-  maps: 'Выберите карты. В пакет войдут связанные карты и иконки мест, которые используются.',
+  maps: 'Выберите карты. При экспорте можно добавить связанные карты или оставить только выбранные.',
   monsters: 'Выберите монстров из бестиария. Игроки и персонажи в пакет не попадают.',
   uniqueMonsters: 'Выберите уникальных существ. Их можно перенести отдельно от игр.',
   realms: 'Выберите один сеттинг. В пакет войдут только его игры, карты, монстры, существа и иконки.'
@@ -171,6 +173,7 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
   const [exporting, setExporting] = useState(false)
   const [exportNotice, setExportNotice] = useState<string | null>(null)
   const [exportError, setExportError] = useState<string | null>(null)
+  const [mapExportPromptOpen, setMapExportPromptOpen] = useState(false)
 
   const [importDraft, setImportDraft] = useState<ImportDraft | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
@@ -221,6 +224,7 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
     setImportSuccess(null)
     setExportNotice(null)
     setExportError(null)
+    setMapExportPromptOpen(false)
   }, [activeTab])
 
   const realmNames = useMemo(
@@ -315,6 +319,14 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
   const selectedItems = filteredExportItems.filter((item) => selectedSet.has(item.id))
   const selectedIds = selectedItems.map((item) => item.id)
   const exportKind = kindForTab(activeTab)
+  const selectedIdSet = new Set(selectedIds)
+  const mapExportHasLinks =
+    activeTab === 'maps' &&
+    sources.maps.some(
+      (map) =>
+        selectedIdSet.has(map.id) &&
+        map.places.some((place) => Boolean(place.linkedMapId))
+    )
 
   const exportPreview = useMemo((): ExportPreview | null => {
     if (selectedIds.length === 0) return null
@@ -330,6 +342,24 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
       return { error: errorMessage(error) }
     }
   }, [exportKind, realms, selectedIds, sources])
+
+  const selectedOnlyPreview = useMemo((): DataPackCounts | null => {
+    if (activeTab !== 'maps' || !mapExportHasLinks || selectedIds.length === 0) {
+      return null
+    }
+
+    try {
+      return countDataPack(
+        createDataPack(
+          { kind: 'maps', ids: selectedIds, mapLinks: 'selectedOnly' },
+          { ...sources, realms },
+          'preview'
+        )
+      )
+    } catch {
+      return null
+    }
+  }, [activeTab, mapExportHasLinks, realms, selectedIds, sources])
 
   function toggleItem(id: string): void {
     const tab = activeTab
@@ -372,7 +402,7 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
     setRealmFilters((previous) => ({ ...previous, [activeTab]: value }))
   }
 
-  async function handleExport(): Promise<void> {
+  async function handleExport(mapLinks?: DataMapLinkMode): Promise<void> {
     if (selectedIds.length === 0) return
 
     setExporting(true)
@@ -380,10 +410,20 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
     setExportError(null)
 
     try {
-      const result = await api.data.exportPackage({ kind: exportKind, ids: selectedIds })
+      const result = await api.data.exportPackage({
+        kind: exportKind,
+        ids: selectedIds,
+        ...(exportKind === 'maps' && mapLinks ? { mapLinks } : {})
+      })
       if (result) {
+        const linkNote =
+          mapLinks === 'selectedOnly'
+            ? ' Связи с другими картами в файле удалены.'
+            : ''
         setExportNotice(
-          `Файл сохранён: ${result.fileName}. В пакете: ${describeCounts(result.counts)}.`
+          `Файл сохранён: ${result.fileName}. В пакете: ${describeCounts(
+            result.counts
+          )}.${linkNote}`
         )
       }
     } catch (error) {
@@ -391,6 +431,14 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
     } finally {
       setExporting(false)
     }
+  }
+
+  function requestExport(): void {
+    if (mapExportHasLinks) {
+      setMapExportPromptOpen(true)
+      return
+    }
+    void handleExport()
   }
 
   function acceptImport(draft: DataImportFile): void {
@@ -634,12 +682,29 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
                 {exportPreview.error ? (
                   <p className="notice notice--error">{exportPreview.error}</p>
                 ) : exportPreview.counts ? (
-                  <>
-                    <span className="data-summary__title">В пакет войдёт</span>
-                    <span className="data-summary__counts">
-                      {describeCounts(exportPreview.counts)}
-                    </span>
-                  </>
+                  activeTab === 'maps' && mapExportHasLinks ? (
+                    <>
+                      <span className="data-summary__title">Со связанными картами</span>
+                      <span className="data-summary__counts">
+                        {describeCounts(exportPreview.counts)}
+                      </span>
+                      {selectedOnlyPreview ? (
+                        <>
+                          <span className="data-summary__title">Только выбранные карты</span>
+                          <span className="data-summary__counts">
+                            {describeCounts(selectedOnlyPreview)}
+                          </span>
+                        </>
+                      ) : null}
+                    </>
+                  ) : (
+                    <>
+                      <span className="data-summary__title">В пакет войдёт</span>
+                      <span className="data-summary__counts">
+                        {describeCounts(exportPreview.counts)}
+                      </span>
+                    </>
+                  )
                 ) : null}
               </div>
             ) : null}
@@ -651,8 +716,13 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
               <button
                 type="button"
                 className="button button--primary"
-                onClick={() => void handleExport()}
-                disabled={exporting || selectedIds.length === 0 || Boolean(exportPreview?.error)}
+                onClick={requestExport}
+                disabled={
+                  exporting ||
+                  mapExportPromptOpen ||
+                  selectedIds.length === 0 ||
+                  Boolean(exportPreview?.error)
+                }
               >
                 {exporting ? 'Экспорт…' : 'Экспортировать'}
               </button>
@@ -783,6 +853,42 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
           </section>
         </div>
       </div>
+
+      <Modal
+        open={mapExportPromptOpen}
+        title="Экспорт карт со связями"
+        description="У выбранных карт есть выходы на другие карты. Что включить в файл экспорта?"
+        onClose={() => setMapExportPromptOpen(false)}
+        footer={
+          <>
+            <button
+              type="button"
+              className="button"
+              onClick={() => {
+                setMapExportPromptOpen(false)
+                void handleExport('selectedOnly')
+              }}
+            >
+              Только выбранные карты
+            </button>
+            <button
+              type="button"
+              className="button button--primary"
+              onClick={() => {
+                setMapExportPromptOpen(false)
+                void handleExport('includeLinked')
+              }}
+            >
+              Включить связанные карты
+            </button>
+          </>
+        }
+      >
+        <p className="muted">
+          При экспорте только выбранных карт ссылки на другие карты будут удалены
+          из файла. В самих картах ничего не изменится.
+        </p>
+      </Modal>
     </main>
   )
 }
