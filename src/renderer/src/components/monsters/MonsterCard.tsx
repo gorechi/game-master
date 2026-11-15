@@ -25,7 +25,6 @@ interface MonsterCardProps {
     | 'challengeRating'
     | 'armorClass'
     | 'hitPoints'
-    | 'abilities'
   >
   badge?: string
   /** Сеттинг монстра — показывается, чтобы записи разных миров не путались. */
@@ -83,23 +82,6 @@ export function MonsterCard({
             <span className="monster-stat__value">{monster[stat.key]}</span>
           </span>
         ))}
-      </div>
-
-      <div className="monster-card__abilities">
-        {monster.abilities.length > 0 ? (
-          monster.abilities.map((ability) => (
-            <p
-              className="monster-ability"
-              key={ability.id}
-              title={`${ability.name}. ${ability.description}`}
-            >
-              <span className="monster-ability__name">{ability.name}.</span>{' '}
-              <span className="monster-ability__desc">{ability.description}</span>
-            </p>
-          ))
-        ) : (
-          <span className="monster-card__no-abilities">Без способностей</span>
-        )}
       </div>
 
       <div className="monster-card__actions">

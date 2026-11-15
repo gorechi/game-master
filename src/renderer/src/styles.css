@@ -1197,40 +1197,6 @@ input[type='number'] {
   font-variant-numeric: tabular-nums;
 }
 
-.monster-card__abilities {
-  flex: 2 1 300px;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.monster-ability {
-  margin: 0;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: var(--ink-muted);
-}
-
-.monster-ability__name {
-  color: var(--ink);
-  font-weight: 600;
-}
-
-.monster-ability__desc {
-  overflow-wrap: anywhere;
-}
-
-.monster-card__no-abilities {
-  font-size: 11.5px;
-  font-style: italic;
-  color: var(--ink-faint);
-}
-
 .monster-card__actions {
   display: flex;
   gap: 8px;
