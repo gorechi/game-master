@@ -1,5 +1,6 @@
 import { app, BrowserWindow, session, shell } from 'electron'
 import path from 'node:path'
+import { bootstrapUserData } from './bootstrap'
 import { registerIpcHandlers } from './ipc'
 import { getSettings } from './storage/settingsStore'
 import { createMainWindow, getMainWindow } from './window'
@@ -69,6 +70,13 @@ if (!app.requestSingleInstanceLock()) {
     }
 
     registerIpcHandlers()
+
+    try {
+      await bootstrapUserData()
+    } catch (error) {
+      // Не мешаем запуску приложения: иконки можно будет добавить позже.
+      console.error('Не удалось применить встроенный набор иконок:', error)
+    }
 
     const settings = await getSettings()
     createMainWindow(settings.theme)

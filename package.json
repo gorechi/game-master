@@ -22,6 +22,8 @@
     "icons:preview": "node tools/icon-forge/preview.mjs",
     "icons:generate": "node --env-file-if-exists=tools/icon-forge/.env tools/icon-forge/generate.mjs",
     "icons:ui": "node --env-file-if-exists=tools/icon-forge/.env tools/icon-forge/server.mjs",
+    "presets:build": "node scripts/build-preset-icons.mjs",
+    "presets:check": "node scripts/build-preset-icons.mjs --check",
     "pack": "npm run build && electron-builder --dir --publish never",
     "dist:win": "npm run build && electron-builder --win --publish never",
     "dist:mac": "npm run build && electron-builder --mac --publish never"

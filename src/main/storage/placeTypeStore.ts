@@ -8,7 +8,9 @@ import {
   type PlaceTypeInput,
   type PlaceTypesFile
 } from '@shared/placeType'
+import { DEFAULT_REALM_ID } from '@shared/realm'
 import { validatePlaceIcon } from '@shared/placeIcon'
+import { applyPresetIconCatalog, type PresetPlaceIcon } from '@shared/presetIcons'
 import { JsonFileError, readJsonFile, withFileLock, writeJsonAtomic } from './jsonFile'
 
 const LOCK_KEY = 'placeTypes.json'
@@ -18,7 +20,12 @@ function placeTypesFile(): string {
 }
 
 function emptyFile(): PlaceTypesFile {
-  return { schemaVersion: PLACE_TYPES_FILE_SCHEMA_VERSION, placeTypes: [] }
+  return {
+    schemaVersion: PLACE_TYPES_FILE_SCHEMA_VERSION,
+    placeTypes: [],
+    presetCatalogVersion: 0,
+    seededPresetKeys: []
+  }
 }
 
 async function readPlaceTypesFile(): Promise<PlaceTypesFile> {
@@ -55,6 +62,27 @@ function assertPlaceTypeInput(input: PlaceTypeInput): { iconSvg: string } {
 export async function listPlaceTypes(realmId?: string): Promise<PlaceType[]> {
   const placeTypes = (await readPlaceTypesFile()).placeTypes
   return realmId ? placeTypes.filter((placeType) => placeType.realmId === realmId) : placeTypes
+}
+
+/** Добавляет/обновляет встроенные иконки в сеттинге, не трогая пользовательские правки. */
+export async function applyPresetIcons(
+  catalog: readonly PresetPlaceIcon[],
+  catalogVersion: number,
+  realmId: string = DEFAULT_REALM_ID
+): Promise<void> {
+  if (catalog.length === 0) return
+
+  await withFileLock(LOCK_KEY, async () => {
+    const file = await readPlaceTypesFile()
+    const result = applyPresetIconCatalog(file, catalog, catalogVersion, realmId)
+
+    if (!result.changed) return
+
+    await writeJsonAtomic(placeTypesFile(), {
+      ...result.file,
+      schemaVersion: PLACE_TYPES_FILE_SCHEMA_VERSION
+    })
+  })
 }
 
 export async function addPlaceType(

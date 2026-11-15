@@ -5,9 +5,11 @@ import type { Monster, MonsterInput } from '@shared/monster'
 import type { Game, GameInput } from '@shared/game'
 import type { GameMap, GameMapInput } from '@shared/map'
 import type { Realm, RealmInput } from '@shared/realm'
-import type { PlaceType, PlaceTypeInput } from '@shared/placeType'
 import { DEFAULT_REALM_ID } from '@shared/realm'
+import { PLACE_TYPES_FILE_SCHEMA_VERSION, type PlaceType, type PlaceTypeInput } from '@shared/placeType'
 import { validatePlaceIcon } from '@shared/placeIcon'
+import { PRESET_ICON_CATALOG_VERSION, PRESET_PLACE_ICONS } from '@shared/presetPlaceIcons'
+import { applyPresetIconCatalog } from '@shared/presetIcons'
 import {
   canTransitionGame,
   isGameDeletable,
@@ -56,6 +58,7 @@ const MONSTERS_KEY = 'game-master.preview.monsters'
 const MAPS_KEY = 'game-master.preview.maps'
 const REALMS_KEY = 'game-master.preview.realms'
 const PLACE_TYPES_KEY = 'game-master.preview.placeTypes'
+const PRESET_STATE_KEY = 'game-master.preview.presetIcons'
 const LEGACY_WORLDS_KEY = 'game-master.preview.worlds'
 const SETTINGS_KEY = 'game-master.preview.settings'
 
@@ -292,6 +295,60 @@ function writePlaceTypes(placeTypes: PlaceType[]): void {
   window.localStorage.setItem(PLACE_TYPES_KEY, JSON.stringify(placeTypes))
 }
 
+interface PreviewPresetState {
+  catalogVersion: number
+  seededKeys: string[]
+}
+
+function readPreviewPresetState(): PreviewPresetState {
+  try {
+    const raw = window.localStorage.getItem(PRESET_STATE_KEY)
+    if (!raw) return { catalogVersion: 0, seededKeys: [] }
+
+    const parsed = JSON.parse(raw) as Partial<PreviewPresetState>
+    return {
+      catalogVersion:
+        typeof parsed.catalogVersion === 'number' ? parsed.catalogVersion : 0,
+      seededKeys: Array.isArray(parsed.seededKeys)
+        ? parsed.seededKeys.filter((key): key is string => typeof key === 'string')
+        : []
+    }
+  } catch {
+    return { catalogVersion: 0, seededKeys: [] }
+  }
+}
+
+function writePreviewPresetState(state: PreviewPresetState): void {
+  window.localStorage.setItem(PRESET_STATE_KEY, JSON.stringify(state))
+}
+
+/** Наполняет D&D встроенными иконками так же, как это делает main. */
+function ensurePreviewPresetIcons(): void {
+  const realms = readRealms()
+  if (!realms.some((realm) => realm.id === DEFAULT_REALM_ID)) return
+
+  const state = readPreviewPresetState()
+  const result = applyPresetIconCatalog(
+    {
+      schemaVersion: PLACE_TYPES_FILE_SCHEMA_VERSION,
+      placeTypes: readPlaceTypes(),
+      presetCatalogVersion: state.catalogVersion,
+      seededPresetKeys: state.seededKeys
+    },
+    PRESET_PLACE_ICONS,
+    PRESET_ICON_CATALOG_VERSION,
+    DEFAULT_REALM_ID
+  )
+
+  if (!result.changed) return
+
+  writePlaceTypes(result.file.placeTypes)
+  writePreviewPresetState({
+    catalogVersion: result.file.presetCatalogVersion,
+    seededKeys: result.file.seededPresetKeys
+  })
+}
+
 function assertPlaceTypeIcon(svg: string): void {
   const check = validatePlaceIcon(svg)
   if (!check.ok) {
@@ -337,6 +394,8 @@ function writeSettings(settings: AppSettings): void {
 }
 
 export function createWebBridge(): GameMasterApi {
+  ensurePreviewPresetIcons()
+
   return {
     app: {
       info: async (): Promise<AppInfo> => ({

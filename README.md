@@ -99,6 +99,18 @@ npm run icons:preview
 Генерация использует DeepSeek API. Ключ хранится только в локальном
 `tools/icon-forge/.env` и не попадает в репозиторий.
 
+## Стандартные иконки
+
+Встроенный набор иконок для сеттинга D&D лежит в `preset-icons/`.
+Он собирается в приложение командой:
+
+```bash
+npm run presets:build
+npm run presets:check
+```
+
+Подробнее о ключах, версиях и правилах обновления — в `preset-icons/README.md`.
+
 ## Лицензия
 
 MIT.
