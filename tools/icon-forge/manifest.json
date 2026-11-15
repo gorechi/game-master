@@ -2,7 +2,7 @@
   "set": "fantasy-places",
   "title": "Фэнтезийные места",
   "viewBox": "0 0 24 24",
-  "generatedAt": "2026-11-14T20:22:10.338Z",
+  "generatedAt": "2026-11-15T09:54:13.823Z",
   "icons": [
     {
       "id": "place-generic",
@@ -87,14 +87,6 @@
       "file": "icons/exit-arch.svg"
     },
     {
-      "id": "village",
-      "title": "Деревня",
-      "tags": [
-        "village"
-      ],
-      "file": "icons/village.svg"
-    },
-    {
       "id": "castle",
       "title": "Замок",
       "tags": [
@@ -168,6 +160,32 @@
       "title": "Лавка",
       "tags": [],
       "file": "icons/shop.svg"
+    },
+    {
+      "id": "port",
+      "title": "Порт",
+      "tags": [],
+      "file": "icons/port.svg"
+    },
+    {
+      "id": "feshermen-village",
+      "title": "Рыбацкая деревня",
+      "tags": [],
+      "file": "icons/feshermen-village.svg"
+    },
+    {
+      "id": "camp",
+      "title": "Лагерь",
+      "tags": [],
+      "file": "icons/camp.svg"
+    },
+    {
+      "id": "blacksmith",
+      "title": "Кузнец",
+      "tags": [
+        "Наковальня"
+      ],
+      "file": "icons/blacksmith.svg"
     }
   ]
 }

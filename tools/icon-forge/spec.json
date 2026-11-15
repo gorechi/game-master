@@ -78,13 +78,6 @@
       ]
     },
     {
-      "id": "village",
-      "title": "Деревня",
-      "tags": [
-        "village"
-      ]
-    },
-    {
       "id": "castle",
       "title": "Замок",
       "tags": [
@@ -147,6 +140,28 @@
       "id": "shop",
       "title": "Лавка",
       "tags": []
+    },
+    {
+      "id": "port",
+      "title": "Порт",
+      "tags": []
+    },
+    {
+      "id": "feshermen-village",
+      "title": "Рыбацкая деревня",
+      "tags": []
+    },
+    {
+      "id": "camp",
+      "title": "Лагерь",
+      "tags": []
+    },
+    {
+      "id": "blacksmith",
+      "title": "Кузнец",
+      "tags": [
+        "Наковальня"
+      ]
     }
   ]
 }
