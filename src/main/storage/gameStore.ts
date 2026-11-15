@@ -21,7 +21,7 @@ import { saveGameMonsters, listGameMonsters } from './gameMonsterStore'
 
 const LOCK_KEY = 'games.json'
 
-export function gamesFile(): string {
+function gamesFile(): string {
   return path.join(app.getPath('userData'), 'games.json')
 }
 

@@ -17,7 +17,7 @@ const settingsFileSchema = z.object({
   theme: z.enum(THEMES)
 })
 
-export function settingsFile(): string {
+function settingsFile(): string {
   return path.join(app.getPath('userData'), 'settings.json')
 }
 

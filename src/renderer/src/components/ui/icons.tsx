@@ -104,18 +104,6 @@ export function IconUndo(props: IconProps): JSX.Element {
   )
 }
 
-export function IconStoneArch(props: IconProps): JSX.Element {
-  return (
-    <Svg {...props}>
-      <path d="M4 20V10a8 8 0 0 1 16 0v10" />
-      <path d="M8.2 20v-8a3.8 3.8 0 0 1 7.6 0v8" />
-      <path d="M2.5 20h19" />
-      <path d="M12 2v2.6" />
-      <path d="M4.8 14H7M17 14h2.2M4.8 17H7M17 17h2.2" />
-    </Svg>
-  )
-}
-
 export function IconSwords(props: IconProps): JSX.Element {
   return (
     <Svg {...props}>

@@ -14,6 +14,7 @@ interface RunMapProps {
 
 const VIEWPORT_PADDING = 36
 const MIN_SCALE = 0.45
+const MAX_SCALE = 2.2
 
 interface PanState {
   pointerId: number
@@ -48,7 +49,8 @@ export function RunMap({
         availableHeight / layout.height
       )
 
-      setScale(Math.max(MIN_SCALE, Math.min(2.2, Math.floor(fit * 100) / 100)))
+      // Вписываем карту в экран, но не даём жетонам стать микроскопическими.
+      setScale(Math.max(MIN_SCALE, Math.min(MAX_SCALE, Math.floor(fit * 100) / 100)))
     }
 
     updateScale()

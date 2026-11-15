@@ -156,7 +156,7 @@ export function createCharacterProfile(
 const ABILITY_MIN = 1
 const ABILITY_MAX = 30
 
-export const MONSTER_SCORE_KEYS = [
+const MONSTER_SCORE_KEYS = [
   'strength',
   'dexterity',
   'intelligence',
@@ -166,7 +166,7 @@ export const MONSTER_SCORE_KEYS = [
 ] as const
 
 /** Версия формата характеристик: 2 — хранятся значения 1–30, а не модификаторы. */
-export const MONSTER_STATS_VERSION = 2
+const MONSTER_STATS_VERSION = 2
 
 /** Характеристики монстра — значения от 1 до 30. */
 export function clampMonsterScore(value: number | undefined): number {
@@ -179,7 +179,7 @@ export function modifierFromScore(score: number): number {
 }
 
 /** Старые данные хранили модификатор; переводим его в значение 10 + 2y. */
-export function scoreFromLegacyModifier(modifier: number): number {
+function scoreFromLegacyModifier(modifier: number): number {
   return clampInt(10 + modifier * 2, ABILITY_MIN, ABILITY_MAX, 10)
 }
 
@@ -223,7 +223,7 @@ export function createMonsterAbility(name = '', description = ''): MonsterAbilit
   }
 }
 
-export function normalizeMonsterAbilities(abilities: MonsterInput['abilities']): MonsterAbility[] {
+function normalizeMonsterAbilities(abilities: MonsterInput['abilities']): MonsterAbility[] {
   return abilities
     .map((ability) => ({
       id: ability.id || crypto.randomUUID().slice(0, 8),

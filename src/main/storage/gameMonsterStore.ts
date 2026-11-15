@@ -13,7 +13,7 @@ import { JsonFileError, readJsonFile, withFileLock, writeJsonAtomic } from './js
 
 const LOCK_KEY = 'gameMonsters.json'
 
-export function gameMonstersFile(): string {
+function gameMonstersFile(): string {
   return path.join(app.getPath('userData'), 'gameMonsters.json')
 }
 

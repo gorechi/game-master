@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { JSX } from 'react'
 import { formatChallengeRating, formatModifier, modifierFromScore } from '@shared/domain'
 import { errorMessage } from '@renderer/lib/api'
+import { MONSTER_STAT_FIELDS } from '@renderer/lib/monsterStats'
 import type { CombatResultEntry, CombatStart } from './CombatModal'
 import { IconCoffin, IconSkull } from '../ui/icons'
 
@@ -13,15 +14,6 @@ interface CombatScreenProps {
 
 const HP_MIN = 0
 const HP_MAX = 100000
-
-const SCORE_FIELDS = [
-  { key: 'strength', label: 'СИЛ' },
-  { key: 'dexterity', label: 'ЛОВ' },
-  { key: 'constitution', label: 'ТЕЛ' },
-  { key: 'intelligence', label: 'ИНТ' },
-  { key: 'wisdom', label: 'МДР' },
-  { key: 'charisma', label: 'ХАР' }
-] as const
 
 function sortEntries(entries: readonly CombatResultEntry[]): CombatResultEntry[] {
   return [...entries].sort(
@@ -479,9 +471,9 @@ function CombatFocusCard({ entry }: { entry: CombatResultEntry }): JSX.Element {
 
         {monster ? (
           <div className="combat-focus-card__scores">
-            {SCORE_FIELDS.map((field) => (
+            {MONSTER_STAT_FIELDS.map((field) => (
               <span className="combat-focus-card__score" key={field.key}>
-                <span className="combat-focus-card__score-label">{field.label}</span>
+                <span className="combat-focus-card__score-label">{field.short}</span>
                 <strong className="combat-focus-card__score-modifier">
                   {formatModifier(modifierFromScore(monster[field.key]))}
                 </strong>

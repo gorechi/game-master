@@ -8,7 +8,7 @@ export const MAPS_FILE_SCHEMA_VERSION = 1
  * Место — атомарная точка на карте. Пока у неё есть только имя,
  * признак выхода и ссылка на другую карту для выхода.
  */
-export const mapPlaceSchema = z.object({
+const mapPlaceSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1).max(100),
   isExit: z.boolean(),
@@ -25,7 +25,7 @@ export const mapPlaceSchema = z.object({
  * Путь — неориентированная связь двух мест. Хранится канонически:
  * a всегда меньше b, поэтому одна и та же связь не дублируется.
  */
-export const mapPathSchema = z.object({
+const mapPathSchema = z.object({
   a: z.string().min(1),
   b: z.string().min(1)
 })

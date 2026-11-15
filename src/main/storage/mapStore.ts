@@ -14,7 +14,7 @@ import { listPlaceTypes } from './placeTypeStore'
 const LOCK_KEY = 'maps.json'
 
 /** Все карты хранятся одним файлом: их единицы, а не тысячи. */
-export function mapsFile(): string {
+function mapsFile(): string {
   return path.join(app.getPath('userData'), 'maps.json')
 }
 

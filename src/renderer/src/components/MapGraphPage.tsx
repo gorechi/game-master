@@ -90,7 +90,6 @@ export function MapGraphPage({
   const zoomCommitScheduledRef = useRef(false)
   const centerTargetRef = useRef<{
     nodes: readonly { x: number; y: number }[]
-    zoom: number
   } | null>(null)
   const panRef = useRef<PanState | null>(null)
   const zoomAnchorRef = useRef<ZoomAnchor | null>(null)
@@ -281,7 +280,7 @@ export function MapGraphPage({
     zoomAnchorRef.current = null
 
     if (wasZoom !== 1) {
-      centerTargetRef.current = { nodes, zoom: 1 }
+      centerTargetRef.current = { nodes }
       setZoom(1)
       return
     }

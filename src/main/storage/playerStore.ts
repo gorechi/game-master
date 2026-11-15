@@ -16,7 +16,7 @@ const LOCK_KEY = 'players.json'
  * Вся база игроков — один файл в userData. Игроков десятки, а не тысячи,
  * поэтому отдельные файлы на каждого только усложнили бы миграции и бэкапы.
  */
-export function playersFile(): string {
+function playersFile(): string {
   return path.join(app.getPath('userData'), 'players.json')
 }
 

@@ -310,7 +310,7 @@ export function MapFormModal({
                     <li key={place.id} className="map-place-row">
                       <span className="map-place-row__name">{place.name}</span>
                       {placeType ? (
-                        <span className="place-type-choice__icon" title="Иконка места">
+                        <span className="map-place-row__icon" title="Иконка места">
                           <PlaceTypeIcon svg={placeType.iconSvg} size={14} />
                         </span>
                       ) : null}

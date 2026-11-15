@@ -13,7 +13,7 @@ import { JsonFileError, readJsonFile, withFileLock, writeJsonAtomic } from './js
 
 const LOCK_KEY = 'placeTypes.json'
 
-export function placeTypesFile(): string {
+function placeTypesFile(): string {
   return path.join(app.getPath('userData'), 'placeTypes.json')
 }
 

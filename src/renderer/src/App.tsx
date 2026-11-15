@@ -24,6 +24,7 @@ const USER_AGENT = typeof navigator === 'undefined' ? '' : navigator.userAgent
 const IS_MAC = /Mac/.test(USER_AGENT)
 const IS_WINDOWS = /Windows/.test(USER_AGENT)
 const IS_LINUX = /Linux/.test(USER_AGENT) && !/Android/.test(USER_AGENT)
+// На Linux остаётся системная рамка, поэтому своя полоса не нужна.
 const SHOW_WINDOW_TITLEBAR = !isWebPreview && !IS_LINUX
 
 export default function App(): JSX.Element {

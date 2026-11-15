@@ -4,22 +4,14 @@ import type { MonsterAbility, MonsterInput } from '@shared/monster'
 import type { Realm } from '@shared/realm'
 import { createMonsterAbility } from '@shared/domain'
 import { errorMessage } from '@renderer/lib/api'
+import { MONSTER_STAT_FIELDS } from '@renderer/lib/monsterStats'
 import { Modal } from '../ui/Modal'
 import { Select } from '../ui/Select'
 import { StatusField } from '../ui/StatusField'
 import { IconPlus, IconTrash } from '../ui/icons'
 import { MonsterStatField } from './MonsterStatField'
 
-const SCORE_FIELDS = [
-  { key: 'strength', label: 'Сила', short: 'СИЛ' },
-  { key: 'dexterity', label: 'Ловкость', short: 'ЛОВ' },
-  { key: 'constitution', label: 'Телосложение', short: 'ТЕЛ' },
-  { key: 'intelligence', label: 'Интеллект', short: 'ИНТ' },
-  { key: 'wisdom', label: 'Мудрость', short: 'МДР' },
-  { key: 'charisma', label: 'Харизма', short: 'ХАР' }
-] as const
-
-type ScoreKey = (typeof SCORE_FIELDS)[number]['key']
+type ScoreKey = (typeof MONSTER_STAT_FIELDS)[number]['key']
 type ScoreDraft = Record<ScoreKey, string>
 
 interface AbilityDraft {
@@ -28,14 +20,9 @@ interface AbilityDraft {
   description: string
 }
 
-const EMPTY_SCORES: ScoreDraft = {
-  strength: '10',
-  dexterity: '10',
-  intelligence: '10',
-  wisdom: '10',
-  constitution: '10',
-  charisma: '10'
-}
+const EMPTY_SCORES = Object.fromEntries(
+  MONSTER_STAT_FIELDS.map((field) => [field.key, '10'])
+) as ScoreDraft
 
 function clampNumber(value: number, min: number, max: number, fallback: number): number {
   if (!Number.isFinite(value)) return fallback
@@ -122,14 +109,9 @@ export function MonsterFormModal({
     setRealmId(initial?.realmId ?? '')
     setScores(
       initial
-        ? {
-            strength: String(initial.strength),
-            dexterity: String(initial.dexterity),
-            intelligence: String(initial.intelligence),
-            wisdom: String(initial.wisdom),
-            constitution: String(initial.constitution),
-            charisma: String(initial.charisma)
-          }
+        ? (Object.fromEntries(
+            MONSTER_STAT_FIELDS.map((field) => [field.key, String(initial[field.key])])
+          ) as ScoreDraft)
         : EMPTY_SCORES
     )
     setChallengeRating(initial ? String(initial.challengeRating) : '1')
@@ -192,14 +174,16 @@ export function MonsterFormModal({
       return
     }
 
+    const scoreValues = Object.fromEntries(
+      MONSTER_STAT_FIELDS.map((field) => [
+        field.key,
+        clampNumber(parseIntOr(scores[field.key], 10), 1, 30, 10)
+      ])
+    ) as Record<ScoreKey, number>
+
     const input: MonsterFormSubmission = {
       name: trimmedName,
-      strength: clampNumber(parseIntOr(scores.strength, 10), 1, 30, 10),
-      dexterity: clampNumber(parseIntOr(scores.dexterity, 10), 1, 30, 10),
-      intelligence: clampNumber(parseIntOr(scores.intelligence, 10), 1, 30, 10),
-      wisdom: clampNumber(parseIntOr(scores.wisdom, 10), 1, 30, 10),
-      constitution: clampNumber(parseIntOr(scores.constitution, 10), 1, 30, 10),
-      charisma: clampNumber(parseIntOr(scores.charisma, 10), 1, 30, 10),
+      ...scoreValues,
       challengeRating: clampNumber(parseFloatOr(challengeRating, 1), 0, 30, 1),
       armorClass: clampNumber(parseIntOr(armorClass, 10), 0, 99, 10),
       hitPoints: clampNumber(parseIntOr(hitPoints, 10), minHitPoints, 100_000, 10),
@@ -286,7 +270,7 @@ export function MonsterFormModal({
         </label>
 
         <div className="monster-form__scores">
-          {SCORE_FIELDS.map((field) => (
+          {MONSTER_STAT_FIELDS.map((field) => (
             <MonsterStatField
               key={field.key}
               short={field.short}

@@ -455,15 +455,7 @@
   color: var(--ink-faint);
 }
 
-:root[data-theme='light'] .run-placeholder {
-  background: rgba(255, 255, 255, 0.3);
-}
 
-:root[data-theme='light'] .run-placeholder__icon {
-  color: var(--rubric);
-  background: rgba(143, 58, 44, 0.08);
-  border-color: rgba(143, 58, 44, 0.28);
-}
 
 :root[data-theme='light'] .participant-row:hover {
   background: rgba(122, 86, 44, 0.05);
@@ -580,7 +572,7 @@
   background: rgba(255, 255, 255, 0.35);
 }
 
-:root[data-theme='light'] .place-type-choice__icon {
+:root[data-theme='light'] .map-place-row__icon {
   background: #fdf6e6;
   border-color: rgba(154, 106, 36, 0.35);
 }
@@ -655,10 +647,6 @@
 
 :root[data-theme='light'] .run-notes-overlay__input {
   background: rgba(255, 255, 255, 0.45);
-}
-
-:root[data-theme='light'] .map-node--exit {
-  border-color: rgba(143, 58, 44, 0.5);
 }
 
 :root[data-theme='light'] .map-exit-mark,

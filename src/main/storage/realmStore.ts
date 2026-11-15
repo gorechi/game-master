@@ -13,7 +13,7 @@ import { JsonFileError, readJsonFile, withFileLock, writeJsonAtomic } from './js
 
 const LOCK_KEY = 'realms.json'
 
-export function realmsFile(): string {
+function realmsFile(): string {
   return path.join(app.getPath('userData'), 'realms.json')
 }
 

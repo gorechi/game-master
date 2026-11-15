@@ -59,20 +59,6 @@ const PLACE_TYPES_KEY = 'game-master.preview.placeTypes'
 const LEGACY_WORLDS_KEY = 'game-master.preview.worlds'
 const SETTINGS_KEY = 'game-master.preview.settings'
 
-/** Полный сброс предпросмотра (кнопка на главном экране). */
-export function resetWebPreview(): void {
-  window.localStorage.removeItem(GAMES_KEY)
-  window.localStorage.removeItem(GAME_MONSTERS_KEY)
-  window.localStorage.removeItem(PLAYERS_KEY)
-  window.localStorage.removeItem(CHARACTERS_KEY)
-  window.localStorage.removeItem(MONSTERS_KEY)
-  window.localStorage.removeItem(MAPS_KEY)
-  window.localStorage.removeItem(REALMS_KEY)
-  window.localStorage.removeItem(PLACE_TYPES_KEY)
-  window.localStorage.removeItem(LEGACY_WORLDS_KEY)
-  window.location.reload()
-}
-
 function readPlayers(): Player[] {
   try {
     const raw = window.localStorage.getItem(PLAYERS_KEY)

@@ -14,7 +14,7 @@ import { JsonFileError, readJsonFile, withFileLock, writeJsonAtomic } from './js
 
 const LOCK_KEY = 'characters.json'
 
-export function charactersFile(): string {
+function charactersFile(): string {
   return path.join(app.getPath('userData'), 'characters.json')
 }
 

@@ -5,6 +5,7 @@ import type { ThemeName } from '@shared/settings'
 let mainWindow: BrowserWindow | null = null
 
 const WINDOW_CHROME: Record<ThemeName, { background: string; symbol: string }> = {
+  // Должно совпадать с --bg соответствующей темы в renderer.
   dark: { background: '#121016', symbol: '#f2cd7a' },
   light: { background: '#ece0c7', symbol: '#7a4f12' }
 }
@@ -47,6 +48,8 @@ export function createMainWindow(theme: ThemeName = 'dark'): BrowserWindow {
     backgroundColor: chrome.background,
     title: 'Game Master',
     autoHideMenuBar: true,
+    // На Windows рисуем свою полосу и нативные кнопки поверх неё.
+    // На macOS оставляем «светофоры», на Linux — обычную системную рамку.
     titleBarStyle:
       process.platform === 'darwin'
         ? 'hiddenInset'

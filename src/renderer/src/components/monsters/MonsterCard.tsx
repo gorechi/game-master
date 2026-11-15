@@ -5,16 +5,8 @@ import {
   formatModifier,
   modifierFromScore
 } from '@shared/domain'
+import { MONSTER_STAT_FIELDS } from '@renderer/lib/monsterStats'
 import { IconPencil, IconSkull, IconTrash } from '../ui/icons'
-
-const STATS = [
-  { key: 'strength', label: 'СИЛ', title: 'Сила' },
-  { key: 'dexterity', label: 'ЛОВ', title: 'Ловкость' },
-  { key: 'constitution', label: 'ТЕЛ', title: 'Телосложение' },
-  { key: 'intelligence', label: 'ИНТ', title: 'Интеллект' },
-  { key: 'wisdom', label: 'МДР', title: 'Мудрость' },
-  { key: 'charisma', label: 'ХАР', title: 'Харизма' }
-] as const
 
 interface MonsterCardProps {
   monster: Pick<
@@ -80,9 +72,9 @@ export function MonsterCard({
       </div>
 
       <div className="monster-card__stats">
-        {STATS.map((stat) => (
-          <span className="monster-stat" key={stat.key} title={stat.title}>
-            <span className="monster-stat__label">{stat.label}</span>
+        {MONSTER_STAT_FIELDS.map((stat) => (
+          <span className="monster-stat" key={stat.key} title={stat.label}>
+            <span className="monster-stat__label">{stat.short}</span>
             <span className="monster-stat__modifier">
               {formatModifier(modifierFromScore(monster[stat.key]))}
             </span>
