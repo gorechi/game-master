@@ -13,9 +13,9 @@ import { MonsterStatField } from './MonsterStatField'
 const SCORE_FIELDS = [
   { key: 'strength', label: 'Сила', short: 'СИЛ' },
   { key: 'dexterity', label: 'Ловкость', short: 'ЛОВ' },
+  { key: 'constitution', label: 'Телосложение', short: 'ТЕЛ' },
   { key: 'intelligence', label: 'Интеллект', short: 'ИНТ' },
   { key: 'wisdom', label: 'Мудрость', short: 'МДР' },
-  { key: 'constitution', label: 'Телосложение', short: 'ТЕЛ' },
   { key: 'charisma', label: 'Харизма', short: 'ХАР' }
 ] as const
 

@@ -10,9 +10,9 @@ import { IconPencil, IconSkull, IconTrash } from '../ui/icons'
 const STATS = [
   { key: 'strength', label: 'СИЛ', title: 'Сила' },
   { key: 'dexterity', label: 'ЛОВ', title: 'Ловкость' },
+  { key: 'constitution', label: 'ТЕЛ', title: 'Телосложение' },
   { key: 'intelligence', label: 'ИНТ', title: 'Интеллект' },
   { key: 'wisdom', label: 'МДР', title: 'Мудрость' },
-  { key: 'constitution', label: 'ТЕЛ', title: 'Телосложение' },
   { key: 'charisma', label: 'ХАР', title: 'Харизма' }
 ] as const
 

@@ -17,9 +17,9 @@ const HP_MAX = 100000
 const SCORE_FIELDS = [
   { key: 'strength', label: 'СИЛ' },
   { key: 'dexterity', label: 'ЛОВ' },
+  { key: 'constitution', label: 'ТЕЛ' },
   { key: 'intelligence', label: 'ИНТ' },
   { key: 'wisdom', label: 'МДР' },
-  { key: 'constitution', label: 'ТЕЛ' },
   { key: 'charisma', label: 'ХАР' }
 ] as const
 
