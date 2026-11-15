@@ -10,8 +10,8 @@ import {
   type MapLayout,
   type MapNodePosition
 } from '@renderer/lib/mapLayout'
-import { IconStoneArch } from '../ui/icons'
 import { PlaceTypeIcon } from '../placeTypes/PlaceTypeIcon'
+import { MapExitFrame } from './MapExitFrame'
 
 const DRAG_THRESHOLD = 4
 
@@ -434,16 +434,10 @@ export function MapGraph({
             <span className="map-node__token">
               {placeType ? (
                 <PlaceTypeIcon svg={placeType.iconSvg} size={36} />
-              ) : node.isExit ? (
-                <IconStoneArch width={28} height={28} />
               ) : (
                 <span className="map-node__token-initial">{nodeInitial(node.name)}</span>
               )}
-              {placeType && node.isExit ? (
-                <span className="map-node__exit-badge" aria-hidden="true">
-                  <IconStoneArch width={12} height={12} />
-                </span>
-              ) : null}
+              {node.isExit ? <MapExitFrame className="map-node__exit-frame" /> : null}
             </span>
             <span className="map-node__token-label">{node.name}</span>
 

@@ -7,7 +7,8 @@ import { canonicalMapPath } from '@shared/domain'
 import { api, errorMessage } from '@renderer/lib/api'
 import { pluralize } from '@renderer/lib/format'
 import { layoutMap, type MapPoint } from '@renderer/lib/mapLayout'
-import { IconPencil, IconSave, IconStoneArch, IconUndo } from './ui/icons'
+import { IconPencil, IconSave, IconUndo } from './ui/icons'
+import { MapExitFrame } from './maps/MapExitFrame'
 import { MapFormModal } from './maps/MapFormModal'
 import { MapGraph } from './maps/MapGraph'
 
@@ -190,7 +191,7 @@ export function MapGraphPage({
                 </span>
                 <span>
                   <span className="map-exit-mark" aria-hidden="true">
-                    <IconStoneArch width={13} height={13} />
+                    <MapExitFrame strokeWidth={3.4} />
                   </span>
                   Выход на другую карту
                 </span>
