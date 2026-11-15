@@ -10,4 +10,5 @@ export type Route =
   | { name: 'realm'; id: string }
   | { name: 'maps' }
   | { name: 'map'; id: string }
+  | { name: 'data' }
   | { name: 'settings' }

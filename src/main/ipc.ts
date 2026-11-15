@@ -48,6 +48,7 @@ import {
   updatePlaceType
 } from './storage/placeTypeStore'
 import { getSettings, updateSettings } from './storage/settingsStore'
+import { chooseDataImportFile, exportDataPack, importDataPack } from './dataExchange'
 
 function assertId(value: unknown): string {
   if (typeof value !== 'string' || value.length === 0 || value.length > 64) {
@@ -261,6 +262,12 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.placeTypeRemove, (_event, id: unknown): Promise<void> =>
     removePlaceType(assertId(id))
   )
+
+  ipcMain.handle(IPC.dataExport, (_event, request: unknown) => exportDataPack(request))
+
+  ipcMain.handle(IPC.dataChooseImportFile, () => chooseDataImportFile())
+
+  ipcMain.handle(IPC.dataImport, (_event, request: unknown) => importDataPack(request))
 
   ipcMain.handle(IPC.realmRemove, async (_event, id: unknown): Promise<void> => {
     const realmId = assertId(id)

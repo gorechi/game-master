@@ -4,6 +4,7 @@ import type { Route } from '@renderer/lib/routes'
 import {
   IconBookmark,
   IconD20,
+  IconDatabase,
   IconGear,
   IconGlobe,
   IconMap,
@@ -109,24 +110,41 @@ export function Sidebar({ route, onNavigate }: SidebarProps): JSX.Element {
           <IconGlobe />
           <span>Сеттинги</span>
         </button>
-
-        <button
-          type="button"
-          className={`nav-item${active === 'settings' ? ' nav-item--active' : ''}`}
-          aria-current={active === 'settings' ? 'page' : undefined}
-          onClick={() => onNavigate({ name: 'settings' })}
-        >
-          <IconGear />
-          <span>Настройки</span>
-        </button>
       </nav>
 
-      {isWebPreview ? (
-        <div className="sidebar__note">
-          Веб-предпросмотр
-          <span>данные в браузере</span>
+      <div className="sidebar__bottom">
+        <div className="sidebar__bottom-row">
+          <button
+            type="button"
+            className={`nav-item${active === 'data' ? ' nav-item--active' : ''}`}
+            aria-current={active === 'data' ? 'page' : undefined}
+            onClick={() => onNavigate({ name: 'data' })}
+          >
+            <IconDatabase />
+            <span>Данные</span>
+          </button>
+
+          <button
+            type="button"
+            className={`nav-icon-button${
+              active === 'settings' ? ' nav-icon-button--active' : ''
+            }`}
+            aria-label="Настройки"
+            aria-current={active === 'settings' ? 'page' : undefined}
+            title="Настройки"
+            onClick={() => onNavigate({ name: 'settings' })}
+          >
+            <IconGear />
+          </button>
         </div>
-      ) : null}
+
+        {isWebPreview ? (
+          <div className="sidebar__note">
+            Веб-предпросмотр
+            <span>данные в браузере</span>
+          </div>
+        ) : null}
+      </div>
     </aside>
   )
 }

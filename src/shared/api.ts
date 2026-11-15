@@ -8,6 +8,13 @@ import type { GameMap, GameMapInput } from './map'
 import type { Realm, RealmInput } from './realm'
 import type { PlaceType, PlaceTypeInput } from './placeType'
 import type { AppSettings, SettingsPatch } from './settings'
+import type {
+  DataExportRequest,
+  DataExportResult,
+  DataImportFile,
+  DataImportRequest,
+  DataImportResult
+} from './dataPack'
 
 /**
  * Контракт между renderer и main. Единственный источник правды для
@@ -50,6 +57,9 @@ export const IPC = {
   placeTypeCreate: 'place-types:create',
   placeTypeUpdate: 'place-types:update',
   placeTypeRemove: 'place-types:remove',
+  dataExport: 'data:export',
+  dataChooseImportFile: 'data:choose-import-file',
+  dataImport: 'data:import',
   settingsGet: 'settings:get',
   settingsUpdate: 'settings:update'
 } as const
@@ -129,6 +139,15 @@ export interface GameMasterApi {
     create(input: PlaceTypeInput, realmId: string): Promise<PlaceType>
     update(placeType: PlaceType): Promise<PlaceType>
     remove(id: string): Promise<void>
+  }
+  /** Импорт и экспорт данных пакетами `.gmpack`. */
+  data: {
+    /** Собирает пакет и сохраняет его через системный диалог. */
+    exportPackage(request: DataExportRequest): Promise<DataExportResult | null>
+    /** Открывает файл, проверяет его и возвращает для предпросмотра. */
+    chooseImportFile(): Promise<DataImportFile | null>
+    /** Импортирует проверенный пакет в выбранный или новый сеттинг. */
+    importPackage(request: DataImportRequest): Promise<DataImportResult>
   }
   /** Настройки приложения (тема и прочее). */
   settings: {

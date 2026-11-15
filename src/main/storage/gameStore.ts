@@ -107,6 +107,24 @@ export async function addGame(
   })
 }
 
+/** Добавляет игры из пакета, не перезаписывая существующие записи. */
+export async function addImportedGames(games: readonly Game[]): Promise<void> {
+  if (games.length === 0) return
+
+  await withFileLock(LOCK_KEY, async () => {
+    const file = await readGamesFile()
+    const existingIds = new Set(file.games.map((game) => game.id))
+    const additions = games.filter((game) => !existingIds.has(game.id))
+
+    if (additions.length === 0) return
+
+    await writeJsonAtomic(gamesFile(), {
+      ...file,
+      games: [...file.games, ...additions]
+    })
+  })
+}
+
 export async function updateGame(game: Game): Promise<Game> {
   const normalized = assertGame(game)
 

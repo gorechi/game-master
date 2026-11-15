@@ -11,6 +11,19 @@ import { validatePlaceIcon } from '@shared/placeIcon'
 import { PRESET_ICON_CATALOG_VERSION, PRESET_PLACE_ICONS } from '@shared/presetPlaceIcons'
 import { applyPresetIconCatalog } from '@shared/presetIcons'
 import {
+  DATA_PACK_EXTENSION,
+  countDataPack,
+  createDataPack,
+  dataPackSchema,
+  remapDataPack,
+  type DataExportRequest,
+  type DataExportResult,
+  type DataImportFile,
+  type DataImportRequest,
+  type DataImportResult,
+  type DataPack
+} from '@shared/dataPack'
+import {
   canTransitionGame,
   isGameDeletable,
   isGameEditable,
@@ -391,6 +404,95 @@ function readSettings(): AppSettings {
 
 function writeSettings(settings: AppSettings): void {
   window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
+}
+
+function parsePreviewPack(value: unknown): DataPack {
+  const parsed = dataPackSchema.safeParse(value)
+  if (parsed.success) return parsed.data
+
+  const first = parsed.error.issues[0]
+  const where = first?.path.length ? ` (${first.path.join('.')})` : ''
+  throw new Error(
+    `Файл не является корректным пакетом Game Master${where}: ${first?.message ?? 'неизвестная ошибка'}`
+  )
+}
+
+function previewPackFileName(kind: DataExportRequest['kind']): string {
+  const date = new Date().toISOString().slice(0, 10)
+  return `game-master-${kind}-${date}.${DATA_PACK_EXTENSION}`
+}
+
+function downloadPreviewPack(fileName: string, pack: DataPack): void {
+  const blob = new Blob([`${JSON.stringify(pack, null, 2)}\n`], {
+    type: 'application/json'
+  })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = fileName
+  link.style.display = 'none'
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+function choosePreviewImportFile(): Promise<DataImportFile | null> {
+  return new Promise((resolve, reject) => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = `.${DATA_PACK_EXTENSION},.json,application/json`
+    input.style.display = 'none'
+    document.body.appendChild(input)
+
+    const cleanup = (): void => {
+      input.remove()
+    }
+
+    input.addEventListener(
+      'cancel',
+      () => {
+        cleanup()
+        resolve(null)
+      },
+      { once: true }
+    )
+
+    input.addEventListener(
+      'change',
+      () => {
+        const file = input.files?.[0]
+        cleanup()
+        if (!file) {
+          resolve(null)
+          return
+        }
+
+        if (file.size > 25 * 1024 * 1024) {
+          reject(new Error('Файл слишком большой для пакета Game Master'))
+          return
+        }
+
+        void file
+          .text()
+          .then((text) => {
+            let json: unknown
+            try {
+              json = JSON.parse(text) as unknown
+            } catch {
+              throw new Error('Файл повреждён: внутри не JSON')
+            }
+
+            const pack = parsePreviewPack(json)
+            resolve({ fileName: file.name, pack, counts: countDataPack(pack) })
+          })
+          .catch((error: unknown) => reject(error))
+      },
+      { once: true }
+    )
+
+    input.click()
+  })
 }
 
 export function createWebBridge(): GameMasterApi {
@@ -821,6 +923,67 @@ export function createWebBridge(): GameMasterApi {
 
       remove: async (id: string): Promise<void> => {
         writePlaceTypes(readPlaceTypes().filter((placeType) => placeType.id !== id))
+      }
+    },
+
+    data: {
+      exportPackage: async (request: DataExportRequest): Promise<DataExportResult | null> => {
+        const pack = createDataPack(
+          request,
+          {
+            games: readGames(),
+            maps: readMaps(),
+            monsters: readMonsters(),
+            uniqueMonsters: readGameMonsters(),
+            placeTypes: readPlaceTypes(),
+            realms: readRealms()
+          },
+          'web-preview'
+        )
+        const fileName = previewPackFileName(request.kind)
+        downloadPreviewPack(fileName, pack)
+        return { fileName, counts: countDataPack(pack) }
+      },
+
+      chooseImportFile: (): Promise<DataImportFile | null> => choosePreviewImportFile(),
+
+      importPackage: async (request: DataImportRequest): Promise<DataImportResult> => {
+        const pack = parsePreviewPack(request.pack)
+
+        for (const placeType of pack.data.placeTypes) {
+          assertPlaceTypeIcon(placeType.iconSvg)
+        }
+
+        let realmId: string
+
+        if (pack.kind === 'realm') {
+          const name = (request.realmName ?? pack.data.realm?.name ?? '').trim()
+          if (!name) throw new Error('Укажите название нового сеттинга')
+
+          const realm = createRealm({
+            name,
+            description: request.realmDescription ?? pack.data.realm?.description ?? ''
+          })
+          writeRealms([...readRealms(), realm])
+          realmId = realm.id
+        } else {
+          const targetRealmId = request.targetRealmId
+          if (!targetRealmId) {
+            throw new Error('Выберите сеттинг, в который нужно импортировать данные')
+          }
+          assertRealm(targetRealmId)
+          realmId = targetRealmId
+        }
+
+        const remapped = remapDataPack(pack, realmId)
+
+        writePlaceTypes([...readPlaceTypes(), ...remapped.placeTypes])
+        writeMonsters([...readMonsters(), ...remapped.monsters])
+        writeGameMonsters([...readGameMonsters(), ...remapped.uniqueMonsters])
+        writeMaps([...readMaps(), ...remapped.maps])
+        writeGames([...readGames(), ...remapped.games])
+
+        return { realmId, counts: countDataPack(pack) }
       }
     },
 

@@ -142,6 +142,52 @@ export async function addMap(input: GameMapInput): Promise<GameMap> {
   })
 }
 
+/** Добавляет карты из пакета, сохраняя связи внутри импортируемого набора. */
+export async function addImportedMaps(maps: readonly GameMap[]): Promise<void> {
+  if (maps.length === 0) return
+
+  await withFileLock(LOCK_KEY, async () => {
+    const file = await readMapsFile()
+    const existingIds = new Set(file.maps.map((map) => map.id))
+    const pending = maps.filter((map) => !existingIds.has(map.id))
+
+    if (pending.length === 0) return
+
+    const realmIds = [...new Set(pending.map((map) => map.realmId))]
+    const placeTypeIds = new Map<string, Set<string>>()
+    const knownMapIds = new Map<string, Set<string>>()
+
+    for (const realmId of realmIds) {
+      placeTypeIds.set(realmId, await placeTypeIdsOf(realmId))
+      knownMapIds.set(
+        realmId,
+        new Set(
+          file.maps
+            .filter((map) => map.realmId === realmId)
+            .map((map) => map.id)
+        )
+      )
+    }
+
+    for (const map of pending) {
+      knownMapIds.get(map.realmId)?.add(map.id)
+    }
+
+    const sanitized = pending.map((map) =>
+      sanitizeMap(
+        map,
+        knownMapIds.get(map.realmId) ?? new Set(),
+        placeTypeIds.get(map.realmId) ?? new Set()
+      )
+    )
+
+    await writeJsonAtomic(mapsFile(), {
+      ...file,
+      maps: [...file.maps, ...sanitized]
+    })
+  })
+}
+
 export async function updateMap(map: GameMap): Promise<GameMap> {
   const normalized = assertMapInput(map)
 

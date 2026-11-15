@@ -104,6 +104,29 @@ export async function addPlaceType(
   })
 }
 
+/** Добавляет иконки из пакета, не перезаписывая существующие записи. */
+export async function addImportedPlaceTypes(placeTypes: readonly PlaceType[]): Promise<void> {
+  if (placeTypes.length === 0) return
+
+  const checked = placeTypes.map((placeType) => {
+    assertPlaceTypeInput(placeType)
+    return placeType
+  })
+
+  await withFileLock(LOCK_KEY, async () => {
+    const file = await readPlaceTypesFile()
+    const existingIds = new Set(file.placeTypes.map((placeType) => placeType.id))
+    const additions = checked.filter((placeType) => !existingIds.has(placeType.id))
+
+    if (additions.length === 0) return
+
+    await writeJsonAtomic(placeTypesFile(), {
+      ...file,
+      placeTypes: [...file.placeTypes, ...additions]
+    })
+  })
+}
+
 export async function updatePlaceType(placeType: PlaceType): Promise<PlaceType> {
   const normalized = assertPlaceTypeInput(placeType)
 

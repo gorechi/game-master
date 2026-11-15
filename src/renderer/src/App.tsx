@@ -14,6 +14,7 @@ import { MapsPage } from './components/MapsPage'
 import { MapGraphPage } from './components/MapGraphPage'
 import { RealmsPage } from './components/RealmsPage'
 import { RealmDetailPage } from './components/RealmDetailPage'
+import { DataPage } from './components/DataPage'
 import { SettingsPage } from './components/SettingsPage'
 import { WindowTitleBar } from './components/WindowTitleBar'
 import { api, isWebPreview } from './lib/api'
@@ -151,6 +152,10 @@ export default function App(): JSX.Element {
             onBack={() => setRoute({ name: 'realms' })}
             onChanged={() => void refreshRealms()}
           />
+        ) : null}
+
+        {route.name === 'data' ? (
+          <DataPage realms={realms} onRealmsChanged={refreshRealms} />
         ) : null}
 
         {route.name === 'settings' ? (

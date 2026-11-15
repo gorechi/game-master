@@ -209,6 +209,16 @@ export function IconCollapse(props: IconProps): JSX.Element {
   )
 }
 
+export function IconDatabase(props: IconProps): JSX.Element {
+  return (
+    <Svg {...props}>
+      <ellipse cx="12" cy="5.4" rx="7.2" ry="2.8" />
+      <path d="M4.8 5.4v6.1c0 1.6 3.2 2.9 7.2 2.9s7.2-1.3 7.2-2.9V5.4" />
+      <path d="M4.8 11.5v6.1c0 1.6 3.2 2.9 7.2 2.9s7.2-1.3 7.2-2.9v-6.1" />
+    </Svg>
+  )
+}
+
 export function IconMap(props: IconProps): JSX.Element {
   return (
     <Svg {...props}>

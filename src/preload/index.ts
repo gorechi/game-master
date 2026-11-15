@@ -57,6 +57,11 @@ const api: GameMasterApi = {
     update: (placeType) => ipcRenderer.invoke(IPC.placeTypeUpdate, placeType),
     remove: (id) => ipcRenderer.invoke(IPC.placeTypeRemove, id)
   },
+  data: {
+    exportPackage: (request) => ipcRenderer.invoke(IPC.dataExport, request),
+    chooseImportFile: () => ipcRenderer.invoke(IPC.dataChooseImportFile),
+    importPackage: (request) => ipcRenderer.invoke(IPC.dataImport, request)
+  },
   settings: {
     get: () => ipcRenderer.invoke(IPC.settingsGet),
     update: (patch) => ipcRenderer.invoke(IPC.settingsUpdate, patch)

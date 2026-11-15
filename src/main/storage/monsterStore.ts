@@ -91,6 +91,24 @@ export async function addMonster(
   })
 }
 
+/** Добавляет монстров из пакета, не перезаписывая существующие записи. */
+export async function addImportedMonsters(monsters: readonly Monster[]): Promise<void> {
+  if (monsters.length === 0) return
+
+  await withFileLock(LOCK_KEY, async () => {
+    const file = await readMonstersFile()
+    const existingIds = new Set(file.monsters.map((monster) => monster.id))
+    const additions = monsters.filter((monster) => !existingIds.has(monster.id))
+
+    if (additions.length === 0) return
+
+    await writeJsonAtomic(monstersFile(), {
+      ...file,
+      monsters: [...file.monsters, ...additions]
+    })
+  })
+}
+
 export async function updateMonster(monster: Monster): Promise<Monster> {
   const normalized = assertName(monster)
 
