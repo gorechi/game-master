@@ -40,6 +40,7 @@ interface DataSources {
 
 interface ExportItem {
   id: string
+  realmId: string
   title: string
   meta: string
   detail?: string
@@ -162,6 +163,7 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
   const [activeTab, setActiveTab] = useState<DataTab>('games')
   const [sources, setSources] = useState<DataSources>(EMPTY_SOURCES)
   const [selection, setSelection] = useState<Partial<Record<ExchangeTab, Set<string>>>>({})
+  const [realmFilters, setRealmFilters] = useState<Partial<Record<ExchangeTab, string>>>({})
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [reloadToken, setReloadToken] = useState(0)
@@ -234,6 +236,7 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
     if (activeTab === 'games') {
       return sources.games.map((game) => ({
         id: game.id,
+        realmId: game.realmId,
         title: game.name,
         meta: `${realmNames.get(game.realmId) ?? 'Без сеттинга'} · ${gameStatusLabels[game.status]}`,
         detail: `${plural(game.monsters.length, 'монстр', 'монстра', 'монстров')} в игре`
@@ -243,6 +246,7 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
     if (activeTab === 'maps') {
       return sources.maps.map((map) => ({
         id: map.id,
+        realmId: map.realmId,
         title: map.name,
         meta: realmNames.get(map.realmId) ?? 'Без сеттинга',
         detail: `${plural(map.places.length, 'место', 'места', 'мест')} · ${plural(
@@ -257,6 +261,7 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
     if (activeTab === 'monsters') {
       return sources.monsters.map((monster) => ({
         id: monster.id,
+        realmId: monster.realmId,
         title: monster.name,
         meta: realmNames.get(monster.realmId) ?? 'Без сеттинга',
         detail: `КО ${formatChallengeRating(monster.challengeRating)} · КЗ ${monster.armorClass} · ${monster.hitPoints} ХП`
@@ -266,6 +271,7 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
     if (activeTab === 'uniqueMonsters') {
       return sources.uniqueMonsters.map((monster) => ({
         id: monster.id,
+        realmId: monster.realmId,
         title: monster.name,
         meta: realmNames.get(monster.realmId) ?? 'Без сеттинга',
         detail: `КО ${formatChallengeRating(monster.challengeRating)} · КЗ ${monster.armorClass} · ${monster.hitPoints} ХП`
@@ -285,6 +291,7 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
 
       return {
         id: realm.id,
+        realmId: realm.id,
         title: realm.name,
         meta: describeCounts({
           games: games.length,
@@ -298,8 +305,14 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
     })
   }, [activeTab, realmNames, realms, sources])
 
+  const realmFilter = realmFilters[activeTab] ?? 'all'
+  const filteredExportItems = useMemo(() => {
+    if (activeTab === 'realms' || realmFilter === 'all') return exportItems
+    return exportItems.filter((item) => item.realmId === realmFilter)
+  }, [activeTab, exportItems, realmFilter])
+
   const selectedSet = selection[activeTab] ?? new Set<string>()
-  const selectedItems = exportItems.filter((item) => selectedSet.has(item.id))
+  const selectedItems = filteredExportItems.filter((item) => selectedSet.has(item.id))
   const selectedIds = selectedItems.map((item) => item.id)
   const exportKind = kindForTab(activeTab)
 
@@ -345,12 +358,18 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
     if (activeTab === 'realms') return
     setSelection((previous) => ({
       ...previous,
-      [activeTab]: new Set(exportItems.map((item) => item.id))
+      [activeTab]: new Set(filteredExportItems.map((item) => item.id))
     }))
   }
 
   function clearSelection(): void {
     setSelection((previous) => ({ ...previous, [activeTab]: new Set() }))
+  }
+
+  function changeRealmFilter(value: string): void {
+    if (activeTab === 'realms') return
+
+    setRealmFilters((previous) => ({ ...previous, [activeTab]: value }))
   }
 
   async function handleExport(): Promise<void> {
@@ -480,6 +499,10 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
   }
 
   const realmOptions = realms.map((realm) => ({ value: realm.id, label: realm.name }))
+  const realmFilterOptions = [
+    { value: 'all', label: 'Все сеттинги' },
+    ...realmOptions
+  ]
   const isRealmPackage = importDraft?.pack.kind === 'realm'
   const importDisabled =
     importing || (isRealmPackage ? !realmName.trim() : !targetRealmId)
@@ -527,9 +550,23 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
                 <p className="muted">{TAB_EXPORT_HINTS[activeTab]}</p>
               </div>
               <span className="data-counter">
-                {selectedItems.length} из {exportItems.length}
+                {selectedItems.length} из {filteredExportItems.length}
               </span>
             </div>
+
+            {activeTab !== 'realms' ? (
+              <label className="field data-filter">
+                <span className="field__label">Фильтр по сеттингу</span>
+                <Select<string>
+                  value={realmFilter}
+                  options={realmFilterOptions}
+                  onChange={changeRealmFilter}
+                  ariaLabel="Фильтр по сеттингу"
+                  placeholder="Все сеттинги"
+                  searchable={realmFilterOptions.length > 9}
+                />
+              </label>
+            ) : null}
 
             <div className="data-toolbar">
               {activeTab !== 'realms' ? (
@@ -537,7 +574,7 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
                   type="button"
                   className="button button--tiny button--ghost"
                   onClick={selectAll}
-                  disabled={exportItems.length === 0}
+                  disabled={filteredExportItems.length === 0}
                 >
                   Выбрать все
                 </button>
@@ -556,15 +593,17 @@ export function DataPage({ realms, onRealmsChanged }: DataPageProps): JSX.Elemen
 
             {loading ? (
               <p className="muted">Загрузка данных…</p>
-            ) : exportItems.length === 0 ? (
+            ) : filteredExportItems.length === 0 ? (
               <div className="empty">
                 {activeTab === 'realms'
                   ? 'Сеттингов пока нет.'
-                  : 'Здесь пока нечего экспортировать.'}
+                  : realmFilter !== 'all'
+                    ? 'В выбранном сеттинге пока нечего экспортировать.'
+                    : 'Здесь пока нечего экспортировать.'}
               </div>
             ) : (
               <ul className="data-choice-list">
-                {exportItems.map((item) => (
+                {filteredExportItems.map((item) => (
                   <li key={item.id}>
                     <label
                       className={`data-choice${

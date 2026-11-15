@@ -4986,6 +4986,14 @@ input[type='number'] {
   font-variant-numeric: tabular-nums;
 }
 
+.data-filter {
+  gap: 7px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
 .data-toolbar {
   display: flex;
   align-items: center;
