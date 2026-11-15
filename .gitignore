@@ -9,6 +9,4 @@ Thumbs.db
 .vscode/
 .idea/
 *.tsbuildinfo
-tools/icon-forge/preview/
-tools/icon-forge/.env
-tools/icon-forge/briefs.json
+tools/icon-forge/
