@@ -46,7 +46,6 @@ export function MapFormModal({
   const [editingPlaceId, setEditingPlaceId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  const [loadingRealm, setLoadingRealm] = useState(false)
   const nameRef = useRef<HTMLInputElement>(null)
   const formId = useId()
 
@@ -63,7 +62,6 @@ export function MapFormModal({
     setEditingPlaceId(null)
     setError(null)
     setSaving(false)
-    setLoadingRealm(false)
     window.setTimeout(() => nameRef.current?.focus(), 0)
   }, [open, map, defaultRealmId])
 
@@ -75,7 +73,6 @@ export function MapFormModal({
     }
 
     let cancelled = false
-    setLoadingRealm(true)
 
     void Promise.all([api.maps.list(realmId), api.placeTypes.list(realmId)])
       .then(([maps, types]) => {
@@ -85,9 +82,6 @@ export function MapFormModal({
       })
       .catch((caught: unknown) => {
         if (!cancelled) setError(errorMessage(caught))
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingRealm(false)
       })
 
     return () => {
@@ -298,17 +292,6 @@ export function MapFormModal({
             <p className="game-editor__hint">
               Иконка выбирается в карточке места — нажмите на карандаш рядом с названием.
             </p>
-
-            {!realmId ? (
-              <p className="notice">
-                Сначала выберите сеттинг карты — без него нельзя добавлять места и
-                выбирать их иконки.
-              </p>
-            ) : null}
-
-            {realmId && loadingRealm ? (
-              <p className="game-editor__hint">Загружаем иконки…</p>
-            ) : null}
 
             {places.length === 0 ? (
               <div className="map-place-list map-place-list--empty">
