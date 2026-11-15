@@ -25,51 +25,44 @@ export interface MapPoint {
   y: number
 }
 
-/** Рабочее поле редактора: заметно больше плотной раскладки карты. */
-export interface EditorFrame {
-  width: number
-  height: number
-  offsetX: number
-  offsetY: number
+/** Размер рабочего поля редактора: с большим запасом для расстановки мест. */
+export const MAP_WORKSPACE_WIDTH = 8000
+export const MAP_WORKSPACE_HEIGHT = 6000
+
+/** Начало координат рабочего поля: центрирует существующую расстановку. */
+export interface EditorOrigin {
+  x: number
+  y: number
 }
 
-const EDITOR_MIN_WIDTH = 1600
-const EDITOR_MIN_HEIGHT = 1000
-const EDITOR_MARGIN = 240
-
-export function createEditorFrame(base: MapLayout): EditorFrame {
-  const width = Math.max(EDITOR_MIN_WIDTH, base.width + EDITOR_MARGIN * 2)
-  const height = Math.max(EDITOR_MIN_HEIGHT, base.height + EDITOR_MARGIN * 2)
-
+export function createEditorOrigin(tight: MapLayout): EditorOrigin {
   return {
-    width,
-    height,
-    offsetX: Math.round((width - base.width) / 2),
-    offsetY: Math.round((height - base.height) / 2)
+    x: Math.max(0, Math.round((MAP_WORKSPACE_WIDTH - tight.width) / 2)),
+    y: Math.max(0, Math.round((MAP_WORKSPACE_HEIGHT - tight.height) / 2))
   }
 }
 
 /**
- * Раскладка для редактора: узлы центрируются внутри большого рабочего поля.
- * Переданные вручную позиции уже заданы в координатах поля и не смещаются.
+ * Раскладка редактора. Поле фиксировано и велико; вьюпорт лишь показывает его
+ * часть. Переданные вручную позиции уже заданы в координатах поля.
  */
 export function editorLayout(
   map: GameMap,
   overrides: Record<string, MapPoint> | undefined,
-  frame: EditorFrame
+  origin: EditorOrigin
 ): MapLayout {
-  const base = layoutMap(map)
+  const tight = layoutMap(map)
 
   return {
-    width: frame.width,
-    height: frame.height,
-    nodes: base.nodes.map((node) => {
+    width: MAP_WORKSPACE_WIDTH,
+    height: MAP_WORKSPACE_HEIGHT,
+    nodes: tight.nodes.map((node) => {
       const override = overrides?.[node.id]
 
       return {
         ...node,
-        x: override ? override.x : node.x + frame.offsetX,
-        y: override ? override.y : node.y + frame.offsetY
+        x: override ? override.x : node.x + origin.x,
+        y: override ? override.y : node.y + origin.y
       }
     })
   }

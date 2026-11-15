@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { JSX, PointerEvent as ReactPointerEvent } from 'react'
 import type { GameMap, MapPath } from '@shared/map'
 import type { Realm } from '@shared/realm'
@@ -7,10 +7,10 @@ import { canonicalMapPath } from '@shared/domain'
 import { api, errorMessage } from '@renderer/lib/api'
 import { pluralize } from '@renderer/lib/format'
 import {
-  createEditorFrame,
+  createEditorOrigin,
   editorLayout,
   layoutMap,
-  type EditorFrame,
+  type EditorOrigin,
   type MapPoint
 } from '@renderer/lib/mapLayout'
 import { IconPencil, IconSave, IconUndo } from './ui/icons'
@@ -37,8 +37,20 @@ interface PanState {
   scrollTop: number
 }
 
+interface ZoomAnchor {
+  canvasX: number
+  canvasY: number
+  cursorX: number
+  cursorY: number
+}
+
 function clampZoom(value: number): number {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(value * 100) / 100))
+}
+
+function centerScrollElement(element: HTMLDivElement): void {
+  element.scrollLeft = Math.max(0, (element.scrollWidth - element.clientWidth) / 2)
+  element.scrollTop = Math.max(0, (element.scrollHeight - element.clientHeight) / 2)
 }
 
 /** Просмотр и редактирование карты: большое рабочее поле с масштабом. */
@@ -57,12 +69,16 @@ export function MapGraphPage({
   const [changeError, setChangeError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
-  const [frame, setFrame] = useState<EditorFrame | null>(null)
+  const [origin, setOrigin] = useState<EditorOrigin | null>(null)
   const [zoom, setZoom] = useState(1)
   const [panning, setPanning] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const zoomRef = useRef(1)
+  const targetZoomRef = useRef(1)
+  const zoomCommitScheduledRef = useRef(false)
+  const centerZoomRef = useRef(false)
   const panRef = useRef<PanState | null>(null)
+  const zoomAnchorRef = useRef<ZoomAnchor | null>(null)
 
   const load = useCallback(async (): Promise<void> => {
     try {
@@ -71,7 +87,7 @@ export function MapGraphPage({
       const nextPlaceTypes = found ? await api.placeTypes.list(found.realmId) : []
 
       setMap(found)
-      setFrame(found ? createEditorFrame(layoutMap(found)) : null)
+      setOrigin(found ? createEditorOrigin(layoutMap(found)) : null)
       setPlaceTypes(nextPlaceTypes)
       setLinkedMapNames(Object.fromEntries(maps.map((item) => [item.id, item.name])))
       setPositions(null)
@@ -87,12 +103,29 @@ export function MapGraphPage({
     void load()
   }, [load])
 
+  // При открытии карты показываем центр большого рабочего поля.
+  useLayoutEffect(() => {
+    const element = scrollRef.current
+    if (!element || !origin || !map) return
+
+    if (map.places.length === 0) {
+      element.scrollLeft = 0
+      element.scrollTop = 0
+      return
+    }
+
+    centerScrollElement(element)
+  }, [map?.id, origin])
+
   useEffect(() => {
     zoomRef.current = 1
+    targetZoomRef.current = 1
+    zoomAnchorRef.current = null
     setZoom(1)
   }, [mapId])
 
-  // Колесо мыши меняет масштаб и старается удержать точку под курсором.
+  // Колесо мыши меняет масштаб. События за один кадр схлопываются в одно
+  // обновление, а прокрутку двигает layout-effect — поэтому карта не прыгает.
   useEffect(() => {
     const element = scrollRef.current
     if (!element) return
@@ -101,39 +134,66 @@ export function MapGraphPage({
       if (event.deltaY === 0) return
       event.preventDefault()
 
-      const current = zoomRef.current
-      const next = clampZoom(current * Math.exp(-event.deltaY * WHEEL_ZOOM_SPEED))
-      if (next === current) return
-
+      const displayed = zoomRef.current
       const rect = element.getBoundingClientRect()
       const cursorX = event.clientX - rect.left
       const cursorY = event.clientY - rect.top
-      const contentX = element.scrollLeft + cursorX
-      const contentY = element.scrollTop + cursorY
 
-      zoomRef.current = next
-      setZoom(next)
+      zoomAnchorRef.current = {
+        canvasX: (element.scrollLeft + cursorX) / displayed,
+        canvasY: (element.scrollTop + cursorY) / displayed,
+        cursorX,
+        cursorY
+      }
 
-      window.requestAnimationFrame(() => {
-        element.scrollLeft = contentX * (next / current) - cursorX
-        element.scrollTop = contentY * (next / current) - cursorY
+      targetZoomRef.current = clampZoom(
+        targetZoomRef.current * Math.exp(-event.deltaY * WHEEL_ZOOM_SPEED)
+      )
+
+      if (zoomCommitScheduledRef.current) return
+      zoomCommitScheduledRef.current = true
+
+      queueMicrotask(() => {
+        zoomCommitScheduledRef.current = false
+        const next = targetZoomRef.current
+        if (next === zoomRef.current) return
+
+        zoomRef.current = next
+        setZoom(next)
       })
     }
 
     element.addEventListener('wheel', onWheel, { passive: false })
-    return () => element.removeEventListener('wheel', onWheel)
+
+    return () => {
+      element.removeEventListener('wheel', onWheel)
+    }
   }, [map?.id])
 
-  // Изначально показываем центр рабочего поля, а не его левый верхний угол.
-  useEffect(() => {
+  useLayoutEffect(() => {
     const element = scrollRef.current
-    if (!element || !frame) return
+    if (!element) return
 
-    element.scrollLeft = Math.max(0, (frame.width - element.clientWidth) / 2)
-    element.scrollTop = Math.max(0, (frame.height - element.clientHeight) / 2)
-  }, [frame])
+    if (centerZoomRef.current) {
+      centerZoomRef.current = false
+      zoomAnchorRef.current = null
+      centerScrollElement(element)
+      return
+    }
 
-  const layout = map && frame ? editorLayout(map, positions ?? undefined, frame) : null
+    const anchor = zoomAnchorRef.current
+    if (!anchor) return
+
+    zoomAnchorRef.current = null
+    element.scrollLeft = anchor.canvasX * zoom - anchor.cursorX
+    element.scrollTop = anchor.canvasY * zoom - anchor.cursorY
+  }, [zoom])
+
+
+  const layout =
+    map && origin
+      ? editorLayout(map, positions ?? undefined, origin)
+      : null
   const displayPaths = draftPaths ?? map?.paths ?? []
   const dirty = positions !== null || draftPaths !== null
 
@@ -172,8 +232,8 @@ export function MapGraphPage({
     setChangeError(null)
 
     try {
-      const offsetX = frame?.offsetX ?? 0
-      const offsetY = frame?.offsetY ?? 0
+      const offsetX = origin?.x ?? 0
+      const offsetY = origin?.y ?? 0
 
       const updated = await api.maps.update({
         ...map,
@@ -206,16 +266,19 @@ export function MapGraphPage({
   }
 
   function resetZoom(): void {
-    const element = scrollRef.current
+    const wasZoom = zoomRef.current
     zoomRef.current = 1
-    setZoom(1)
+    targetZoomRef.current = 1
+    zoomAnchorRef.current = null
 
-    if (element) {
-      window.requestAnimationFrame(() => {
-        element.scrollLeft = Math.max(0, (element.scrollWidth - element.clientWidth) / 2)
-        element.scrollTop = Math.max(0, (element.scrollHeight - element.clientHeight) / 2)
-      })
+    if (wasZoom !== 1) {
+      centerZoomRef.current = true
+      setZoom(1)
+      return
     }
+
+    const element = scrollRef.current
+    if (element) centerScrollElement(element)
   }
 
   function startPan(event: ReactPointerEvent<HTMLDivElement>): void {
@@ -385,7 +448,7 @@ export function MapGraphPage({
               onPointerUp={endPan}
               onPointerCancel={endPan}
             >
-              {layout && frame ? (
+              {layout && origin ? (
                 <div
                   className="map-graph-fit"
                   style={{
@@ -412,7 +475,7 @@ export function MapGraphPage({
                       onConnect={connectNodes}
                       scale={zoom}
                       showCanvas
-                      dragInset={{ x: frame.offsetX, y: frame.offsetY }}
+                      dragInset={{ x: origin.x, y: origin.y }}
                     />
                   </div>
                 </div>
