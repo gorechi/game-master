@@ -25,6 +25,56 @@ export interface MapPoint {
   y: number
 }
 
+/** Рабочее поле редактора: заметно больше плотной раскладки карты. */
+export interface EditorFrame {
+  width: number
+  height: number
+  offsetX: number
+  offsetY: number
+}
+
+const EDITOR_MIN_WIDTH = 1600
+const EDITOR_MIN_HEIGHT = 1000
+const EDITOR_MARGIN = 240
+
+export function createEditorFrame(base: MapLayout): EditorFrame {
+  const width = Math.max(EDITOR_MIN_WIDTH, base.width + EDITOR_MARGIN * 2)
+  const height = Math.max(EDITOR_MIN_HEIGHT, base.height + EDITOR_MARGIN * 2)
+
+  return {
+    width,
+    height,
+    offsetX: Math.round((width - base.width) / 2),
+    offsetY: Math.round((height - base.height) / 2)
+  }
+}
+
+/**
+ * Раскладка для редактора: узлы центрируются внутри большого рабочего поля.
+ * Переданные вручную позиции уже заданы в координатах поля и не смещаются.
+ */
+export function editorLayout(
+  map: GameMap,
+  overrides: Record<string, MapPoint> | undefined,
+  frame: EditorFrame
+): MapLayout {
+  const base = layoutMap(map)
+
+  return {
+    width: frame.width,
+    height: frame.height,
+    nodes: base.nodes.map((node) => {
+      const override = overrides?.[node.id]
+
+      return {
+        ...node,
+        x: override ? override.x : node.x + frame.offsetX,
+        y: override ? override.y : node.y + frame.offsetY
+      }
+    })
+  }
+}
+
 interface AutoLayout {
   width: number
   height: number

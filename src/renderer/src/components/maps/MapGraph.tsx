@@ -103,6 +103,10 @@ interface MapGraphProps {
   interactive?: boolean
   /** Масштаб отображения: координаты указателя переводятся обратно в координаты раскладки. */
   scale?: number
+  /** Показывать фон рабочего поля с сеткой. */
+  showCanvas?: boolean
+  /** Смещение начала координат поля для ограничения перетаскивания. */
+  dragInset?: { x: number; y: number }
 }
 
 /** Графическое представление карты: места-жетоны и пути-дорожки. */
@@ -116,7 +120,9 @@ export function MapGraph({
   onMoveNode,
   onConnect,
   interactive = true,
-  scale = 1
+  scale = 1,
+  showCanvas = false,
+  dragInset
 }: MapGraphProps): JSX.Element {
   const dragRef = useRef<DragState | null>(null)
   const connectionRef = useRef<ConnectionDraft | null>(null)
@@ -158,10 +164,12 @@ export function MapGraph({
     edges.push({ key: mapPathKey(path), from, to })
   }
 
-  const minX = MAP_NODE_WIDTH / 2 + MAP_GRAPH_PADDING
-  const maxX = Math.max(minX, layout.width - minX)
-  const minY = MAP_NODE_HEIGHT / 2 + MAP_GRAPH_PADDING
-  const maxY = Math.max(minY, layout.height - minY)
+  const insetX = dragInset?.x ?? 0
+  const insetY = dragInset?.y ?? 0
+  const minX = MAP_NODE_WIDTH / 2 + MAP_GRAPH_PADDING + insetX
+  const maxX = Math.max(minX, layout.width - MAP_NODE_WIDTH / 2 - MAP_GRAPH_PADDING)
+  const minY = MAP_NODE_HEIGHT / 2 + MAP_GRAPH_PADDING + insetY
+  const maxY = Math.max(minY, layout.height - MAP_NODE_HEIGHT / 2 - MAP_GRAPH_PADDING)
 
   function onPointerDown(event: PointerEvent<HTMLDivElement>, node: MapNodePosition): void {
     if (event.button !== 0) return
@@ -344,7 +352,7 @@ export function MapGraph({
   return (
     <div
       ref={graphRef}
-      className="map-graph"
+      className={`map-graph${showCanvas ? ' map-graph--canvas' : ''}`}
       style={{ width: layout.width, height: layout.height }}
       role="group"
       aria-label={`Карта «${mapName}»`}

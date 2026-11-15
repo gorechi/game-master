@@ -605,6 +605,16 @@
     linear-gradient(160deg, rgba(255, 255, 255, 0.45), transparent 60%);
 }
 
+:root[data-theme='light'] .map-graph--canvas {
+  background-color: rgba(255, 255, 255, 0.32);
+  background-image: radial-gradient(
+    circle,
+    rgba(143, 58, 44, 0.2) 1px,
+    transparent 1.4px
+  );
+  box-shadow: inset 0 0 90px rgba(74, 52, 26, 0.08);
+}
+
 :root[data-theme='light'] .map-edge--bed {
   stroke: rgba(154, 106, 36, 0.16);
 }

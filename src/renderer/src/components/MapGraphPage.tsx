@@ -1,12 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { JSX } from 'react'
+import type { JSX, PointerEvent as ReactPointerEvent } from 'react'
 import type { GameMap, MapPath } from '@shared/map'
 import type { Realm } from '@shared/realm'
 import type { PlaceType } from '@shared/placeType'
 import { canonicalMapPath } from '@shared/domain'
 import { api, errorMessage } from '@renderer/lib/api'
 import { pluralize } from '@renderer/lib/format'
-import { layoutMap, type MapPoint } from '@renderer/lib/mapLayout'
+import {
+  createEditorFrame,
+  editorLayout,
+  layoutMap,
+  type EditorFrame,
+  type MapPoint
+} from '@renderer/lib/mapLayout'
 import { IconPencil, IconSave, IconUndo } from './ui/icons'
 import { MapExitFrame } from './maps/MapExitFrame'
 import { MapFormModal } from './maps/MapFormModal'
@@ -19,7 +25,23 @@ interface MapGraphPageProps {
   onOpenMap: (mapId: string) => void
 }
 
-/** Просмотр карты: граф мест и путей. */
+const MIN_ZOOM = 0.3
+const MAX_ZOOM = 1.6
+const WHEEL_ZOOM_SPEED = 0.0015
+
+interface PanState {
+  pointerId: number
+  startX: number
+  startY: number
+  scrollLeft: number
+  scrollTop: number
+}
+
+function clampZoom(value: number): number {
+  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(value * 100) / 100))
+}
+
+/** Просмотр и редактирование карты: большое рабочее поле с масштабом. */
 export function MapGraphPage({
   mapId,
   realms,
@@ -35,8 +57,12 @@ export function MapGraphPage({
   const [changeError, setChangeError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
+  const [frame, setFrame] = useState<EditorFrame | null>(null)
+  const [zoom, setZoom] = useState(1)
+  const [panning, setPanning] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const [scrollBox, setScrollBox] = useState({ width: 0, height: 0 })
+  const zoomRef = useRef(1)
+  const panRef = useRef<PanState | null>(null)
 
   const load = useCallback(async (): Promise<void> => {
     try {
@@ -45,6 +71,7 @@ export function MapGraphPage({
       const nextPlaceTypes = found ? await api.placeTypes.list(found.realmId) : []
 
       setMap(found)
+      setFrame(found ? createEditorFrame(layoutMap(found)) : null)
       setPlaceTypes(nextPlaceTypes)
       setLinkedMapNames(Object.fromEntries(maps.map((item) => [item.id, item.name])))
       setPositions(null)
@@ -61,29 +88,62 @@ export function MapGraphPage({
   }, [load])
 
   useEffect(() => {
+    zoomRef.current = 1
+    setZoom(1)
+  }, [mapId])
+
+  // Колесо мыши меняет масштаб и старается удержать точку под курсором.
+  useEffect(() => {
     const element = scrollRef.current
     if (!element) return
 
-    const update = (): void => {
-      setScrollBox({ width: element.clientWidth, height: element.clientHeight })
+    const onWheel = (event: WheelEvent): void => {
+      if (event.deltaY === 0) return
+      event.preventDefault()
+
+      const current = zoomRef.current
+      const next = clampZoom(current * Math.exp(-event.deltaY * WHEEL_ZOOM_SPEED))
+      if (next === current) return
+
+      const rect = element.getBoundingClientRect()
+      const cursorX = event.clientX - rect.left
+      const cursorY = event.clientY - rect.top
+      const contentX = element.scrollLeft + cursorX
+      const contentY = element.scrollTop + cursorY
+
+      zoomRef.current = next
+      setZoom(next)
+
+      window.requestAnimationFrame(() => {
+        element.scrollLeft = contentX * (next / current) - cursorX
+        element.scrollTop = contentY * (next / current) - cursorY
+      })
     }
 
-    update()
-    const observer = new ResizeObserver(update)
-    observer.observe(element)
-
-    return () => observer.disconnect()
+    element.addEventListener('wheel', onWheel, { passive: false })
+    return () => element.removeEventListener('wheel', onWheel)
   }, [map?.id])
 
+  // Изначально показываем центр рабочего поля, а не его левый верхний угол.
+  useEffect(() => {
+    const element = scrollRef.current
+    if (!element || !frame) return
+
+    element.scrollLeft = Math.max(0, (frame.width - element.clientWidth) / 2)
+    element.scrollTop = Math.max(0, (frame.height - element.clientHeight) / 2)
+  }, [frame])
+
+  const layout = map && frame ? editorLayout(map, positions ?? undefined, frame) : null
+  const displayPaths = draftPaths ?? map?.paths ?? []
+  const dirty = positions !== null || draftPaths !== null
+
   function moveNode(placeId: string, x: number, y: number): void {
-    if (!map) return
+    if (!layout) return
 
     setPositions((current) => {
       const base =
         current ??
-        Object.fromEntries(
-          layoutMap(map).nodes.map((node) => [node.id, { x: node.x, y: node.y }])
-        )
+        Object.fromEntries(layout.nodes.map((node) => [node.id, { x: node.x, y: node.y }]))
 
       return { ...base, [placeId]: { x, y } }
     })
@@ -112,13 +172,20 @@ export function MapGraphPage({
     setChangeError(null)
 
     try {
+      const offsetX = frame?.offsetX ?? 0
+      const offsetY = frame?.offsetY ?? 0
+
       const updated = await api.maps.update({
         ...map,
-        places: map.places.map((place) => ({
-          ...place,
-          x: positions?.[place.id]?.x ?? place.x,
-          y: positions?.[place.id]?.y ?? place.y
-        })),
+        places: map.places.map((place) => {
+          const position = positions?.[place.id]
+
+          return {
+            ...place,
+            x: position ? Math.max(0, Math.round(position.x - offsetX)) : place.x,
+            y: position ? Math.max(0, Math.round(position.y - offsetY)) : place.y
+          }
+        }),
         paths: draftPaths ?? map.paths
       })
 
@@ -138,24 +205,64 @@ export function MapGraphPage({
     setChangeError(null)
   }
 
-  const layout = map ? layoutMap(map, positions ?? undefined) : null
-  const fitLayout = map ? (positions ? layoutMap(map) : layout) : null
-  const mapScale = (() => {
-    if (!fitLayout || fitLayout.width === 0 || fitLayout.height === 0) return 1
-    if (scrollBox.width === 0 || scrollBox.height === 0) return 1
+  function resetZoom(): void {
+    const element = scrollRef.current
+    zoomRef.current = 1
+    setZoom(1)
 
-    const availableWidth = scrollBox.width - 20
-    const availableHeight = scrollBox.height - 20
-    const fit = Math.min(
-      availableWidth / fitLayout.width,
-      availableHeight / fitLayout.height
-    )
+    if (element) {
+      window.requestAnimationFrame(() => {
+        element.scrollLeft = Math.max(0, (element.scrollWidth - element.clientWidth) / 2)
+        element.scrollTop = Math.max(0, (element.scrollHeight - element.clientHeight) / 2)
+      })
+    }
+  }
 
-    if (!Number.isFinite(fit)) return 1
-    return Math.max(1, Math.min(1.6, Math.floor(fit * 100) / 100))
-  })()
-  const displayPaths = draftPaths ?? map?.paths ?? []
-  const dirty = positions !== null || draftPaths !== null
+  function startPan(event: ReactPointerEvent<HTMLDivElement>): void {
+    if (event.button !== 0) return
+
+    const target = event.target
+    if (target instanceof Element && target.closest('.map-node')) return
+
+    const viewport = event.currentTarget
+    event.preventDefault()
+
+    try {
+      viewport.setPointerCapture(event.pointerId)
+    } catch {
+      // Синтетические события в тестах могут не иметь активного pointer id.
+    }
+
+    panRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      scrollLeft: viewport.scrollLeft,
+      scrollTop: viewport.scrollTop
+    }
+    setPanning(true)
+  }
+
+  function movePan(event: ReactPointerEvent<HTMLDivElement>): void {
+    const pan = panRef.current
+    if (!pan || pan.pointerId !== event.pointerId) return
+
+    event.preventDefault()
+    event.currentTarget.scrollLeft = pan.scrollLeft - (event.clientX - pan.startX)
+    event.currentTarget.scrollTop = pan.scrollTop - (event.clientY - pan.startY)
+  }
+
+  function endPan(event: ReactPointerEvent<HTMLDivElement>): void {
+    const pan = panRef.current
+    if (!pan || pan.pointerId !== event.pointerId) return
+
+    panRef.current = null
+    setPanning(false)
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+  }
 
   return (
     <main className="page">
@@ -229,39 +336,61 @@ export function MapGraphPage({
                 </span>
               </div>
 
-              {dirty ? (
-                <div className="map-graph-tools">
+              <div className="map-graph-actions">
+                <div className="map-zoom">
+                  <span className="map-zoom__hint">Колесо — масштаб</span>
                   <button
                     type="button"
-                    className="icon-button map-tool map-tool--save"
-                    title="Сохранить изменения"
-                    aria-label="Сохранить изменения карты"
-                    onClick={() => void saveChanges()}
-                    disabled={savingChanges}
+                    className="map-zoom__value"
+                    title="Сбросить масштаб"
+                    aria-label="Сбросить масштаб карты"
+                    onClick={resetZoom}
                   >
-                    <IconSave width={15} height={15} />
-                  </button>
-                  <button
-                    type="button"
-                    className="icon-button map-tool"
-                    title="Сбросить изменения"
-                    aria-label="Вернуть сохранённое состояние карты"
-                    onClick={resetChanges}
-                    disabled={savingChanges}
-                  >
-                    <IconUndo width={15} height={15} />
+                    {Math.round(zoom * 100)}%
                   </button>
                 </div>
-              ) : null}
+
+                {dirty ? (
+                  <div className="map-graph-tools">
+                    <button
+                      type="button"
+                      className="icon-button map-tool map-tool--save"
+                      title="Сохранить изменения"
+                      aria-label="Сохранить изменения карты"
+                      onClick={() => void saveChanges()}
+                      disabled={savingChanges}
+                    >
+                      <IconSave width={15} height={15} />
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-button map-tool"
+                      title="Сбросить изменения"
+                      aria-label="Вернуть сохранённое состояние карты"
+                      onClick={resetChanges}
+                      disabled={savingChanges}
+                    >
+                      <IconUndo width={15} height={15} />
+                    </button>
+                  </div>
+                ) : null}
+              </div>
             </div>
 
-            <div className="map-graph-scroll" ref={scrollRef}>
-              {layout ? (
+            <div
+              ref={scrollRef}
+              className={`map-graph-scroll${panning ? ' map-graph-scroll--panning' : ''}`}
+              onPointerDown={startPan}
+              onPointerMove={movePan}
+              onPointerUp={endPan}
+              onPointerCancel={endPan}
+            >
+              {layout && frame ? (
                 <div
                   className="map-graph-fit"
                   style={{
-                    width: layout.width * mapScale,
-                    height: layout.height * mapScale
+                    width: layout.width * zoom,
+                    height: layout.height * zoom
                   }}
                 >
                   <div
@@ -269,7 +398,7 @@ export function MapGraphPage({
                     style={{
                       width: layout.width,
                       height: layout.height,
-                      transform: `scale(${mapScale})`
+                      transform: `scale(${zoom})`
                     }}
                   >
                     <MapGraph
@@ -281,7 +410,9 @@ export function MapGraphPage({
                       onOpenMap={onOpenMap}
                       onMoveNode={moveNode}
                       onConnect={connectNodes}
-                      scale={mapScale}
+                      scale={zoom}
+                      showCanvas
+                      dragInset={{ x: frame.offsetX, y: frame.offsetY }}
                     />
                   </div>
                 </div>

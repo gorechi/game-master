@@ -3313,7 +3313,39 @@ input[type='number'] {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.map-graph-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
   margin-left: auto;
+}
+
+.map-zoom {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink-faint);
+  font-size: 11.5px;
+}
+
+.map-zoom__value {
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel-soft);
+  color: var(--gold-strong);
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.map-zoom__value:hover {
+  border-color: var(--gold);
+  background: var(--panel-raised);
 }
 
 .map-tool {
@@ -3356,6 +3388,12 @@ input[type='number'] {
   height: clamp(380px, 70vh, 900px);
   overflow: auto;
   padding: 10px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.map-graph-scroll--panning {
+  cursor: grabbing;
 }
 
 .map-graph-fit {
@@ -3365,6 +3403,19 @@ input[type='number'] {
 
 .map-graph-scale {
   transform-origin: top left;
+}
+
+.map-graph--canvas {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background-color: rgba(0, 0, 0, 0.14);
+  background-image: radial-gradient(
+    circle,
+    rgba(216, 178, 92, 0.18) 1px,
+    transparent 1.4px
+  );
+  background-size: 32px 32px;
+  box-shadow: inset 0 0 90px rgba(0, 0, 0, 0.28);
 }
 
 .map-graph {
