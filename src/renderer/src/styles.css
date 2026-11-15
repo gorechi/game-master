@@ -3397,7 +3397,17 @@ input[type='number'] {
 }
 
 .map-graph-fit {
+  position: relative;
   flex: none;
+  margin: auto;
+}
+
+.map-graph-boundary {
+  position: absolute;
+  inset: 0;
+  border: 1px dashed var(--gold-strong);
+  pointer-events: none;
+  opacity: 0.75;
 }
 
 .map-graph-scale {
@@ -3405,8 +3415,6 @@ input[type='number'] {
 }
 
 .map-graph--canvas {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
   background-color: rgba(0, 0, 0, 0.14);
   background-image: radial-gradient(
     circle,

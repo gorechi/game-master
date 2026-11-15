@@ -26,8 +26,8 @@ export interface MapPoint {
 }
 
 /** Размер рабочего поля редактора: с большим запасом для расстановки мест. */
-export const MAP_WORKSPACE_WIDTH = 8000
-export const MAP_WORKSPACE_HEIGHT = 6000
+export const MAP_WORKSPACE_WIDTH = 4000
+export const MAP_WORKSPACE_HEIGHT = 3000
 
 /** Начало координат рабочего поля: центрирует существующую расстановку. */
 export interface EditorOrigin {

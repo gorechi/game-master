@@ -25,7 +25,7 @@ interface MapGraphPageProps {
   onOpenMap: (mapId: string) => void
 }
 
-const MIN_ZOOM = 0.3
+const MIN_ZOOM = 0.2
 const MAX_ZOOM = 1.6
 const WHEEL_ZOOM_SPEED = 0.0015
 
@@ -478,6 +478,7 @@ export function MapGraphPage({
                       dragInset={{ x: origin.x, y: origin.y }}
                     />
                   </div>
+                  <div className="map-graph-boundary" aria-hidden="true" />
                 </div>
               ) : null}
             </div>
