@@ -14,7 +14,7 @@ export function SettingsPage({ settings, onThemeChange }: SettingsPageProps): JS
         <header className="page-head">
           <div>
             <h1>Настройки</h1>
-            <p className="muted">Оформление приложения и сведения о данных.</p>
+            <p className="muted">Оформление приложения.</p>
           </div>
         </header>
 
