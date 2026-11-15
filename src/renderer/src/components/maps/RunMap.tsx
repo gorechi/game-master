@@ -45,11 +45,10 @@ export function RunMap({
       const availableHeight = viewport.clientHeight - VIEWPORT_PADDING
       const fit = Math.min(
         availableWidth / layout.width,
-        availableHeight / layout.height,
-        1
+        availableHeight / layout.height
       )
 
-      setScale(Math.max(MIN_SCALE, Math.floor(fit * 100) / 100))
+      setScale(Math.max(MIN_SCALE, Math.min(2.2, Math.floor(fit * 100) / 100)))
     }
 
     updateScale()

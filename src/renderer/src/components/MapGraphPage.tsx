@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { JSX } from 'react'
 import type { GameMap, MapPath } from '@shared/map'
 import type { Realm } from '@shared/realm'
@@ -35,6 +35,8 @@ export function MapGraphPage({
   const [changeError, setChangeError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [scrollBox, setScrollBox] = useState({ width: 0, height: 0 })
 
   const load = useCallback(async (): Promise<void> => {
     try {
@@ -57,6 +59,21 @@ export function MapGraphPage({
   useEffect(() => {
     void load()
   }, [load])
+
+  useEffect(() => {
+    const element = scrollRef.current
+    if (!element) return
+
+    const update = (): void => {
+      setScrollBox({ width: element.clientWidth, height: element.clientHeight })
+    }
+
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(element)
+
+    return () => observer.disconnect()
+  }, [map?.id])
 
   function moveNode(placeId: string, x: number, y: number): void {
     if (!map) return
@@ -122,6 +139,21 @@ export function MapGraphPage({
   }
 
   const layout = map ? layoutMap(map, positions ?? undefined) : null
+  const fitLayout = map ? (positions ? layoutMap(map) : layout) : null
+  const mapScale = (() => {
+    if (!fitLayout || fitLayout.width === 0 || fitLayout.height === 0) return 1
+    if (scrollBox.width === 0 || scrollBox.height === 0) return 1
+
+    const availableWidth = scrollBox.width - 20
+    const availableHeight = scrollBox.height - 20
+    const fit = Math.min(
+      availableWidth / fitLayout.width,
+      availableHeight / fitLayout.height
+    )
+
+    if (!Number.isFinite(fit)) return 1
+    return Math.max(1, Math.min(1.6, Math.floor(fit * 100) / 100))
+  })()
   const displayPaths = draftPaths ?? map?.paths ?? []
   const dirty = positions !== null || draftPaths !== null
 
@@ -223,18 +255,36 @@ export function MapGraphPage({
               ) : null}
             </div>
 
-            <div className="map-graph-scroll">
+            <div className="map-graph-scroll" ref={scrollRef}>
               {layout ? (
-                <MapGraph
-                  mapName={map.name}
-                  paths={displayPaths}
-                  layout={layout}
-                  placeTypes={placeTypes}
-                  linkedMapNames={linkedMapNames}
-                  onOpenMap={onOpenMap}
-                  onMoveNode={moveNode}
-                  onConnect={connectNodes}
-                />
+                <div
+                  className="map-graph-fit"
+                  style={{
+                    width: layout.width * mapScale,
+                    height: layout.height * mapScale
+                  }}
+                >
+                  <div
+                    className="map-graph-scale"
+                    style={{
+                      width: layout.width,
+                      height: layout.height,
+                      transform: `scale(${mapScale})`
+                    }}
+                  >
+                    <MapGraph
+                      mapName={map.name}
+                      paths={displayPaths}
+                      layout={layout}
+                      placeTypes={placeTypes}
+                      linkedMapNames={linkedMapNames}
+                      onOpenMap={onOpenMap}
+                      onMoveNode={moveNode}
+                      onConnect={connectNodes}
+                      scale={mapScale}
+                    />
+                  </div>
+                </div>
               ) : null}
             </div>
           </section>

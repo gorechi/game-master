@@ -101,6 +101,8 @@ interface MapGraphProps {
   onConnect: (fromId: string, toId: string) => void
   /** В режиме проведения карта только для чтения. */
   interactive?: boolean
+  /** Масштаб отображения: координаты указателя переводятся обратно в координаты раскладки. */
+  scale?: number
 }
 
 /** Графическое представление карты: места-жетоны и пути-дорожки. */
@@ -113,7 +115,8 @@ export function MapGraph({
   onOpenMap,
   onMoveNode,
   onConnect,
-  interactive = true
+  interactive = true,
+  scale = 1
 }: MapGraphProps): JSX.Element {
   const dragRef = useRef<DragState | null>(null)
   const connectionRef = useRef<ConnectionDraft | null>(null)
@@ -185,8 +188,8 @@ export function MapGraph({
     const drag = dragRef.current
     if (!drag || drag.pointerId !== event.pointerId) return
 
-    const dx = event.clientX - drag.startClientX
-    const dy = event.clientY - drag.startClientY
+    const dx = (event.clientX - drag.startClientX) / scale
+    const dy = (event.clientY - drag.startClientY) / scale
 
     if (!drag.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return
     drag.moved = true
@@ -229,7 +232,10 @@ export function MapGraph({
     const rect = graphRef.current?.getBoundingClientRect()
     if (!rect) return null
 
-    return { x: event.clientX - rect.left, y: event.clientY - rect.top }
+    return {
+      x: (event.clientX - rect.left) / scale,
+      y: (event.clientY - rect.top) / scale
+    }
   }
 
   function nodeIdAt(clientX: number, clientY: number): string | null {
