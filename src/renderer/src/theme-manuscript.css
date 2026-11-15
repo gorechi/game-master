@@ -406,6 +406,11 @@
   background: rgba(255, 255, 255, 0.45);
 }
 
+:root[data-theme='light'] .monster-stat-field__frame {
+  background: linear-gradient(160deg, #fffaf0, #f5e9d3);
+  box-shadow: 0 6px 14px rgba(74, 52, 26, 0.08);
+}
+
 :root[data-theme='light'] .ability-row {
   background: rgba(255, 255, 255, 0.35);
 }

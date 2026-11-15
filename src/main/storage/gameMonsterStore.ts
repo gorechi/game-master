@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { app } from 'electron'
-import { createGameMonsterEntry } from '@shared/domain'
+import { createGameMonsterEntry, migrateMonsterStats } from '@shared/domain'
 import { DEFAULT_REALM_ID } from '@shared/realm'
 import {
   GAME_MONSTERS_FILE_SCHEMA_VERSION,
@@ -33,7 +33,20 @@ async function readGameMonstersFile(): Promise<GameMonstersFile> {
     throw new Error(`Не удалось прочитать список игровых монстров: ${(error as Error).message}`)
   }
 
-  const parsed = gameMonstersFileSchema.safeParse(raw)
+  if (!raw || typeof raw !== 'object') {
+    throw new Error('Файл игровых монстров повреждён и не может быть прочитан')
+  }
+
+  const file = raw as Record<string, unknown>
+  const monsters = Array.isArray(file.monsters)
+    ? file.monsters.map((monster) =>
+        monster && typeof monster === 'object'
+          ? migrateMonsterStats(monster as Record<string, unknown>)
+          : monster
+      )
+    : file.monsters
+
+  const parsed = gameMonstersFileSchema.safeParse({ ...file, monsters })
   if (!parsed.success) {
     throw new Error('Файл игровых монстров повреждён и не может быть прочитан')
   }

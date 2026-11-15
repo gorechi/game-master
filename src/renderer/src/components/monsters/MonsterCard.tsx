@@ -1,6 +1,10 @@
 import type { JSX } from 'react'
 import type { Monster } from '@shared/monster'
-import { formatChallengeRating } from '@shared/domain'
+import {
+  formatChallengeRating,
+  formatModifier,
+  modifierFromScore
+} from '@shared/domain'
 import { IconPencil, IconSkull, IconTrash } from '../ui/icons'
 
 const STATS = [
@@ -79,6 +83,9 @@ export function MonsterCard({
         {STATS.map((stat) => (
           <span className="monster-stat" key={stat.key} title={stat.title}>
             <span className="monster-stat__label">{stat.label}</span>
+            <span className="monster-stat__modifier">
+              {formatModifier(modifierFromScore(monster[stat.key]))}
+            </span>
             <span className="monster-stat__value">{monster[stat.key]}</span>
           </span>
         ))}

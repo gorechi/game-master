@@ -153,8 +153,8 @@ export function createCharacterProfile(
 /* Монстры (бестиарий)                                                */
 /* ------------------------------------------------------------------ */
 
-const ABILITY_MIN = -10
-const ABILITY_MAX = 10
+const ABILITY_MIN = 1
+const ABILITY_MAX = 30
 
 export const MONSTER_SCORE_KEYS = [
   'strength',
@@ -165,9 +165,49 @@ export const MONSTER_SCORE_KEYS = [
   'charisma'
 ] as const
 
-/** Характеристики монстра — от -10 до 10. */
+/** Версия формата характеристик: 2 — хранятся значения 1–30, а не модификаторы. */
+export const MONSTER_STATS_VERSION = 2
+
+/** Характеристики монстра — значения от 1 до 30. */
 export function clampMonsterScore(value: number | undefined): number {
-  return clampInt(value, ABILITY_MIN, ABILITY_MAX, 0)
+  return clampInt(value, ABILITY_MIN, ABILITY_MAX, 10)
+}
+
+/** Модификатор характеристики: floor((x − 10) / 2). */
+export function modifierFromScore(score: number): number {
+  return Math.floor((clampMonsterScore(score) - 10) / 2)
+}
+
+/** Старые данные хранили модификатор; переводим его в значение 10 + 2y. */
+export function scoreFromLegacyModifier(modifier: number): number {
+  return clampInt(10 + modifier * 2, ABILITY_MIN, ABILITY_MAX, 10)
+}
+
+/** «+1», «0» → «+0», «−1». */
+export function formatModifier(modifier: number): string {
+  return modifier >= 0 ? `+${modifier}` : String(modifier)
+}
+
+/**
+ * Переводит старую запись монстра с модификаторами на значения 1–30.
+ * Записи с актуальной statsVersion возвращаются как есть.
+ */
+export function migrateMonsterStats<T extends Record<string, unknown>>(monster: T): T {
+  if (monster.statsVersion === MONSTER_STATS_VERSION) return monster
+
+  const next: Record<string, unknown> = {
+    ...monster,
+    statsVersion: MONSTER_STATS_VERSION
+  }
+
+  for (const key of MONSTER_SCORE_KEYS) {
+    const value = monster[key]
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      next[key] = scoreFromLegacyModifier(value)
+    }
+  }
+
+  return next as T
 }
 
 function clampInt(value: number | undefined, min: number, max: number, fallback: number): number {
@@ -230,6 +270,7 @@ export function createMonster(
     id,
     realmId,
     ...normalizeMonsterInput(input),
+    statsVersion: MONSTER_STATS_VERSION,
     createdAt: now,
     updatedAt: now
   }
@@ -433,7 +474,8 @@ export function createGameMonster(
     armorClass: source.armorClass,
     hitPoints: source.hitPoints,
     abilities: source.abilities.map((ability) => ({ ...ability })),
-    statuses: []
+    statuses: [],
+    statsVersion: MONSTER_STATS_VERSION
   }
 }
 
@@ -453,7 +495,8 @@ export function gameMonsterFromEntry(entry: GameMonsterEntry): GameMonster {
     armorClass: entry.armorClass,
     hitPoints: entry.hitPoints,
     abilities: entry.abilities,
-    statuses: [...entry.statuses]
+    statuses: [...entry.statuses],
+    statsVersion: MONSTER_STATS_VERSION
   }
 }
 
@@ -483,6 +526,7 @@ export function createGameMonsterEntry(
         (input.statuses ?? []).map((status) => status.trim()).filter(Boolean)
       )
     ].slice(0, 16),
+    statsVersion: MONSTER_STATS_VERSION,
     savedFromGameId,
     savedAt: new Date().toISOString()
   }

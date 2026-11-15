@@ -8,6 +8,7 @@ import { Modal } from '../ui/Modal'
 import { Select } from '../ui/Select'
 import { StatusField } from '../ui/StatusField'
 import { IconPlus, IconTrash } from '../ui/icons'
+import { MonsterStatField } from './MonsterStatField'
 
 const SCORE_FIELDS = [
   { key: 'strength', label: 'Сила', short: 'СИЛ' },
@@ -28,12 +29,12 @@ interface AbilityDraft {
 }
 
 const EMPTY_SCORES: ScoreDraft = {
-  strength: '0',
-  dexterity: '0',
-  intelligence: '0',
-  wisdom: '0',
-  constitution: '0',
-  charisma: '0'
+  strength: '10',
+  dexterity: '10',
+  intelligence: '10',
+  wisdom: '10',
+  constitution: '10',
+  charisma: '10'
 }
 
 function clampNumber(value: number, min: number, max: number, fallback: number): number {
@@ -193,12 +194,12 @@ export function MonsterFormModal({
 
     const input: MonsterFormSubmission = {
       name: trimmedName,
-      strength: clampNumber(parseIntOr(scores.strength, 0), -10, 10, 0),
-      dexterity: clampNumber(parseIntOr(scores.dexterity, 0), -10, 10, 0),
-      intelligence: clampNumber(parseIntOr(scores.intelligence, 0), -10, 10, 0),
-      wisdom: clampNumber(parseIntOr(scores.wisdom, 0), -10, 10, 0),
-      constitution: clampNumber(parseIntOr(scores.constitution, 0), -10, 10, 0),
-      charisma: clampNumber(parseIntOr(scores.charisma, 0), -10, 10, 0),
+      strength: clampNumber(parseIntOr(scores.strength, 10), 1, 30, 10),
+      dexterity: clampNumber(parseIntOr(scores.dexterity, 10), 1, 30, 10),
+      intelligence: clampNumber(parseIntOr(scores.intelligence, 10), 1, 30, 10),
+      wisdom: clampNumber(parseIntOr(scores.wisdom, 10), 1, 30, 10),
+      constitution: clampNumber(parseIntOr(scores.constitution, 10), 1, 30, 10),
+      charisma: clampNumber(parseIntOr(scores.charisma, 10), 1, 30, 10),
       challengeRating: clampNumber(parseFloatOr(challengeRating, 1), 0, 30, 1),
       armorClass: clampNumber(parseIntOr(armorClass, 10), 0, 99, 10),
       hitPoints: clampNumber(parseIntOr(hitPoints, 10), minHitPoints, 100_000, 10),
@@ -286,26 +287,25 @@ export function MonsterFormModal({
 
         <div className="monster-form__scores">
           {SCORE_FIELDS.map((field) => (
-            <label className="field monster-form__score" key={field.key} title={field.label}>
-              <span className="field__label">{field.short}</span>
-              <input
-                className="input"
-                type="number"
-                inputMode="numeric"
-                min={-10}
-                max={10}
-                value={scores[field.key]}
-                onChange={(event) => setScore(field.key, event.target.value)}
-                onBlur={(event) =>
-                  setScore(
-                    field.key,
-                    String(clampNumber(parseIntOr(event.target.value, 0), -10, 10, 0))
-                  )
-                }
-              />
-            </label>
+            <MonsterStatField
+              key={field.key}
+              short={field.short}
+              label={field.label}
+              value={scores[field.key]}
+              onChange={(value) => setScore(field.key, value)}
+              onCommit={() =>
+                setScore(
+                  field.key,
+                  String(clampNumber(parseIntOr(scores[field.key], 10), 1, 30, 10))
+                )
+              }
+            />
           ))}
         </div>
+
+        <p className="game-editor__hint">
+          Значение характеристики — от 1 до 30. Модификатор считается автоматически.
+        </p>
 
         <div className="monster-form__vitals">
           <label className="field">

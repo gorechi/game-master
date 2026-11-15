@@ -19,7 +19,10 @@ export const gameMonsterEntrySchema = gameMonsterSchema.extend({
 export type GameMonsterEntry = z.infer<typeof gameMonsterEntrySchema>
 
 /** Поля, которые задаёт мастер при создании уникального монстра. */
-export const gameMonsterInputSchema = gameMonsterSchema.omit({ id: true })
+export const gameMonsterInputSchema = gameMonsterSchema.omit({
+  id: true,
+  statsVersion: true
+})
 export type GameMonsterInput = z.input<typeof gameMonsterInputSchema>
 
 export const gameMonstersFileSchema = z.object({

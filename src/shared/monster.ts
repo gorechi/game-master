@@ -12,7 +12,7 @@ export const monsterAbilitySchema = z.object({
 
 export type MonsterAbility = z.infer<typeof monsterAbilitySchema>
 
-const abilityScore = z.number().int().min(-10).max(10)
+const abilityScore = z.number().int().min(1).max(30)
 
 const monsterFields = {
   name: z.string().min(1).max(100),
@@ -35,6 +35,8 @@ export const monsterSchema = z.object({
   id: z.string().min(1),
   realmId: z.string().min(1).default(DEFAULT_REALM_ID),
   ...monsterFields,
+  /** 1 — старые модификаторы, 2 — значения 1–30. */
+  statsVersion: z.number().int().min(1).max(2).default(2),
   createdAt: z.string().min(1),
   updatedAt: z.string().min(1)
 })

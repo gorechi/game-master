@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { app } from 'electron'
-import { clampMonsterScore, createMonster, normalizeMonsterInput, MONSTER_SCORE_KEYS } from '@shared/domain'
+import { createMonster, migrateMonsterStats, normalizeMonsterInput } from '@shared/domain'
 import { DEFAULT_REALM_ID } from '@shared/realm'
 import {
   MONSTERS_FILE_SCHEMA_VERSION,
@@ -22,23 +22,12 @@ function emptyFile(): MonstersFile {
 }
 
 /**
- * Старые файлы могли содержать характеристики вне диапазона -10…10.
- * При чтении зажимаем их, чтобы запись не считалась повреждённой.
+ * Старые файлы хранили модификаторы −10…10. Переводим их в значения 1–30
+ * по формуле 10 + 2·y, чтобы записи не считались повреждёнными.
  */
-function clampStoredScores(raw: unknown): unknown {
+function migrateStoredMonster(raw: unknown): unknown {
   if (!raw || typeof raw !== 'object') return raw
-
-  const monster = raw as Record<string, unknown>
-  const next: Record<string, unknown> = { ...monster }
-
-  for (const key of MONSTER_SCORE_KEYS) {
-    const value = monster[key]
-    if (typeof value === 'number' && Number.isFinite(value)) {
-      next[key] = clampMonsterScore(value)
-    }
-  }
-
-  return next
+  return migrateMonsterStats(raw as Record<string, unknown>)
 }
 
 async function readMonstersFile(): Promise<MonstersFile> {
@@ -59,7 +48,7 @@ async function readMonstersFile(): Promise<MonstersFile> {
 
   const file = raw as Record<string, unknown>
   const monsters = Array.isArray(file.monsters)
-    ? file.monsters.map(clampStoredScores)
+    ? file.monsters.map(migrateStoredMonster)
     : file.monsters
 
   const parsed = monstersFileSchema.safeParse({ ...file, monsters })

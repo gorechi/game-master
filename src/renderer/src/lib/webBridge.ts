@@ -26,6 +26,7 @@ import {
   createPlayer,
   createPlaceType,
   createRealm,
+  migrateMonsterStats,
   normalizeCharacterProfileInput,
   normalizeMapInput,
   normalizeMonsterInput,
@@ -110,6 +111,23 @@ function writeCharacters(characters: CharacterProfile[]): void {
   window.localStorage.setItem(CHARACTERS_KEY, JSON.stringify(characters))
 }
 
+/** Старые записи хранили модификаторы; переводим на значения 1–30. */
+function normalizeStoredMonster<T>(monster: T): T {
+  const migrated = migrateMonsterStats(
+    monster as unknown as Record<string, unknown>
+  )
+
+  return {
+    ...migrated,
+    strength: clampMonsterScore(migrated.strength as number),
+    dexterity: clampMonsterScore(migrated.dexterity as number),
+    intelligence: clampMonsterScore(migrated.intelligence as number),
+    wisdom: clampMonsterScore(migrated.wisdom as number),
+    constitution: clampMonsterScore(migrated.constitution as number),
+    charisma: clampMonsterScore(migrated.charisma as number)
+  } as unknown as T
+}
+
 function readMonsters(): Monster[] {
   try {
     const raw = window.localStorage.getItem(MONSTERS_KEY)
@@ -118,16 +136,15 @@ function readMonsters(): Monster[] {
     const parsed: unknown = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
 
-    return (parsed as Monster[]).map((monster) => ({
-      ...monster,
-      realmId: typeof monster.realmId === 'string' ? monster.realmId : DEFAULT_REALM_ID,
-      strength: clampMonsterScore(monster.strength),
-      dexterity: clampMonsterScore(monster.dexterity),
-      intelligence: clampMonsterScore(monster.intelligence),
-      wisdom: clampMonsterScore(monster.wisdom),
-      constitution: clampMonsterScore(monster.constitution),
-      charisma: clampMonsterScore(monster.charisma)
-    }))
+    return (parsed as Monster[]).map((monster) => {
+      const migrated = normalizeStoredMonster(monster)
+
+      return {
+        ...migrated,
+        realmId:
+          typeof migrated.realmId === 'string' ? migrated.realmId : DEFAULT_REALM_ID
+      }
+    })
   } catch {
     return []
   }
@@ -187,10 +204,13 @@ function readGames(): Game[] {
       notes: typeof game.notes === 'string' ? game.notes : '',
       characterIds: Array.isArray(game.characterIds) ? game.characterIds : [],
       monsters: Array.isArray(game.monsters)
-        ? game.monsters.map((monster) => ({
-            ...monster,
-            statuses: Array.isArray(monster.statuses) ? monster.statuses : []
-          }))
+        ? game.monsters.map((monster) => {
+            const migrated = normalizeStoredMonster(monster)
+            return {
+              ...migrated,
+              statuses: Array.isArray(migrated.statuses) ? migrated.statuses : []
+            }
+          })
         : [],
       status: isGameStatus(game.status) ? game.status : 'new'
     }))
@@ -210,11 +230,16 @@ function readGameMonsters(): GameMonsterEntry[] {
 
     const parsed: unknown = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
-    return (parsed as GameMonsterEntry[]).map((monster) => ({
-      ...monster,
-      realmId: typeof monster.realmId === 'string' ? monster.realmId : DEFAULT_REALM_ID,
-      statuses: Array.isArray(monster.statuses) ? monster.statuses : []
-    }))
+    return (parsed as GameMonsterEntry[]).map((monster) => {
+      const migrated = normalizeStoredMonster(monster)
+
+      return {
+        ...migrated,
+        realmId:
+          typeof migrated.realmId === 'string' ? migrated.realmId : DEFAULT_REALM_ID,
+        statuses: Array.isArray(migrated.statuses) ? migrated.statuses : []
+      }
+    })
   } catch {
     return []
   }

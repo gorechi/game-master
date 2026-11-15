@@ -6,7 +6,7 @@ import { DEFAULT_REALM_ID } from './realm'
 /** Версия формата файла игр. */
 export const GAMES_FILE_SCHEMA_VERSION = 1
 
-const abilityScore = z.number().int().min(-10).max(10)
+const abilityScore = z.number().int().min(1).max(30)
 
 /**
  * Монстр в конкретной игре — независимая копия записи из бестиария.
@@ -27,6 +27,8 @@ export const gameMonsterSchema = z.object({
   armorClass: z.number().int().min(0).max(99),
   hitPoints: z.number().int().min(0).max(100_000),
   abilities: z.array(monsterAbilitySchema).max(50),
+  /** 1 — старые модификаторы, 2 — значения 1–30. */
+  statsVersion: z.number().int().min(1).max(2).default(2),
   /** Статусы вроде «Ранен», «Отравлен», «Проклят». */
   statuses: z.array(z.string().min(1).max(40)).max(16).default([])
 })

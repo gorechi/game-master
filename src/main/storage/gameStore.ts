@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { app } from 'electron'
-import { createGame } from '@shared/domain'
+import { createGame, migrateMonsterStats } from '@shared/domain'
 import { DEFAULT_REALM_ID } from '@shared/realm'
 import {
   GAMES_FILE_SCHEMA_VERSION,
@@ -29,6 +29,23 @@ function emptyFile(): GamesFile {
   return { schemaVersion: GAMES_FILE_SCHEMA_VERSION, games: [] }
 }
 
+/** Игры хранят копии монстров: их характеристики тоже переводим на 1–30. */
+function migrateStoredGame(raw: unknown): unknown {
+  if (!raw || typeof raw !== 'object') return raw
+
+  const game = raw as Record<string, unknown>
+  return {
+    ...game,
+    monsters: Array.isArray(game.monsters)
+      ? game.monsters.map((monster) =>
+          monster && typeof monster === 'object'
+            ? migrateMonsterStats(monster as Record<string, unknown>)
+            : monster
+        )
+      : game.monsters
+  }
+}
+
 async function readGamesFile(): Promise<GamesFile> {
   let raw: unknown
 
@@ -41,7 +58,14 @@ async function readGamesFile(): Promise<GamesFile> {
     throw new Error(`Не удалось прочитать список игр: ${(error as Error).message}`)
   }
 
-  const parsed = gamesFileSchema.safeParse(raw)
+  if (!raw || typeof raw !== 'object') {
+    throw new Error('Файл игр повреждён и не может быть прочитан')
+  }
+
+  const file = raw as Record<string, unknown>
+  const games = Array.isArray(file.games) ? file.games.map(migrateStoredGame) : file.games
+
+  const parsed = gamesFileSchema.safeParse({ ...file, games })
   if (!parsed.success) {
     throw new Error('Файл игр повреждён и не может быть прочитан')
   }
