@@ -1,17 +1,15 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { ChangeEvent, DragEvent, FormEvent, JSX } from 'react'
 import { PLACE_ICON_REQUIREMENTS, repairPlaceIcon, validatePlaceIcon } from '@shared/placeIcon'
 import type { PlaceType, PlaceTypeInput } from '@shared/placeType'
 import { errorMessage } from '@renderer/lib/api'
 import { Modal } from '../ui/Modal'
 import { IconCheck } from '../ui/icons'
-import { PlaceTypeIcon } from './PlaceTypeIcon'
+import { PlaceTypeIcon } from '../placeTypes/PlaceTypeIcon'
 
-interface PlaceTypeFormModalProps {
+interface RealmIconFormModalProps {
   open: boolean
-  placeType: PlaceType | null
-  /** Типы сеттинга, к которому относится создаваемое место. */
-  existingTypes: readonly PlaceType[]
+  icon: PlaceType | null
   onClose: () => void
   onSubmit: (input: PlaceTypeInput) => Promise<void>
 }
@@ -24,15 +22,13 @@ type IconStatus =
 
 const MAX_FILE_SIZE = 64 * 1024
 
-/** Создание и редактирование типа места: название, иконка из SVG. */
-export function PlaceTypeFormModal({
+/** Загрузка и замена SVG-иконки в наборе сеттинга. */
+export function RealmIconFormModal({
   open,
-  placeType,
-  existingTypes,
+  icon,
   onClose,
   onSubmit
-}: PlaceTypeFormModalProps): JSX.Element {
-  const [name, setName] = useState('')
+}: RealmIconFormModalProps): JSX.Element {
   const [iconSvg, setIconSvg] = useState('')
   const [source, setSource] = useState('')
   const [fileName, setFileName] = useState<string | null>(null)
@@ -40,38 +36,22 @@ export function PlaceTypeFormModal({
   const [dragActive, setDragActive] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  const nameRef = useRef<HTMLInputElement>(null)
+  const dropRef = useRef<HTMLButtonElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const formId = useId()
 
   useEffect(() => {
     if (!open) return
 
-    setName(placeType?.name ?? '')
-    setIconSvg(placeType?.iconSvg ?? '')
+    setIconSvg(icon?.iconSvg ?? '')
     setSource('')
     setFileName(null)
     setStatus({ kind: 'idle' })
     setError(null)
     setSaving(false)
     setDragActive(false)
-    window.setTimeout(() => nameRef.current?.focus(), 0)
-  }, [open, placeType])
-
-  /** Иконки, которые уже используются в сеттинге; одинаковые схлопываются. */
-  const library = useMemo(() => {
-    const seen = new Set<string>()
-    const result: PlaceType[] = []
-
-    for (const entry of existingTypes) {
-      if (!entry.iconSvg || seen.has(entry.iconSvg)) continue
-      if (!validatePlaceIcon(entry.iconSvg).ok) continue
-      seen.add(entry.iconSvg)
-      result.push(entry)
-    }
-
-    return result
-  }, [existingTypes])
+    window.setTimeout(() => dropRef.current?.focus(), 0)
+  }, [open, icon])
 
   function applySource(raw: string): void {
     const text = raw.trim()
@@ -154,26 +134,8 @@ export function PlaceTypeFormModal({
     if (file) void readFile(file)
   }
 
-  function chooseExisting(option: PlaceType): void {
-    setIconSvg(option.iconSvg)
-    setFileName(null)
-    setSource('')
-    setStatus({
-      kind: 'ok',
-      title: 'Иконка выбрана',
-      text: `Используется иконка типа «${option.name}».`
-    })
-  }
-
   async function submit(event: FormEvent): Promise<void> {
     event.preventDefault()
-
-    const trimmedName = name.trim()
-    if (!trimmedName) {
-      setError('Укажите название типа места')
-      nameRef.current?.focus()
-      return
-    }
 
     if (!iconSvg) {
       setError('Загрузите или выберите иконку')
@@ -190,7 +152,7 @@ export function PlaceTypeFormModal({
     setError(null)
 
     try {
-      await onSubmit({ name: trimmedName, iconSvg })
+      await onSubmit({ iconSvg })
     } catch (caught) {
       setError(errorMessage(caught))
     } finally {
@@ -201,12 +163,12 @@ export function PlaceTypeFormModal({
   return (
     <Modal
       open={open}
-      title={placeType ? 'Тип места' : 'Новый тип места'}
-      description="Название и иконка. Иконка проверяется перед сохранением: SVG 24×24, только контур currentColor, без заливок, текста и внешних ссылок."
+      title={icon ? 'Иконка места' : 'Новая иконка'}
+      description="SVG 24×24, только контур currentColor, без заливок, текста и внешних ссылок."
       size="lg"
       panelClassName="modal--place-type"
       onClose={onClose}
-      initialFocusRef={nameRef}
+      initialFocusRef={dropRef}
       footer={
         <>
           <button type="button" className="button" onClick={onClose} disabled={saving}>
@@ -218,25 +180,12 @@ export function PlaceTypeFormModal({
             className="button button--primary"
             disabled={saving}
           >
-            {saving ? 'Сохраняем…' : placeType ? 'Сохранить' : 'Создать тип'}
+            {saving ? 'Сохраняем…' : icon ? 'Сохранить' : 'Добавить иконку'}
           </button>
         </>
       }
     >
       <form id={formId} className="place-type-form" onSubmit={(event) => void submit(event)} noValidate>
-        <label className="field">
-          <span className="field__label">Название</span>
-          <input
-            ref={nameRef}
-            className="input"
-            value={name}
-            maxLength={100}
-            placeholder="Лес, таверна, руины…"
-            autoComplete="off"
-            onChange={(event) => setName(event.target.value)}
-          />
-        </label>
-
         <div className="place-icon-preview">
           <span className="place-icon-preview__token">
             {iconSvg ? (
@@ -253,12 +202,13 @@ export function PlaceTypeFormModal({
           </span>
         </div>
 
-        <section className="place-icon-source-block" aria-labelledby="place-icon-upload">
-          <h3 id="place-icon-upload" className="editor-subtitle">
+        <section className="place-icon-source-block" aria-labelledby="realm-icon-upload">
+          <h3 id="realm-icon-upload" className="editor-subtitle">
             Загрузить иконку
           </h3>
 
           <button
+            ref={dropRef}
             type="button"
             className={`place-icon-drop${dragActive ? ' place-icon-drop--active' : ''}`}
             onClick={() => fileRef.current?.click()}
@@ -307,35 +257,6 @@ export function PlaceTypeFormModal({
             </button>
           </div>
         </section>
-
-        {library.length > 0 ? (
-          <section className="place-icon-library-block" aria-labelledby="place-icon-library">
-            <h3 id="place-icon-library" className="editor-subtitle">
-              Или возьмите иконку другого типа
-            </h3>
-            <div className="place-icon-library">
-              {library.map((option) => {
-                const selected = option.iconSvg === iconSvg
-
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    className={`place-icon-library__item${
-                      selected ? ' place-icon-library__item--active' : ''
-                    }`}
-                    title={`Иконка типа «${option.name}»`}
-                    aria-label={`Использовать иконку типа ${option.name}`}
-                    aria-pressed={selected}
-                    onClick={() => chooseExisting(option)}
-                  >
-                    <PlaceTypeIcon svg={option.iconSvg} size={26} />
-                  </button>
-                )
-              })}
-            </div>
-          </section>
-        ) : null}
 
         {status.kind === 'ok' ? (
           <div className="notice notice--success place-icon-report">

@@ -3061,11 +3061,6 @@ input[type='number'] {
   min-width: 0;
 }
 
-.map-add-place__type {
-  flex: 0 1 190px;
-  min-width: 160px;
-}
-
 .map-add-place .button {
   flex: none;
   white-space: nowrap;
@@ -3150,19 +3145,6 @@ input[type='number'] {
   margin-left: auto;
   color: var(--ink-faint);
   font-size: 11.5px;
-  white-space: nowrap;
-}
-
-.map-place-row__type {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  flex: none;
-  padding: 2px 8px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--ink-muted);
-  font-size: 11px;
   white-space: nowrap;
 }
 
@@ -3771,7 +3753,7 @@ input[type='number'] {
 }
 
 /* ------------------------------------------------------------------ */
-/* Типы мест                                                          */
+/* Иконки мест и сеттинг                                              */
 /* ------------------------------------------------------------------ */
 
 .place-types-block {
@@ -3813,31 +3795,67 @@ input[type='number'] {
   color: var(--ink-faint);
 }
 
-.place-type-grid {
+.realm-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 18px 0 16px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--border);
+}
+
+.realm-tab {
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.realm-tab:hover {
+  color: var(--ink);
+  background: var(--panel-soft);
+}
+
+.realm-tab--active {
+  border-color: var(--border-strong);
+  background: var(--panel-raised);
+  color: var(--gold-strong);
+}
+
+.realm-icons-block {
+  margin-top: 4px;
+}
+
+.realm-icon-grid {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
   gap: 10px;
 }
 
-.place-type-card {
+.realm-icon-card {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 7px;
   min-width: 0;
-  padding: 10px 12px;
+  padding: 11px 8px 8px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.02);
 }
 
-.place-type-card__icon {
+.realm-icon-card__token {
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
+  width: 54px;
+  height: 54px;
   flex: none;
   border: 1px solid rgba(216, 178, 92, 0.45);
   border-radius: 50%;
@@ -3848,36 +3866,32 @@ input[type='number'] {
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
 }
 
-.place-type-card__icon--broken {
+.realm-icon-card__token--broken {
   border-color: rgba(209, 88, 79, 0.5);
   color: var(--danger);
 }
 
-.place-type-card__body {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.place-type-card__name {
-  overflow: hidden;
-  font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 400;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.place-type-card__warning {
-  display: block;
-  margin-top: 2px;
-  color: var(--danger);
-  font-size: 11px;
-}
-
-.place-type-card__actions {
+.realm-icon-card__actions {
   display: flex;
   gap: 4px;
-  flex: none;
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
+}
+
+.realm-icon-card:hover .realm-icon-card__actions,
+.realm-icon-card:focus-within .realm-icon-card__actions {
+  opacity: 1;
+}
+
+.icon-button--tiny {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+}
+
+.realm-form__actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .place-type-icon {
@@ -4049,6 +4063,12 @@ input[type='number'] {
 .place-icon-library__item--active {
   border-color: var(--gold);
   box-shadow: 0 0 0 3px rgba(216, 178, 92, 0.18);
+}
+
+.place-icon-library__item--none {
+  border-style: dashed;
+  color: var(--ink-faint);
+  font-size: 18px;
 }
 
 .place-icon-report {

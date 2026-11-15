@@ -571,8 +571,7 @@
   background: rgba(255, 255, 255, 0.4);
 }
 
-:root[data-theme='light'] .map-filter-bar,
-:root[data-theme='light'] .map-place-row__type {
+:root[data-theme='light'] .map-filter-bar {
   background: rgba(255, 255, 255, 0.35);
 }
 
@@ -743,7 +742,7 @@
   border-color: rgba(154, 106, 36, 0.32);
 }
 
-:root[data-theme='light'] .place-type-card,
+:root[data-theme='light'] .realm-icon-card,
 :root[data-theme='light'] .place-icon-preview {
   background: rgba(255, 255, 255, 0.4);
 }
@@ -752,7 +751,7 @@
   background: rgba(255, 255, 255, 0.3);
 }
 
-:root[data-theme='light'] .place-type-card__icon,
+:root[data-theme='light'] .realm-icon-card__token,
 :root[data-theme='light'] .place-icon-preview__token {
   color: #7a4f12;
   background:
@@ -761,7 +760,7 @@
   box-shadow: 0 8px 18px rgba(74, 52, 26, 0.16);
 }
 
-:root[data-theme='light'] .place-type-card__icon--broken {
+:root[data-theme='light'] .realm-icon-card__token--broken {
   color: #8c3423;
   border-color: rgba(140, 52, 35, 0.5);
 }

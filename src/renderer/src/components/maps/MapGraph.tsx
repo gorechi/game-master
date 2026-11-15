@@ -92,7 +92,7 @@ interface MapGraphProps {
   mapName: string
   paths: readonly MapPath[]
   layout: MapLayout
-  /** Типы мест сеттинга: по placeTypeId выбирается иконка жетона. */
+  /** Иконки мест сеттинга: по placeTypeId выбирается картинка жетона. */
   placeTypes: readonly PlaceType[]
   /** Названия других карт по id — для подписи выхода. */
   linkedMapNames: Record<string, string>

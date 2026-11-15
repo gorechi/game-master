@@ -82,7 +82,7 @@ function assertMapInput(input: GameMapInput): NormalizedMapInput {
   return normalized
 }
 
-/** Ссылки допустимы только на существующую карту; тип места — только из своего сеттинга. */
+/** Ссылки допустимы только на существующую карту; иконка — только из своего сеттинга. */
 function sanitizeMap(
   map: GameMap,
   knownMapIds: ReadonlySet<string>,

@@ -123,7 +123,7 @@ export interface GameMasterApi {
     update(realm: Realm): Promise<Realm>
     remove(id: string): Promise<void>
   }
-  /** Типы мест конкретного сеттинга: у каждого свой набор. */
+  /** Иконки мест конкретного сеттинга: у каждого свой набор. */
   placeTypes: {
     list(realmId: string): Promise<PlaceType[]>
     create(input: PlaceTypeInput, realmId: string): Promise<PlaceType>

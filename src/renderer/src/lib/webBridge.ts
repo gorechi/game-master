@@ -709,7 +709,7 @@ export function createWebBridge(): GameMasterApi {
 
         if (hasData) {
           throw new Error(
-            'В сеттинге есть игры, персонажи, монстры, карты или типы мест — сначала удалите их'
+            'В сеттинге есть игры, персонажи, монстры, карты или иконки мест — сначала удалите их'
           )
         }
 
@@ -732,14 +732,13 @@ export function createWebBridge(): GameMasterApi {
       update: async (placeType: PlaceType): Promise<PlaceType> => {
         const existing = readPlaceTypes().find((item) => item.id === placeType.id)
         if (!existing) {
-          throw new Error('Тип места не найден — возможно, запись уже удалена')
+          throw new Error('Иконка не найдена — возможно, запись уже удалена')
         }
 
         assertPlaceTypeIcon(placeType.iconSvg)
 
         const updated: PlaceType = {
           ...existing,
-          name: placeType.name.trim().slice(0, 100),
           iconSvg: placeType.iconSvg.trim(),
           updatedAt: new Date().toISOString()
         }

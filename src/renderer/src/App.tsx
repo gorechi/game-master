@@ -134,6 +134,7 @@ export default function App(): JSX.Element {
           <RealmDetailPage
             realm={realms.find((realm) => realm.id === route.id) ?? null}
             onBack={() => setRoute({ name: 'realms' })}
+            onChanged={() => void refreshRealms()}
           />
         ) : null}
 

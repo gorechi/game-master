@@ -42,7 +42,6 @@ export function MapFormModal({
   const [paths, setPaths] = useState<MapPath[]>([])
   const [otherMaps, setOtherMaps] = useState<GameMap[]>([])
   const [placeTypes, setPlaceTypes] = useState<PlaceType[]>([])
-  const [newPlaceTypeId, setNewPlaceTypeId] = useState<string | null>(null)
   const [placeName, setPlaceName] = useState('')
   const [editingPlaceId, setEditingPlaceId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -60,7 +59,6 @@ export function MapFormModal({
     setPaths(map?.paths ?? [])
     setOtherMaps([])
     setPlaceTypes([])
-    setNewPlaceTypeId(null)
     setPlaceName('')
     setEditingPlaceId(null)
     setError(null)
@@ -99,8 +97,7 @@ export function MapFormModal({
 
   function changeRealm(nextRealmId: string): void {
     setRealmId(nextRealmId)
-    setNewPlaceTypeId(null)
-    // Типы принадлежат сеттингу: при его смене все места теряют тип.
+    // Иконки принадлежат сеттингу: при его смене все места теряют иконку.
     setPlaces((current) =>
       current.map((place) => (place.placeTypeId ? { ...place, placeTypeId: null } : place))
     )
@@ -119,15 +116,9 @@ export function MapFormModal({
     const trimmed = placeName.trim()
     if (!trimmed || !realmId) return
 
-    const placeTypeId =
-      newPlaceTypeId && placeTypes.some((placeType) => placeType.id === newPlaceTypeId)
-        ? newPlaceTypeId
-        : null
-
     const place = createMapPlace(trimmed)
-    setPlaces((current) => [...current, { ...place, placeTypeId }])
+    setPlaces((current) => [...current, place])
     setPlaceName('')
-    setNewPlaceTypeId(null)
   }
 
   function removePlace(placeId: string): void {
@@ -253,7 +244,7 @@ export function MapFormModal({
               onChange={changeRealm}
             />
             <p className="game-editor__hint">
-              Карта принадлежит выбранному сеттингу. При смене сеттинга типы всех мест
+              Карта принадлежит выбранному сеттингу. При смене сеттинга иконки всех мест
               сбрасываются.
             </p>
           </div>
@@ -266,7 +257,7 @@ export function MapFormModal({
 
           {map && realmId && realmId !== map.realmId && map.places.some((place) => place.placeTypeId) ? (
             <p className="notice notice--error">
-              При сохранении карты в другом сеттинге типы всех мест будут сброшены.
+              При сохранении карты в другом сеттинге иконки всех мест будут сброшены.
             </p>
           ) : null}
 
@@ -293,22 +284,6 @@ export function MapFormModal({
                   addPlace()
                 }}
               />
-              <div className="map-add-place__type">
-                <Select
-                  ariaLabel="Тип нового места"
-                  value={newPlaceTypeId ?? ''}
-                  placeholder="Без типа"
-                  disabled={!realmId}
-                  options={[
-                    { value: '', label: 'Без типа' },
-                    ...placeTypes.map((placeType) => ({
-                      value: placeType.id,
-                      label: placeType.name
-                    }))
-                  ]}
-                  onChange={(value) => setNewPlaceTypeId(value || null)}
-                />
-              </div>
               <button
                 type="button"
                 className="button"
@@ -320,15 +295,19 @@ export function MapFormModal({
               </button>
             </div>
 
+            <p className="game-editor__hint">
+              Иконка выбирается в карточке места — нажмите на карандаш рядом с названием.
+            </p>
+
             {!realmId ? (
               <p className="notice">
                 Сначала выберите сеттинг карты — без него нельзя добавлять места и
-                выбирать их типы.
+                выбирать их иконки.
               </p>
             ) : null}
 
             {realmId && loadingRealm ? (
-              <p className="game-editor__hint">Загружаем типы мест…</p>
+              <p className="game-editor__hint">Загружаем иконки…</p>
             ) : null}
 
             {places.length === 0 ? (
@@ -348,9 +327,8 @@ export function MapFormModal({
                     <li key={place.id} className="map-place-row">
                       <span className="map-place-row__name">{place.name}</span>
                       {placeType ? (
-                        <span className="map-place-row__type">
+                        <span className="place-type-choice__icon" title="Иконка места">
                           <PlaceTypeIcon svg={placeType.iconSvg} size={14} />
-                          {placeType.name}
                         </span>
                       ) : null}
                       {place.isExit ? <span className="map-badge">Выход</span> : null}

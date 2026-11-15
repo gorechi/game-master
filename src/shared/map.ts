@@ -14,7 +14,7 @@ export const mapPlaceSchema = z.object({
   isExit: z.boolean(),
   /** Карта, на которую ведёт выход. Заполняется только при isExit. */
   linkedMapId: z.string().min(1).nullable().default(null),
-  /** Тип места из того же сеттинга; null — место без типа. */
+  /** Иконка места из того же сеттинга; null — место без иконки. */
   placeTypeId: z.string().min(1).nullable().default(null),
   /** Ручная позиция на карте; null — автоматическая раскладка. */
   x: z.number().min(0).max(100000).nullable().default(null),

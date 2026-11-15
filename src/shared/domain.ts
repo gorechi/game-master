@@ -75,15 +75,13 @@ export function createRealm(input: RealmInput, id: string = crypto.randomUUID())
 }
 
 /* ------------------------------------------------------------------ */
-/* Типы мест                                                          */
+/* Иконки мест                                                        */
 /* ------------------------------------------------------------------ */
 
 export function normalizePlaceTypeInput(input: PlaceTypeInput): {
-  name: string
   iconSvg: string
 } {
   return {
-    name: input.name.trim().slice(0, 100),
     iconSvg: input.iconSvg.trim()
   }
 }

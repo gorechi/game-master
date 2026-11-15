@@ -15,7 +15,7 @@ interface PlaceFormModalProps {
   connectedIds: readonly string[]
   /** Другие карты, на которые может вести выход. */
   otherMaps: readonly GameMap[]
-  /** Типы мест сеттинга, к которому относится карта. */
+  /** Иконки сеттинга, к которому относится карта. */
   placeTypes: readonly PlaceType[]
   onClose: () => void
   onSave: (input: {
@@ -27,7 +27,7 @@ interface PlaceFormModalProps {
   }) => void
 }
 
-/** Редактирование места: имя, тип, выход на другую карту и пути к другим местам. */
+/** Редактирование места: имя, иконка, выход на другую карту и пути к другим местам. */
 export function PlaceFormModal({
   open,
   place,
@@ -59,10 +59,6 @@ export function PlaceFormModal({
     window.setTimeout(() => nameRef.current?.focus(), 0)
   }, [open, place])
 
-  const selectedType = placeTypeId
-    ? (placeTypes.find((placeType) => placeType.id === placeTypeId) ?? null)
-    : null
-
   function toggleConnection(id: string): void {
     setConnections((current) =>
       current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
@@ -92,7 +88,7 @@ export function PlaceFormModal({
     <Modal
       open={open}
       title={place ? 'Место' : 'Новое место'}
-      description="Название, выход на другую карту и пути к другим местам. Путь всегда двусторонний."
+      description="Название, иконка, выход на другую карту и пути к другим местам. Путь всегда двусторонний."
       size="md"
       onClose={onClose}
       initialFocusRef={nameRef}
@@ -122,37 +118,47 @@ export function PlaceFormModal({
         </label>
 
         <div className="field">
-          <span className="field__label">Тип места</span>
-          <Select
-            ariaLabel="Тип места"
-            value={placeTypeId ?? ''}
-            placeholder="Без типа"
-            options={[
-              { value: '', label: 'Без типа' },
-              ...placeTypes.map((placeType) => ({
-                value: placeType.id,
-                label: placeType.name
-              }))
-            ]}
-            onChange={(value) => setPlaceTypeId(value || null)}
-          />
+          <span className="field__label">Иконка</span>
+          {placeTypes.length > 0 ? (
+            <div className="place-icon-library" role="group" aria-label="Иконка места">
+              <button
+                type="button"
+                className={`place-icon-library__item place-icon-library__item--none${
+                  placeTypeId ? '' : ' place-icon-library__item--active'
+                }`}
+                title="Без иконки"
+                aria-label="Без иконки"
+                aria-pressed={!placeTypeId}
+                onClick={() => setPlaceTypeId(null)}
+              >
+                —
+              </button>
 
-          {selectedType ? (
-            <span className="place-type-choice">
-              <span className="place-type-choice__icon">
-                <PlaceTypeIcon svg={selectedType.iconSvg} size={18} />
-              </span>
-              {selectedType.name}
-            </span>
+              {placeTypes.map((icon, index) => {
+                const selected = placeTypeId === icon.id
+
+                return (
+                  <button
+                    key={icon.id}
+                    type="button"
+                    className={`place-icon-library__item${
+                      selected ? ' place-icon-library__item--active' : ''
+                    }`}
+                    title={`Иконка ${index + 1}`}
+                    aria-label={`Иконка ${index + 1}`}
+                    aria-pressed={selected}
+                    onClick={() => setPlaceTypeId(icon.id)}
+                  >
+                    <PlaceTypeIcon svg={icon.iconSvg} size={26} />
+                  </button>
+                )
+              })}
+            </div>
           ) : (
-            <span className="game-editor__hint">Можно оставить место без типа.</span>
-          )}
-
-          {placeTypes.length === 0 ? (
             <span className="game-editor__hint">
-              В этом сеттинге пока нет типов мест — создайте их на экране сеттинга.
+              В сеттинге пока нет иконок. Добавьте их на экране сеттинга.
             </span>
-          ) : null}
+          )}
         </div>
 
         <label className="map-exit-toggle">

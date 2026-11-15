@@ -30,23 +30,19 @@ async function readPlaceTypesFile(): Promise<PlaceTypesFile> {
     if (error instanceof JsonFileError && error.code === 'ENOENT') {
       return emptyFile()
     }
-    throw new Error(`Не удалось прочитать типы мест: ${(error as Error).message}`)
+    throw new Error(`Не удалось прочитать иконки мест: ${(error as Error).message}`)
   }
 
   const parsed = placeTypesFileSchema.safeParse(raw)
   if (!parsed.success) {
-    throw new Error('Файл типов мест повреждён и не может быть прочитан')
+    throw new Error('Файл иконок мест повреждён и не может быть прочитан')
   }
 
   return parsed.data
 }
 
-function assertPlaceTypeInput(input: PlaceTypeInput): { name: string; iconSvg: string } {
+function assertPlaceTypeInput(input: PlaceTypeInput): { iconSvg: string } {
   const normalized = normalizePlaceTypeInput(input)
-
-  if (!normalized.name) {
-    throw new Error('Название типа места не может быть пустым')
-  }
 
   const check = validatePlaceIcon(normalized.iconSvg)
   if (!check.ok) {
@@ -88,7 +84,7 @@ export async function updatePlaceType(placeType: PlaceType): Promise<PlaceType> 
     const index = file.placeTypes.findIndex((item) => item.id === placeType.id)
 
     if (index === -1) {
-      throw new Error('Тип места не найден — возможно, запись уже удалена')
+      throw new Error('Иконка не найдена — возможно, запись уже удалена')
     }
 
     const updated: PlaceType = {
