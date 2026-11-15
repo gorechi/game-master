@@ -2596,21 +2596,36 @@ input[type='number'] {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1px;
+  gap: 2px;
   padding: 6px 4px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.03);
 }
 
-.combat-focus-card__score span {
+.combat-focus-card__score-label {
   color: var(--ink-faint);
   font-size: 9.5px;
   letter-spacing: 0.06em;
 }
 
-.combat-focus-card__score strong {
-  font-size: 15px;
+.combat-focus-card__score-modifier {
+  color: var(--gold-strong);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+
+.combat-focus-card__score-value {
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--ink-muted);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
 }
 
 .combat-focus-card__abilities {

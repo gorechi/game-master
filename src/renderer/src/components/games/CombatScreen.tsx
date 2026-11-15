@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { JSX } from 'react'
-import { formatChallengeRating } from '@shared/domain'
+import { formatChallengeRating, formatModifier, modifierFromScore } from '@shared/domain'
 import { errorMessage } from '@renderer/lib/api'
 import type { CombatResultEntry, CombatStart } from './CombatModal'
 import { IconCoffin, IconSkull } from '../ui/icons'
@@ -481,8 +481,13 @@ function CombatFocusCard({ entry }: { entry: CombatResultEntry }): JSX.Element {
           <div className="combat-focus-card__scores">
             {SCORE_FIELDS.map((field) => (
               <span className="combat-focus-card__score" key={field.key}>
-                <span>{field.label}</span>
-                <strong>{monster[field.key]}</strong>
+                <span className="combat-focus-card__score-label">{field.label}</span>
+                <strong className="combat-focus-card__score-modifier">
+                  {formatModifier(modifierFromScore(monster[field.key]))}
+                </strong>
+                <span className="combat-focus-card__score-value">
+                  {monster[field.key]}
+                </span>
               </span>
             ))}
           </div>
