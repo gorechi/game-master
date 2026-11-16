@@ -3831,8 +3831,8 @@ input[type='number'] {
 .map-node__description {
   position: absolute;
   z-index: 3;
-  top: -16px;
-  left: -16px;
+  top: -6px;
+  left: -6px;
   display: grid;
   place-items: center;
   width: 24px;
@@ -3861,8 +3861,8 @@ input[type='number'] {
 .map-node__monsters {
   position: absolute;
   z-index: 3;
-  top: -16px;
-  right: -16px;
+  top: -6px;
+  right: -6px;
   display: grid;
   place-items: center;
   width: 24px;
