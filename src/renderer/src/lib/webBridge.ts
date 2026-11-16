@@ -6,6 +6,7 @@ import type { Game, GameInput } from '@shared/game'
 import type { GameMap, GameMapInput } from '@shared/map'
 import type { Realm, RealmInput } from '@shared/realm'
 import { DEFAULT_REALM_ID } from '@shared/realm'
+import { localizeDefaultRealm } from '@shared/defaultRealm'
 import { PLACE_TYPES_FILE_SCHEMA_VERSION, type PlaceType, type PlaceTypeInput } from '@shared/placeType'
 import { validatePlaceIcon } from '@shared/placeIcon'
 import { PRESET_ICON_CATALOG_VERSION, PRESET_PLACE_ICONS } from '@shared/presetPlaceIcons'
@@ -305,10 +306,17 @@ function readRealms(): Realm[] {
     if (raw) {
       const parsed: unknown = JSON.parse(raw)
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return (parsed as Realm[]).map((realm) => ({
+        const realms = (parsed as Realm[]).map((realm) => ({
           ...realm,
           description: typeof realm.description === 'string' ? realm.description : ''
         }))
+        const localized = realms.map(localizeDefaultRealm)
+
+        if (localized.some((realm, index) => realm !== realms[index])) {
+          writeRealms(localized)
+        }
+
+        return localized
       }
     }
   } catch {

@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { app } from 'electron'
 import { createRealm, normalizeRealmInput } from '@shared/domain'
+import { localizeDefaultRealm } from '@shared/defaultRealm'
 import {
   DEFAULT_REALM_ID,
   REALMS_FILE_SCHEMA_VERSION,
@@ -60,6 +61,15 @@ async function readRealmsFile(): Promise<RealmsFile> {
     const seeded = { ...parsed.data, realms: [seedRealm()] }
     await writeRealms(seeded)
     return seeded
+  }
+
+  const localized = parsed.data.realms.map(localizeDefaultRealm)
+  const changed = localized.some((realm, index) => realm !== parsed.data.realms[index])
+
+  if (changed) {
+    const file = { ...parsed.data, realms: localized }
+    await writeRealms(file)
+    return file
   }
 
   return parsed.data

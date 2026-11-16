@@ -84,7 +84,10 @@ export default function App(): JSX.Element {
 
   const changeLocale = useCallback((locale: LocaleCode): void => {
     setSettings((previous) => ({ ...previous, locale }))
-    void api.settings.update({ locale }).catch(() => undefined)
+    void api.settings.update({ locale })
+      .then(() => api.realms.list())
+      .then((loadedRealms) => setRealms(loadedRealms))
+      .catch(() => undefined)
   }, [])
 
   const checkUpdates = useCallback(async (): Promise<void> => {
