@@ -3699,8 +3699,8 @@ input[type='number'] {
 .map-node__monsters {
   position: absolute;
   z-index: 3;
-  top: -5px;
-  right: -5px;
+  top: -16px;
+  right: -16px;
   display: grid;
   place-items: center;
   width: 24px;

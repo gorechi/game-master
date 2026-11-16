@@ -454,23 +454,26 @@ export function MapGraph({
                 <span className="map-node__token-initial">{nodeInitial(node.name)}</span>
               )}
               {node.isExit ? <MapExitFrame className="map-node__exit-frame" /> : null}
-              {placeMonsters.length > 0 && onOpenPlaceMonsters ? (
-                <button
-                  type="button"
-                  className="map-node__monsters"
-                  title={`Монстры здесь: ${placeMonsters.join(', ')}`}
-                  aria-label={`Монстры в локации «${node.name}»`}
-                  onPointerDown={(event) => event.stopPropagation()}
-                  onKeyDown={(event) => event.stopPropagation()}
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    onOpenPlaceMonsters(node.id)
-                  }}
-                >
-                  <IconMonsterFace width={13} height={13} />
-                </button>
-              ) : null}
             </span>
+
+            {placeMonsters.length > 0 && onOpenPlaceMonsters ? (
+              <button
+                type="button"
+                className="map-node__monsters"
+                title={`Монстры здесь: ${placeMonsters.join(', ')}`}
+                aria-label={`Монстры в локации «${node.name}»`}
+                onPointerDown={(event) => event.stopPropagation()}
+                onPointerUp={(event) => event.stopPropagation()}
+                onKeyDown={(event) => event.stopPropagation()}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onOpenPlaceMonsters(node.id)
+                }}
+              >
+                <IconMonsterFace width={13} height={13} />
+              </button>
+            ) : null}
+
             <span className="map-node__token-label">{node.name}</span>
 
             {interactive ? (
