@@ -48,7 +48,7 @@ export const backupDataSchema = z
     settings: z.object({
       theme: z.enum(THEMES),
       locale: z
-        .enum(LOCALE_CODES as [LocaleCode, ...LocaleCode[]])
+        .enum([...LOCALE_CODES] as [LocaleCode, ...LocaleCode[]])
         .default(DEFAULT_LOCALE)
     })
   })

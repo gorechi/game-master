@@ -84,7 +84,7 @@ if (!app.requestSingleInstanceLock()) {
       console.error('Не удалось применить встроенный набор иконок:', error)
     }
 
-    createMainWindow(settings.theme)
+    createMainWindow(settings.theme, settings.locale)
 
     // Бэкап не должен задерживать появление окна.
     void runAutoBackupIfDue('startup').catch((error: unknown) => {
@@ -93,7 +93,7 @@ if (!app.requestSingleInstanceLock()) {
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length > 0) return
-      void getSettings().then((loaded) => createMainWindow(loaded.theme))
+      void getSettings().then((loaded) => createMainWindow(loaded.theme, loaded.locale))
     })
   })
 

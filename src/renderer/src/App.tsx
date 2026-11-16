@@ -23,7 +23,6 @@ import { WindowTitleBar } from './components/WindowTitleBar'
 import { UpdateNotice } from './components/UpdateNotice'
 import { api, isWebPreview } from './lib/api'
 import { applyTheme } from './lib/theme'
-import { readCachedLocale } from './lib/locale'
 import type { Route } from './lib/routes'
 
 const USER_AGENT = typeof navigator === 'undefined' ? '' : navigator.userAgent
@@ -47,7 +46,7 @@ export default function App(): JSX.Element {
   const [route, setRoute] = useState<Route>({ name: 'games' })
   const [settings, setSettings] = useState<AppSettings>(() => ({
     ...DEFAULT_SETTINGS,
-    locale: readCachedLocale() ?? DEFAULT_SETTINGS.locale
+    locale: api.app.initialLocale()
   }))
   const [realms, setRealms] = useState<Realm[]>([])
   const [updateState, setUpdateState] = useState<UpdateState | null>(null)

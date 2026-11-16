@@ -1,6 +1,10 @@
 import { en } from './locales/en'
 import { ru } from './locales/ru'
+import { DEFAULT_LOCALE, LOCALE_CODES, isLocaleCode, type LocaleCode } from './codes'
 import type { MessageValues, PluralForms } from './types'
+
+export { DEFAULT_LOCALE, LOCALE_CODES, isLocaleCode }
+export type { LocaleCode }
 
 /**
  * Форма сообщений любой локали. Строки остаются строками, объекты склонений
@@ -19,24 +23,12 @@ type Localized<T> = T extends string
 export type Messages = Localized<typeof ru>
 
 /** Реестр локалей. Новая локаль добавляется сюда и в `LOCALE_LABELS`. */
-export const locales = { ru, en } as const satisfies Record<string, Messages>
-
-export type LocaleCode = keyof typeof locales
-
-export const LOCALE_CODES = Object.keys(locales) as LocaleCode[]
-
-export const DEFAULT_LOCALE: LocaleCode = 'ru'
+export const locales: Record<LocaleCode, Messages> = { ru, en }
 
 /** Названия языков для выбора в настройках — на самом языке. */
 export const LOCALE_LABELS: Record<LocaleCode, string> = {
   ru: ru.app.languageName,
   en: en.app.languageName
-}
-
-export function isLocaleCode(value: unknown): value is LocaleCode {
-  return (
-    typeof value === 'string' && Object.prototype.hasOwnProperty.call(locales, value)
-  )
 }
 
 export function getMessages(locale: LocaleCode): Messages {

@@ -71,6 +71,7 @@ import {
   type SettingsPatch
 } from '@shared/settings'
 import { DEFAULT_LOCALE, fill, isLocaleCode, m, setActiveLocale } from '@shared/i18n'
+import { readCachedLocale } from './locale'
 import {
   GITHUB_LATEST_RELEASE_API,
   isVersionNewer,
@@ -788,7 +789,8 @@ export function createWebBridge(): GameMasterApi {
         platform: 'other',
         dataDir: m().main.preview.storageLabel
       }),
-      openDataFolder: async (): Promise<void> => undefined
+      openDataFolder: async (): Promise<void> => undefined,
+      initialLocale: () => readCachedLocale() ?? DEFAULT_LOCALE
     },
 
     updates: {

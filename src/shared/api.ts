@@ -8,6 +8,7 @@ import type { GameMap, GameMapInput } from './map'
 import type { Realm, RealmInput } from './realm'
 import type { PlaceType, PlaceTypeInput } from './placeType'
 import type { AppSettings, SettingsPatch } from './settings'
+import type { LocaleCode } from './i18n'
 import type { UpdateState } from './update'
 import type {
   DataExportRequest,
@@ -93,6 +94,8 @@ export interface GameMasterApi {
   app: {
     info(): Promise<AppInfo>
     openDataFolder(): Promise<void>
+    /** Локаль для первого кадра — до загрузки настроек. */
+    initialLocale(): LocaleCode
   }
   /** Проверка новых версий на GitHub. Ничего не скачивает и не устанавливает. */
   updates: {

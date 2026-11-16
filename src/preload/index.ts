@@ -1,11 +1,19 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { GameMasterApi } from '@shared/api'
 import { IPC } from '@shared/api'
+import { DEFAULT_LOCALE, isLocaleCode, type LocaleCode } from '@shared/i18n/codes'
+
+const localeArgument = process.argv.find((argument) => argument.startsWith('--gm-locale='))
+const initialLocaleCandidate = localeArgument?.slice('--gm-locale='.length)
+const initialLocale: LocaleCode = isLocaleCode(initialLocaleCandidate)
+  ? initialLocaleCandidate
+  : DEFAULT_LOCALE
 
 const api: GameMasterApi = {
   app: {
     info: () => ipcRenderer.invoke(IPC.appInfo),
-    openDataFolder: () => ipcRenderer.invoke(IPC.appOpenDataFolder)
+    openDataFolder: () => ipcRenderer.invoke(IPC.appOpenDataFolder),
+    initialLocale: () => initialLocale
   },
   updates: {
     check: () => ipcRenderer.invoke(IPC.updatesCheck)

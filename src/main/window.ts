@@ -1,5 +1,6 @@
 import { BrowserWindow, nativeTheme } from 'electron'
 import path from 'node:path'
+import type { LocaleCode } from '@shared/i18n'
 import type { ThemeName } from '@shared/settings'
 
 let mainWindow: BrowserWindow | null = null
@@ -35,7 +36,10 @@ export function applyWindowTheme(theme: ThemeName): void {
   }
 }
 
-export function createMainWindow(theme: ThemeName = 'dark'): BrowserWindow {
+export function createMainWindow(
+  theme: ThemeName = 'dark',
+  locale: LocaleCode = 'ru'
+): BrowserWindow {
   const chrome = WINDOW_CHROME[theme]
   nativeTheme.themeSource = theme
 
@@ -70,7 +74,8 @@ export function createMainWindow(theme: ThemeName = 'dark'): BrowserWindow {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      spellcheck: false
+      spellcheck: false,
+      additionalArguments: [`--gm-locale=${locale}`]
     }
   })
 
