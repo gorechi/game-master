@@ -5,7 +5,11 @@ import type { GameMap } from '@shared/map'
 import type { PlaceType } from '@shared/placeType'
 import { api, errorMessage } from '@renderer/lib/api'
 import { GameFinishModal } from './games/GameFinishModal'
-import { CombatModal, type CombatStart } from './games/CombatModal'
+import {
+  CombatModal,
+  type CombatResultEntry,
+  type CombatStart
+} from './games/CombatModal'
 import { CombatScreen } from './games/CombatScreen'
 import { RunMap } from './maps/RunMap'
 import { PlaceMonstersModal } from './maps/PlaceMonstersModal'
@@ -30,6 +34,8 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
   const [error, setError] = useState<string | null>(null)
   const [confirmFinish, setConfirmFinish] = useState(false)
   const notesRef = useRef(notes)
+  const gameRef = useRef<Game | null>(null)
+  const defeatQueueRef = useRef<Promise<void>>(Promise.resolve())
   notesRef.current = notes
 
   useEffect(() => {
@@ -43,6 +49,7 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
 
       if (cancelled) return
 
+      gameRef.current = loaded
       setGame(loaded)
       setMaps(nextMaps)
       setActiveMapId(loaded?.mapId ?? null)
@@ -58,10 +65,18 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
   }, [gameId])
 
   async function persistNotes(value: string): Promise<void> {
-    if (!game || game.status === 'finished' || value === game.notes) return
+    const currentGame = gameRef.current
+    if (
+      !currentGame ||
+      currentGame.status === 'finished' ||
+      value === currentGame.notes
+    ) {
+      return
+    }
 
     try {
-      const updated = await api.games.update({ ...game, notes: value })
+      const updated = await api.games.update({ ...currentGame, notes: value })
+      gameRef.current = updated
       setGame(updated)
       setError(null)
     } catch (caught) {
@@ -99,24 +114,62 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
   }, [notesExpanded])
 
   async function saveMonsterHp(monsterId: string, hitPoints: number): Promise<void> {
-    if (!game) return
+    const currentGame = gameRef.current
+    if (!currentGame) return
 
     const updated = await api.games.update({
-      ...game,
-      monsters: game.monsters.map((monster) =>
+      ...currentGame,
+      monsters: currentGame.monsters.map((monster) =>
         monster.id === monsterId ? { ...monster, hitPoints } : monster
       )
     })
 
+    gameRef.current = updated
     setGame(updated)
     setError(null)
   }
 
+  async function saveDefeat(
+    entry: CombatResultEntry,
+    defeated: boolean
+  ): Promise<void> {
+    const task = defeatQueueRef.current.then(async () => {
+      const currentGame = gameRef.current
+      if (!currentGame) return
+
+      const nextIds = (ids: readonly string[]): string[] =>
+        defeated
+          ? [...new Set([...ids, entry.id])]
+          : ids.filter((id) => id !== entry.id)
+
+      const updated = await api.games.update({
+        ...currentGame,
+        defeatedCharacterIds:
+          entry.kind === 'character'
+            ? nextIds(currentGame.defeatedCharacterIds)
+            : currentGame.defeatedCharacterIds,
+        defeatedMonsterIds:
+          entry.kind === 'monster'
+            ? nextIds(currentGame.defeatedMonsterIds)
+            : currentGame.defeatedMonsterIds
+      })
+
+      gameRef.current = updated
+      setGame(updated)
+      setError(null)
+    })
+
+    defeatQueueRef.current = task.catch(() => undefined)
+    return task
+  }
+
   async function finishGame(keepMonsterIds: string[]): Promise<void> {
-    if (!game) return
+    const currentGame = gameRef.current
+    if (!currentGame) return
 
     await persistNotes(notesRef.current)
-    const updated = await api.games.finish(game.id, keepMonsterIds)
+    const updated = await api.games.finish(currentGame.id, keepMonsterIds)
+    gameRef.current = updated
     setGame(updated)
     setConfirmFinish(false)
     onBack()
@@ -135,7 +188,12 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
 
   if (game && map) {
     const monstersById = new Map(
-      game.monsters.filter((monster) => monster.hitPoints > 0).map((monster) => [monster.id, monster])
+      game.monsters
+        .filter(
+          (monster) =>
+            monster.hitPoints > 0 && !game.defeatedMonsterIds.includes(monster.id)
+        )
+        .map((monster) => [monster.id, monster])
     )
 
     for (const placement of game.monsterPlacements) {
@@ -169,6 +227,7 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
         initial={combat}
         onFinish={() => setCombat(null)}
         onMonsterHpChange={saveMonsterHp}
+        onDefeatChange={saveDefeat}
       />
     )
   }

@@ -66,6 +66,7 @@ export const packGameSchema = gameSchema
   .omit({
     realmId: true,
     characterIds: true,
+    defeatedCharacterIds: true,
     status: true,
     createdAt: true,
     updatedAt: true
@@ -265,6 +266,29 @@ export const dataPackSchema = z
             'placeId'
           ])
         }
+      })
+
+      const defeatedMonsterIds = new Set<string>()
+      game.defeatedMonsterIds.forEach((monsterId, monsterIndex) => {
+        if (!gameMonsterIds.has(monsterId)) {
+          issue('Поверженный монстр отсутствует в игре', [
+            'data',
+            'games',
+            gameIndex,
+            'defeatedMonsterIds',
+            monsterIndex
+          ])
+        }
+        if (defeatedMonsterIds.has(monsterId)) {
+          issue('Поверженный монстр указан несколько раз', [
+            'data',
+            'games',
+            gameIndex,
+            'defeatedMonsterIds',
+            monsterIndex
+          ])
+        }
+        defeatedMonsterIds.add(monsterId)
       })
     })
 
@@ -475,7 +499,10 @@ function packGamesForMaps(
             : null,
         abilities: monster.abilities.map((ability) => ({ ...ability }))
       })),
-      monsterPlacements: monsterPlacements.map((placement) => ({ ...placement }))
+      monsterPlacements: monsterPlacements.map((placement) => ({ ...placement })),
+      defeatedMonsterIds: (game.defeatedMonsterIds ?? []).filter((id) =>
+        gameMonsterIds.has(id)
+      )
     }
   })
 }
@@ -806,6 +833,11 @@ export function remapDataPack(
       characterIds: [],
       monsters: game.monsters.map(remapGameMonster),
       monsterPlacements,
+      defeatedCharacterIds: [],
+      defeatedMonsterIds: game.defeatedMonsterIds.flatMap((monsterId) => {
+        const nextId = gameMonsterIdMap.get(monsterId)
+        return nextId ? [nextId] : []
+      }),
       status: 'new',
       createdAt: now,
       updatedAt: now

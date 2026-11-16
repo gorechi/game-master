@@ -166,6 +166,29 @@ export const backupFileSchema = z
           ])
         }
       })
+
+      const defeatedMonsterIds = new Set<string>()
+      game.defeatedMonsterIds.forEach((monsterId, monsterIndex) => {
+        if (!gameMonsterIds.has(monsterId)) {
+          issue('Поверженный монстр отсутствует в игре', [
+            'data',
+            'games',
+            index,
+            'defeatedMonsterIds',
+            monsterIndex
+          ])
+        }
+        if (defeatedMonsterIds.has(monsterId)) {
+          issue('Поверженный монстр указан несколько раз', [
+            'data',
+            'games',
+            index,
+            'defeatedMonsterIds',
+            monsterIndex
+          ])
+        }
+        defeatedMonsterIds.add(monsterId)
+      })
     })
 
     data.characters.forEach((character, index) => {

@@ -55,7 +55,11 @@ const gameFields = {
   notes: z.string().max(20000).default(''),
   characterIds: z.array(z.string().min(1)).max(200).default([]),
   monsters: z.array(gameMonsterSchema).max(200).default([]),
-  monsterPlacements: z.array(gameMonsterPlacementSchema).max(200).default([])
+  monsterPlacements: z.array(gameMonsterPlacementSchema).max(200).default([]),
+  /** Персонажи, выбывшие в схватке и находящиеся на кладбище. */
+  defeatedCharacterIds: z.array(z.string().min(1)).max(200).default([]),
+  /** Монстры этой игры, выбывшие в схватке и находящиеся на кладбище. */
+  defeatedMonsterIds: z.array(z.string().min(1)).max(200).default([])
 }
 
 export const gameInputSchema = z.object(gameFields)
@@ -79,6 +83,8 @@ export interface GameInput {
   monsters: GameMonster[]
   /** Необязательно: старые импорты и тесты могут не передавать размещения. */
   monsterPlacements?: GameMonsterPlacement[]
+  defeatedCharacterIds?: string[]
+  defeatedMonsterIds?: string[]
 }
 
 export const gamesFileSchema = z.object({

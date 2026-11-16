@@ -576,7 +576,13 @@ export function GameFormModal({
                 readyInstances.map((monster) => monster.name)
               )
             ],
-        monsterPlacements: validPlacements
+        monsterPlacements: validPlacements,
+        defeatedCharacterIds: (game?.defeatedCharacterIds ?? []).filter((id) =>
+          validCharacterIds.includes(id)
+        ),
+        defeatedMonsterIds: (game?.defeatedMonsterIds ?? []).filter((id) =>
+          instances.some((monster) => monster.id === id)
+        )
       }
 
       const saved = game

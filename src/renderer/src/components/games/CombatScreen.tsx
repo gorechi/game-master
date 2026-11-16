@@ -10,6 +10,8 @@ interface CombatScreenProps {
   initial: CombatStart
   onFinish: () => void
   onMonsterHpChange: (monsterId: string, hitPoints: number) => Promise<void>
+  /** Сохраняет или снимает отметку «повержен» у участника схватки. */
+  onDefeatChange: (entry: CombatResultEntry, defeated: boolean) => Promise<void>
 }
 
 const HP_MIN = 0
@@ -39,7 +41,8 @@ function entryMeta(entry: CombatResultEntry): string {
 export function CombatScreen({
   initial,
   onFinish,
-  onMonsterHpChange
+  onMonsterHpChange,
+  onDefeatChange
 }: CombatScreenProps): JSX.Element {
   const [active, setActive] = useState<CombatResultEntry[]>(() =>
     sortEntries(initial.participants)
@@ -94,6 +97,11 @@ export function CombatScreen({
       const next = nextActive.length > 0 ? nextActive[index % nextActive.length] : null
       setCurrentKey(next?.key ?? null)
     }
+
+    setSaveError(null)
+    void onDefeatChange(entry, true).catch((caught: unknown) => {
+      setSaveError(errorMessage(caught))
+    })
   }
 
   function join(entry: CombatResultEntry): void {
@@ -109,6 +117,11 @@ export function CombatScreen({
     setActive(nextActive)
     setCemetery((items) => items.filter((item) => item.key !== entry.key))
     if (!current) setCurrentKey(nextActive[0]?.key ?? null)
+
+    setSaveError(null)
+    void onDefeatChange(entry, false).catch((caught: unknown) => {
+      setSaveError(errorMessage(caught))
+    })
   }
 
   return (

@@ -49,6 +49,18 @@ interface CombatModalProps {
 const INITIATIVE_MIN = 1
 const INITIATIVE_MAX = 99
 
+const DEFEATED_CHARACTER_STATUS = /^(мёртв|мертв|повержен|погиб|убит)/i
+
+function isCharacterDefeated(
+  character: CharacterProfile,
+  defeatedCharacterIds: readonly string[]
+): boolean {
+  return (
+    defeatedCharacterIds.includes(character.id) ||
+    character.statuses.some((status) => DEFEATED_CHARACTER_STATUS.test(status.trim()))
+  )
+}
+
 function parseInitiative(value: string): number | null {
   if (!value.trim()) return null
   const parsed = Number(value)
@@ -119,7 +131,7 @@ export function CombatModal({
 
   function addCharacter(characterId: string): void {
     const character = characters.find((item) => item.id === characterId)
-    if (!character) return
+    if (!character || isCharacterDefeated(character, game.defeatedCharacterIds)) return
 
     setCombatants((current) => [
       ...current,
@@ -139,6 +151,13 @@ export function CombatModal({
   }
 
   function addMonster(monster: GameMonster): void {
+    if (
+      monster.hitPoints <= 0 ||
+      game.defeatedMonsterIds.includes(monster.id)
+    ) {
+      return
+    }
+
     setCombatants((current) => [
       ...current,
       {
@@ -266,7 +285,14 @@ export function CombatModal({
   const addedMonsterIds = new Set(
     combatants.filter((combatant) => combatant.kind === 'monster').map((combatant) => combatant.id)
   )
-  const characterOptions = characters
+  const availableCharacters = characters.filter(
+    (character) => !isCharacterDefeated(character, game.defeatedCharacterIds)
+  )
+  const availableMonsters = game.monsters.filter(
+    (monster) =>
+      monster.hitPoints > 0 && !game.defeatedMonsterIds.includes(monster.id)
+  )
+  const characterOptions = availableCharacters
     .filter((character) => !addedCharacterIds.has(character.id))
     .map((character) => ({
       value: character.id,
@@ -274,7 +300,7 @@ export function CombatModal({
         ? `${character.name} · ${playerNameOf(character.playerId) ?? 'без игрока'}`
         : character.name
     }))
-  const monsterOptions = game.monsters
+  const monsterOptions = availableMonsters
     .filter((monster) => !addedMonsterIds.has(monster.id))
     .map((monster) => ({ value: monster.id, label: monster.name }))
 
@@ -425,8 +451,12 @@ export function CombatModal({
                 onChange={addCharacter}
               />
             </div>
+          ) : availableCharacters.length === 0 ? (
+            <p className="abilities-editor__empty">Все персонажи повержены.</p>
           ) : (
-            <p className="abilities-editor__empty">Все персонажи уже в списке.</p>
+            <p className="abilities-editor__empty">
+              Все доступные персонажи уже в списке.
+            </p>
           )}
 
           {combatants.some((combatant) => combatant.kind === 'character') ? (
@@ -462,8 +492,10 @@ export function CombatModal({
                 }}
               />
             </div>
+          ) : availableMonsters.length === 0 ? (
+            <p className="abilities-editor__empty">Все монстры повержены.</p>
           ) : (
-            <p className="abilities-editor__empty">Все монстры уже в списке.</p>
+            <p className="abilities-editor__empty">Все доступные монстры уже в списке.</p>
           )}
 
           {combatants.some((combatant) => combatant.kind === 'monster') ? (

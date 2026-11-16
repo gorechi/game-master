@@ -234,6 +234,12 @@ function readGames(): Game[] {
       monsterPlacements: Array.isArray(game.monsterPlacements)
         ? game.monsterPlacements
         : [],
+      defeatedCharacterIds: Array.isArray(game.defeatedCharacterIds)
+        ? game.defeatedCharacterIds
+        : [],
+      defeatedMonsterIds: Array.isArray(game.defeatedMonsterIds)
+        ? game.defeatedMonsterIds
+        : [],
       status: isGameStatus(game.status) ? game.status : 'new'
     }))
   } catch {
@@ -723,6 +729,8 @@ export function createWebBridge(): GameMasterApi {
           characterIds: game.characterIds,
           monsters: game.monsters,
           monsterPlacements: game.monsterPlacements ?? [],
+          defeatedCharacterIds: game.defeatedCharacterIds ?? [],
+          defeatedMonsterIds: game.defeatedMonsterIds ?? [],
           updatedAt: new Date().toISOString()
         }
 

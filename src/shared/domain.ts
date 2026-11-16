@@ -439,6 +439,8 @@ export function createGame(
     characterIds: [...new Set(input.characterIds)],
     monsters: input.monsters,
     monsterPlacements: input.monsterPlacements ?? [],
+    defeatedCharacterIds: [...new Set(input.defeatedCharacterIds ?? [])],
+    defeatedMonsterIds: [...new Set(input.defeatedMonsterIds ?? [])],
     status: 'new',
     createdAt: now,
     updatedAt: now

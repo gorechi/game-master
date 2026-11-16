@@ -91,7 +91,9 @@ function assertGame(input: GameInput): GameInput {
           placement
         ])
       ).values()
-    ]
+    ],
+    defeatedCharacterIds: [...new Set(input.defeatedCharacterIds ?? [])],
+    defeatedMonsterIds: [...new Set(input.defeatedMonsterIds ?? [])]
   }
 }
 
@@ -158,6 +160,8 @@ export async function updateGame(game: Game): Promise<Game> {
       characterIds: normalized.characterIds,
       monsters: normalized.monsters,
       monsterPlacements: normalized.monsterPlacements ?? [],
+      defeatedCharacterIds: normalized.defeatedCharacterIds ?? [],
+      defeatedMonsterIds: normalized.defeatedMonsterIds ?? [],
       updatedAt: new Date().toISOString()
     }
 
