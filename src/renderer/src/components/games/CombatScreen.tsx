@@ -4,7 +4,8 @@ import { formatChallengeRating, formatModifier, modifierFromScore } from '@share
 import { errorMessage } from '@renderer/lib/api'
 import { MONSTER_STAT_FIELDS } from '@renderer/lib/monsterStats'
 import type { CombatResultEntry, CombatStart } from './CombatModal'
-import { IconCoffin, IconSkull } from '../ui/icons'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
+import { IconCoffin, IconRun, IconSkull } from '../ui/icons'
 
 interface CombatScreenProps {
   initial: CombatStart
@@ -12,6 +13,8 @@ interface CombatScreenProps {
   onMonsterHpChange: (monsterId: string, hitPoints: number) => Promise<void>
   /** Сохраняет или снимает отметку «повержен» у участника схватки. */
   onDefeatChange: (entry: CombatResultEntry, defeated: boolean) => Promise<void>
+  /** Убирает привязку сбежавшего монстра к локации, оставляя его в игре. */
+  onMonsterEscape: (monsterId: string) => Promise<void>
 }
 
 const HP_MIN = 0
@@ -42,7 +45,8 @@ export function CombatScreen({
   initial,
   onFinish,
   onMonsterHpChange,
-  onDefeatChange
+  onDefeatChange,
+  onMonsterEscape
 }: CombatScreenProps): JSX.Element {
   const [active, setActive] = useState<CombatResultEntry[]>(() =>
     sortEntries(initial.participants)
@@ -56,6 +60,7 @@ export function CombatScreen({
   )
   const [saveError, setSaveError] = useState<string | null>(null)
   const [finishing, setFinishing] = useState(false)
+  const [escapingEntry, setEscapingEntry] = useState<CombatResultEntry | null>(null)
 
   const current = active.find((entry) => entry.key === currentKey) ?? active[0] ?? null
 
@@ -146,6 +151,31 @@ export function CombatScreen({
     }
   }
 
+  async function confirmEscape(): Promise<void> {
+    const entry = escapingEntry
+    if (!entry || entry.kind !== 'monster') return
+
+    setEscapingEntry(null)
+    setSaveError(null)
+
+    try {
+      await onMonsterEscape(entry.id)
+
+      const index = active.findIndex((item) => item.key === entry.key)
+      const nextActive = active.filter((item) => item.key !== entry.key)
+      setActive(nextActive)
+      setReserves((items) => items.filter((item) => item.key !== entry.key))
+      setCemetery((items) => items.filter((item) => item.key !== entry.key))
+
+      if (current?.key === entry.key) {
+        const next = nextActive.length > 0 ? nextActive[index % nextActive.length] : null
+        setCurrentKey(next?.key ?? null)
+      }
+    } catch (caught) {
+      setSaveError(errorMessage(caught))
+    }
+  }
+
   return (
     <main className="combat-screen">
       <header className="combat-screen__head">
@@ -201,6 +231,11 @@ export function CombatScreen({
                       entry={entry}
                       current={current?.key === entry.key}
                       onDefeat={() => defeat(entry)}
+                      onEscape={
+                        entry.kind === 'monster'
+                          ? () => setEscapingEntry(entry)
+                          : undefined
+                      }
                       onHpLive={(value) => updateHp(entry.key, value)}
                       onHpCommit={(value) => commitHp(entry, value)}
                     />
@@ -225,7 +260,15 @@ export function CombatScreen({
               <ul className="combat-queue combat-queue--reserves">
                 {reserves.map((entry) => (
                   <li key={entry.key}>
-                    <ReserveCard entry={entry} onJoin={() => join(entry)} />
+                    <ReserveCard
+                      entry={entry}
+                      onJoin={() => join(entry)}
+                      onEscape={
+                        entry.kind === 'monster'
+                          ? () => setEscapingEntry(entry)
+                          : undefined
+                      }
+                    />
                   </li>
                 ))}
               </ul>
@@ -262,6 +305,16 @@ export function CombatScreen({
           <p className="combat-side__empty">Пока пусто.</p>
         )}
       </section>
+
+      <ConfirmDialog
+        open={escapingEntry !== null}
+        title={escapingEntry ? `Побег: ${escapingEntry.name}` : 'Побег монстра'}
+        description="Монстр собирается сбежать из схватки в неизвестном направлении. Все правильно?"
+        confirmLabel="Да, сбегает"
+        cancelLabel="Отмена"
+        onConfirm={() => void confirmEscape()}
+        onCancel={() => setEscapingEntry(null)}
+      />
     </main>
   )
 }
@@ -270,12 +323,14 @@ function QueueCard({
   entry,
   current,
   onDefeat,
+  onEscape,
   onHpLive,
   onHpCommit
 }: {
   entry: CombatResultEntry
   current: boolean
   onDefeat: () => void
+  onEscape?: () => void
   onHpLive: (hitPoints: number) => void
   onHpCommit: (hitPoints: number) => void
 }): JSX.Element {
@@ -302,12 +357,26 @@ function QueueCard({
         {initiativeLabel(entry)}
       </span>
 
+      {onEscape ? (
+        <button
+          type="button"
+          className="combat-escape-button"
+          title="Убежать"
+          aria-label={`Монстр ${entry.name} убегает`}
+          onClick={onEscape}
+        >
+          <IconRun width={15} height={15} />
+        </button>
+      ) : null}
+
       <button
         type="button"
-        className="button button--tiny button--danger combat-queue-card__defeat"
+        className="combat-defeat-button"
+        title="Повержен"
+        aria-label={`Повержен: ${entry.name}`}
         onClick={onDefeat}
       >
-        Повержен
+        <IconSkull width={22} height={22} />
       </button>
     </article>
   )
@@ -385,10 +454,12 @@ function HpEditor({
 
 function ReserveCard({
   entry,
-  onJoin
+  onJoin,
+  onEscape
 }: {
   entry: CombatResultEntry
   onJoin: () => void
+  onEscape?: () => void
 }): JSX.Element {
   return (
     <article className="combat-queue-card combat-queue-card--reserve">
@@ -400,6 +471,18 @@ function ReserveCard({
       <span className="combat-queue-card__initiative" title="Инициатива">
         {initiativeLabel(entry)}
       </span>
+
+      {onEscape ? (
+        <button
+          type="button"
+          className="combat-escape-button"
+          title="Убежать"
+          aria-label={`Монстр ${entry.name} убегает`}
+          onClick={onEscape}
+        >
+          <IconRun width={15} height={15} />
+        </button>
+      ) : null}
 
       <button
         type="button"

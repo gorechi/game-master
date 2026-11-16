@@ -35,7 +35,7 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
   const [confirmFinish, setConfirmFinish] = useState(false)
   const notesRef = useRef(notes)
   const gameRef = useRef<Game | null>(null)
-  const defeatQueueRef = useRef<Promise<void>>(Promise.resolve())
+  const combatUpdateQueueRef = useRef<Promise<void>>(Promise.resolve())
   notesRef.current = notes
 
   useEffect(() => {
@@ -133,7 +133,7 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
     entry: CombatResultEntry,
     defeated: boolean
   ): Promise<void> {
-    const task = defeatQueueRef.current.then(async () => {
+    const task = combatUpdateQueueRef.current.then(async () => {
       const currentGame = gameRef.current
       if (!currentGame) return
 
@@ -159,7 +159,31 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
       setError(null)
     })
 
-    defeatQueueRef.current = task.catch(() => undefined)
+    combatUpdateQueueRef.current = task.catch(() => undefined)
+    return task
+  }
+
+  async function saveMonsterEscape(monsterId: string): Promise<void> {
+    const task = combatUpdateQueueRef.current.then(async () => {
+      const currentGame = gameRef.current
+      if (!currentGame) return
+
+      const updated = await api.games.update({
+        ...currentGame,
+        monsterPlacements: currentGame.monsterPlacements.filter(
+          (placement) => placement.monsterId !== monsterId
+        ),
+        defeatedMonsterIds: currentGame.defeatedMonsterIds.filter(
+          (id) => id !== monsterId
+        )
+      })
+
+      gameRef.current = updated
+      setGame(updated)
+      setError(null)
+    })
+
+    combatUpdateQueueRef.current = task.catch(() => undefined)
     return task
   }
 
@@ -225,6 +249,7 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
         onFinish={() => setCombat(null)}
         onMonsterHpChange={saveMonsterHp}
         onDefeatChange={saveDefeat}
+        onMonsterEscape={saveMonsterEscape}
       />
     )
   }

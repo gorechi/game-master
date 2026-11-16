@@ -209,6 +209,18 @@ export function IconCollapse(props: IconProps): JSX.Element {
   )
 }
 
+export function IconRun(props: IconProps): JSX.Element {
+  return (
+    <Svg {...props}>
+      <circle cx="15.8" cy="4.3" r="2" />
+      <path d="M8 21l3.2-5.2-1.7-3.6L7 15v3" />
+      <path d="M10.8 12.1l3.4 1.4 1.9 3.1" />
+      <path d="M13.3 8.7l2.9 1.3 2.3 2.6" />
+      <path d="M16.2 8l2.8-2.1M4 6h4M3 9h3" />
+    </Svg>
+  )
+}
+
 export function IconMonsterFace(props: IconProps): JSX.Element {
   return (
     <Svg {...props}>

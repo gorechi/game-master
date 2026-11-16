@@ -2832,6 +2832,75 @@ input[type='number'] {
   color: #3a2a0d;
 }
 
+.combat-defeat-button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  padding: 0;
+  border-radius: 10px;
+  border: 1px solid #e78a80;
+  background: linear-gradient(180deg, #e06a5f, #b83a30);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.24);
+  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.combat-defeat-button:hover {
+  background: linear-gradient(180deg, #ec7d72, #c9493e);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3);
+}
+
+.combat-defeat-button:active {
+  transform: translateY(0);
+}
+
+.combat-defeat-button:focus-visible {
+  outline: 2px solid #f0a49b;
+  outline-offset: 2px;
+}
+
+.combat-escape-button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink-faint);
+  opacity: 0.68;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.combat-escape-button:hover {
+  color: var(--ink-muted);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border);
+  opacity: 1;
+}
+
+.combat-escape-button:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.combat-queue-card--current .combat-escape-button {
+  color: rgba(36, 29, 11, 0.5);
+}
+
+.combat-queue-card--current .combat-escape-button:hover {
+  color: rgba(36, 29, 11, 0.82);
+  background: rgba(36, 29, 11, 0.1);
+  border-color: rgba(36, 29, 11, 0.22);
+}
+
 .combat-queue-card .button {
   flex: none;
 }
