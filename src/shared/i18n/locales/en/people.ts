@@ -32,7 +32,7 @@ export const enPeopleMessages = {
     firstNameLabel: 'First name',
     firstNamePlaceholder: 'Anna',
     lastNameLabel: 'Last name',
-    lastNamePlaceholder: 'Smirnova'
+    lastNamePlaceholder: 'Smith'
   },
   playerCharacters: {
     kicker: 'Player',
