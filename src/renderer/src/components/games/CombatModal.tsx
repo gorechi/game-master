@@ -49,16 +49,11 @@ interface CombatModalProps {
 const INITIATIVE_MIN = 1
 const INITIATIVE_MAX = 99
 
-const DEFEATED_CHARACTER_STATUS = /^(мёртв|мертв|повержен|погиб|убит)/i
-
 function isCharacterDefeated(
   character: CharacterProfile,
   defeatedCharacterIds: readonly string[]
 ): boolean {
-  return (
-    defeatedCharacterIds.includes(character.id) ||
-    character.statuses.some((status) => DEFEATED_CHARACTER_STATUS.test(status.trim()))
-  )
+  return defeatedCharacterIds.includes(character.id)
 }
 
 function parseInitiative(value: string): number | null {
@@ -151,12 +146,7 @@ export function CombatModal({
   }
 
   function addMonster(monster: GameMonster): void {
-    if (
-      monster.hitPoints <= 0 ||
-      game.defeatedMonsterIds.includes(monster.id)
-    ) {
-      return
-    }
+    if (game.defeatedMonsterIds.includes(monster.id)) return
 
     setCombatants((current) => [
       ...current,
@@ -289,8 +279,7 @@ export function CombatModal({
     (character) => !isCharacterDefeated(character, game.defeatedCharacterIds)
   )
   const availableMonsters = game.monsters.filter(
-    (monster) =>
-      monster.hitPoints > 0 && !game.defeatedMonsterIds.includes(monster.id)
+    (monster) => !game.defeatedMonsterIds.includes(monster.id)
   )
   const characterOptions = availableCharacters
     .filter((character) => !addedCharacterIds.has(character.id))

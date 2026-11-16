@@ -189,10 +189,7 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
   if (game && map) {
     const monstersById = new Map(
       game.monsters
-        .filter(
-          (monster) =>
-            monster.hitPoints > 0 && !game.defeatedMonsterIds.includes(monster.id)
-        )
+        .filter((monster) => !game.defeatedMonsterIds.includes(monster.id))
         .map((monster) => [monster.id, monster])
     )
 
