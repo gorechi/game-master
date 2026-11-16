@@ -55,6 +55,7 @@ export function CombatScreen({
     () => sortEntries(initial.participants)[0]?.key ?? null
   )
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [finishing, setFinishing] = useState(false)
 
   const current = active.find((entry) => entry.key === currentKey) ?? active[0] ?? null
 
@@ -124,6 +125,27 @@ export function CombatScreen({
     })
   }
 
+  async function finishCombat(): Promise<void> {
+    if (finishing) return
+
+    setFinishing(true)
+    setSaveError(null)
+
+    try {
+      const zeroHpMonsters = [...active, ...reserves, ...cemetery].filter(
+        (entry) => entry.kind === 'monster' && entry.monster?.hitPoints === 0
+      )
+
+      await Promise.all(
+        zeroHpMonsters.map((entry) => onDefeatChange(entry, true))
+      )
+      onFinish()
+    } catch (caught) {
+      setSaveError(errorMessage(caught))
+      setFinishing(false)
+    }
+  }
+
   return (
     <main className="combat-screen">
       <header className="combat-screen__head">
@@ -134,9 +156,10 @@ export function CombatScreen({
         <button
           type="button"
           className="button button--danger-solid combat-screen__finish"
-          onClick={onFinish}
+          onClick={() => void finishCombat()}
+          disabled={finishing}
         >
-          Закончить
+          {finishing ? 'Заканчиваем…' : 'Закончить'}
         </button>
       </header>
 
