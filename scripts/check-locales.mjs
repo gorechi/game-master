@@ -56,6 +56,9 @@ try {
           problems.push(`${where}: ожидалась непустая строка`)
           continue
         }
+        if (/[А-Яа-яЁё]/.test(currentValue)) {
+          problems.push(`${where}: кириллица в значении`)
+        }
 
         const expected = placeholders(baseValue)
         const actual = placeholders(currentValue)
@@ -77,6 +80,31 @@ try {
         for (const [form, text] of Object.entries(currentValue)) {
           if (typeof text !== 'string' || !text.trim()) {
             problems.push(`${where}.${form}: пустая форма склонения`)
+            continue
+          }
+          if (/[А-Яа-яЁё]/.test(text)) {
+            problems.push(`${where}.${form}: кириллица в значении`)
+          }
+        }
+
+        const basePlaceholders = new Set(
+          Object.values(baseValue).flatMap((text) =>
+            typeof text === 'string' ? [...placeholders(text)] : []
+          )
+        )
+        const currentPlaceholders = new Set(
+          Object.values(currentValue).flatMap((text) =>
+            typeof text === 'string' ? [...placeholders(text)] : []
+          )
+        )
+        for (const name of basePlaceholders) {
+          if (!currentPlaceholders.has(name)) {
+            problems.push(`${where}: в склонениях нет плейсхолдера {${name}}`)
+          }
+        }
+        for (const name of currentPlaceholders) {
+          if (!basePlaceholders.has(name)) {
+            problems.push(`${where}: в склонениях лишний плейсхолдер {${name}}`)
           }
         }
         continue
