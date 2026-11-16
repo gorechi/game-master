@@ -239,7 +239,7 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
   )
   const descriptionPlaceIds = new Set(
     map?.places
-      .filter((place) => place.description.trim().length > 0)
+      .filter((place) => (place.description ?? '').trim().length > 0)
       .map((place) => place.id) ?? []
   )
   const descriptionPlace = descriptionPlaceId
