@@ -6,6 +6,7 @@ import {
   modifierFromScore
 } from '@shared/domain'
 import { MONSTER_STAT_FIELDS } from '@renderer/lib/monsterStats'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 import { IconPencil, IconSkull, IconTrash } from '../ui/icons'
 
 interface MonsterCardProps {
@@ -40,6 +41,8 @@ export function MonsterCard({
   onEdit,
   onDelete
 }: MonsterCardProps): JSX.Element {
+  const { messages: m, fill } = useI18n()
+
   return (
     <li className="monster-card">
       <div className="monster-card__identity">
@@ -53,10 +56,16 @@ export function MonsterCard({
             {realmName ? <span className="monster-chip">{realmName}</span> : null}
             {badge ? <span className="monster-chip monster-chip--unique">{badge}</span> : null}
             <span className="monster-chip monster-chip--cr">
-              КО {formatChallengeRating(monster.challengeRating)}
+              {fill(m.bestiary.card.challengeRating, {
+                cr: formatChallengeRating(monster.challengeRating)
+              })}
             </span>
-            <span className="monster-chip">КЗ {monster.armorClass}</span>
-            <span className="monster-chip">ХП {monster.hitPoints}</span>
+            <span className="monster-chip">
+              {fill(m.bestiary.card.armorClass, { ac: monster.armorClass })}
+            </span>
+            <span className="monster-chip">
+              {fill(m.bestiary.card.hitPoints, { hp: monster.hitPoints })}
+            </span>
           </div>
 
           {statuses && statuses.length > 0 ? (
@@ -87,8 +96,8 @@ export function MonsterCard({
         <button
           type="button"
           className="icon-button"
-          title="Редактировать"
-          aria-label={`Редактировать монстра ${monster.name}`}
+          title={m.bestiary.card.edit}
+          aria-label={fill(m.bestiary.card.editAria, { name: monster.name })}
           onClick={onEdit}
         >
           <IconPencil />
@@ -96,8 +105,8 @@ export function MonsterCard({
         <button
           type="button"
           className="icon-button icon-button--danger"
-          title="Удалить"
-          aria-label={`Удалить монстра ${monster.name}`}
+          title={m.bestiary.card.delete}
+          aria-label={fill(m.bestiary.card.deleteAria, { name: monster.name })}
           onClick={onDelete}
         >
           <IconTrash />

@@ -3,6 +3,7 @@ import type { JSX } from 'react'
 import { validatePlaceIcon } from '@shared/placeIcon'
 import type { PlaceType, PlaceTypeInput } from '@shared/placeType'
 import { api, errorMessage } from '@renderer/lib/api'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { IconPencil, IconPlus, IconTrash } from '../ui/icons'
 import { PlaceTypeIcon } from '../placeTypes/PlaceTypeIcon'
@@ -20,6 +21,7 @@ export function RealmIconsSection({
   realmId,
   realmName
 }: RealmIconsSectionProps): JSX.Element {
+  const { messages: m, fill } = useI18n()
   const [icons, setIcons] = useState<PlaceType[]>([])
   const [form, setForm] = useState<FormState | null>(null)
   const [deleting, setDeleting] = useState<PlaceType | null>(null)
@@ -73,10 +75,9 @@ export function RealmIconsSection({
     <section className="settings-block realm-icons-block" aria-labelledby="realm-icons-title">
       <div className="place-types-head">
         <div className="settings-block__head">
-          <h2 id="realm-icons-title">Набор иконок</h2>
+          <h2 id="realm-icons-title">{m.realms.icons.title}</h2>
           <p className="muted">
-            Набор иконок сеттинга «{realmName || '—'}». Место на карте выбирает любую
-            иконку из этого набора.
+            {fill(m.realms.icons.description, { realm: realmName || '—' })}
           </p>
         </div>
 
@@ -87,24 +88,24 @@ export function RealmIconsSection({
           onClick={() => setForm({ mode: 'create' })}
         >
           <IconPlus width={16} height={16} />
-          Добавить иконку
+          {m.realms.icons.add}
         </button>
       </div>
 
       {error ? <p className="notice notice--error">{error}</p> : null}
 
       {loading && icons.length === 0 ? (
-        <p className="muted">Загружаем иконки…</p>
+        <p className="muted">{m.realms.icons.loading}</p>
       ) : icons.length === 0 ? (
         <div className="place-types-empty">
-          <p>Иконок пока нет.</p>
-          <span>Добавьте первую SVG-иконку — потом её можно будет выбрать для места.</span>
+          <p>{m.realms.icons.empty}</p>
+          <span>{m.realms.icons.emptyHint}</span>
         </div>
       ) : (
         <ul className="realm-icon-grid">
           {icons.map((icon, index) => {
             const valid = validatePlaceIcon(icon.iconSvg).ok
-            const label = `Иконка ${index + 1}`
+            const label = fill(m.realms.icons.iconLabel, { index: index + 1 })
 
             return (
               <li className="realm-icon-card" key={icon.id}>
@@ -112,7 +113,7 @@ export function RealmIconsSection({
                   className={`realm-icon-card__token${
                     valid ? '' : ' realm-icon-card__token--broken'
                   }`}
-                  title={valid ? label : `${label}: повреждена`}
+                  title={valid ? label : fill(m.realms.icons.broken, { label })}
                 >
                   <PlaceTypeIcon svg={icon.iconSvg} size={30} />
                 </span>
@@ -121,8 +122,10 @@ export function RealmIconsSection({
                   <button
                     type="button"
                     className="icon-button icon-button--tiny"
-                    title="Заменить иконку"
-                    aria-label={`Заменить ${label.toLowerCase()}`}
+                    title={m.realms.icons.replace}
+                    aria-label={fill(m.realms.icons.replaceAria, {
+                      label: label.toLowerCase()
+                    })}
                     onClick={() => setForm({ mode: 'edit', icon })}
                   >
                     <IconPencil width={14} height={14} />
@@ -130,8 +133,10 @@ export function RealmIconsSection({
                   <button
                     type="button"
                     className="icon-button icon-button--tiny icon-button--danger"
-                    title="Удалить иконку"
-                    aria-label={`Удалить ${label.toLowerCase()}`}
+                    title={m.realms.icons.delete}
+                    aria-label={fill(m.realms.icons.deleteAria, {
+                      label: label.toLowerCase()
+                    })}
                     onClick={() => {
                       setError(null)
                       setDeleting(icon)
@@ -155,8 +160,8 @@ export function RealmIconsSection({
 
       <ConfirmDialog
         open={deleting !== null}
-        title="Удалить иконку?"
-        description="Иконка исчезнет из набора сеттинга. Места, где она выбрана, останутся без иконки."
+        title={m.realms.icons.deleteTitle}
+        description={m.realms.icons.deleteDescription}
         onCancel={() => setDeleting(null)}
         onConfirm={() => void confirmDelete()}
       />

@@ -10,6 +10,7 @@ import {
   type MonstersFile
 } from '@shared/monster'
 import { JsonFileError, readJsonFile, withFileLock, writeJsonAtomic } from './jsonFile'
+import { fill, m } from '@shared/i18n'
 
 const LOCK_KEY = 'monsters.json'
 
@@ -39,11 +40,11 @@ async function readMonstersFile(): Promise<MonstersFile> {
     if (error instanceof JsonFileError && error.code === 'ENOENT') {
       return emptyFile()
     }
-    throw new Error(`Не удалось прочитать бестиарий: ${(error as Error).message}`)
+    throw new Error(fill(m().main.monsters.readFailed, { error: (error as Error).message }))
   }
 
   if (!raw || typeof raw !== 'object') {
-    throw new Error('Файл бестиария повреждён и не может быть прочитан')
+    throw new Error(m().main.monsters.corrupted)
   }
 
   const file = raw as Record<string, unknown>
@@ -53,7 +54,7 @@ async function readMonstersFile(): Promise<MonstersFile> {
 
   const parsed = monstersFileSchema.safeParse({ ...file, monsters })
   if (!parsed.success) {
-    throw new Error('Файл бестиария повреждён и не может быть прочитан')
+    throw new Error(m().main.monsters.corrupted)
   }
 
   return parsed.data
@@ -62,7 +63,7 @@ async function readMonstersFile(): Promise<MonstersFile> {
 function assertName(input: MonsterInput): ReturnType<typeof normalizeMonsterInput> {
   const normalized = normalizeMonsterInput(input)
   if (!normalized.name) {
-    throw new Error('Название монстра не может быть пустым')
+    throw new Error(m().main.monsters.nameRequired)
   }
   return normalized
 }
@@ -117,7 +118,7 @@ export async function updateMonster(monster: Monster): Promise<Monster> {
     const index = file.monsters.findIndex((item) => item.id === monster.id)
 
     if (index === -1) {
-      throw new Error('Монстр не найден — возможно, запись уже удалена')
+      throw new Error(m().main.monsters.notFound)
     }
 
     const updated: Monster = {

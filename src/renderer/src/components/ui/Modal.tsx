@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { JSX, ReactNode, RefObject } from 'react'
 import { createPortal } from 'react-dom'
+import { useMessages } from '@renderer/i18n/LocaleProvider'
 import { IconClose } from './icons'
 
 interface ModalProps {
@@ -46,6 +47,7 @@ export function Modal({
   onClose,
   initialFocusRef
 }: ModalProps): JSX.Element | null {
+  const m = useMessages()
   const panelRef = useRef<HTMLDivElement>(null)
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
@@ -133,7 +135,7 @@ export function Modal({
       >
         <header className="modal__head">
           <h2 className="modal__title">{title}</h2>
-          <button type="button" className="icon-button" onClick={onClose} aria-label="Закрыть">
+          <button type="button" className="icon-button" onClick={onClose} aria-label={m.ui.modal.close}>
             <IconClose />
           </button>
         </header>

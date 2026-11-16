@@ -5,7 +5,7 @@ import type { CharacterProfile } from '@shared/characterProfile'
 import type { Realm } from '@shared/realm'
 import { playerFullName, playerInitials } from '@shared/domain'
 import { api, errorMessage } from '@renderer/lib/api'
-import { formatDate, pluralize } from '@renderer/lib/format'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 import { CharacterCard } from './character/CharacterCard'
 import { CharacterFormModal } from './character/CharacterFormModal'
 import { ConfirmDialog } from './ui/ConfirmDialog'
@@ -26,6 +26,7 @@ export function PlayerCharactersPage({
   backLabel,
   onBack
 }: PlayerCharactersPageProps): JSX.Element {
+  const { messages: m, fill, plural, formatDate } = useI18n()
   const [player, setPlayer] = useState<Player | null | undefined>(undefined)
   const [characters, setCharacters] = useState<CharacterProfile[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -83,17 +84,17 @@ export function PlayerCharactersPage({
               </span>
 
               <div>
-                <p className="page-kicker">Игрок</p>
-                <h1>{player ? playerFullName(player) : 'Игрок'}</h1>
+                <p className="page-kicker">{m.people.playerCharacters.kicker}</p>
+                <h1>{player ? playerFullName(player) : m.people.playerCharacters.nameFallback}</h1>
                 <p className="muted">
                   {characters === null || !player
-                    ? 'Загружаем…'
-                    : `${characters.length} ${pluralize(
+                    ? m.people.playerCharacters.loadingSummary
+                    : `${plural(
                         characters.length,
-                        'персонаж',
-                        'персонажа',
-                        'персонажей'
-                      )} · в базе с ${formatDate(player.createdAt)}`}
+                        m.people.playerCharacters.characterCount
+                      )} · ${fill(m.people.playerCharacters.since, {
+                        date: formatDate(player.createdAt)
+                      })}`}
                 </p>
               </div>
             </div>
@@ -104,7 +105,7 @@ export function PlayerCharactersPage({
               disabled={!player}
             >
               <IconPlus width={16} height={16} />
-              Добавить персонажа
+              {m.people.playerCharacters.add}
             </button>
           </header>
         </div>
@@ -113,18 +114,18 @@ export function PlayerCharactersPage({
 
         {player === null ? (
           <div className="notice notice--action">
-            <span>Игрок не найден — возможно, запись удалили.</span>
+            <span>{m.people.playerCharacters.notFound}</span>
             <button className="button button--tiny" onClick={onBack}>
-              Вернуться
+              {m.people.playerCharacters.back}
             </button>
           </div>
         ) : characters === null ? (
-          <p className="muted">Загружаем персонажей…</p>
+          <p className="muted">{m.people.playerCharacters.loading}</p>
         ) : characters.length === 0 ? (
           <div className="empty empty--action">
-            <p>У этого игрока пока нет персонажей. Создайте первого героя.</p>
+            <p>{m.people.playerCharacters.empty}</p>
             <button className="button" onClick={() => setEditing('new')}>
-              Добавить персонажа
+              {m.people.playerCharacters.add}
             </button>
           </div>
         ) : (
@@ -133,7 +134,9 @@ export function PlayerCharactersPage({
               <CharacterCard
                 key={character.id}
                 profile={character}
-                realmName={realmNames.get(character.realmId) ?? 'Без сеттинга'}
+                realmName={
+                  realmNames.get(character.realmId) ?? m.people.playerCharacters.noRealm
+                }
                 player={player ?? undefined}
                 onEdit={() => setEditing(character)}
                 onDelete={() => setDeleting(character)}
@@ -159,10 +162,10 @@ export function PlayerCharactersPage({
 
       <ConfirmDialog
         open={deleting !== null}
-        title="Удалить персонажа?"
+        title={m.people.playerCharacters.deleteTitle}
         description={
           deleting
-            ? `«${deleting.name}» будет удалён вместе с портретом и статусами. Это действие нельзя отменить.`
+            ? fill(m.people.playerCharacters.deleteDescription, { name: deleting.name })
             : undefined
         }
         onCancel={() => setDeleting(null)}

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import type { JSX } from 'react'
 import { formatChallengeRating, formatModifier, modifierFromScore } from '@shared/domain'
+import { fill, getActiveLocale, type Messages } from '@shared/i18n'
 import { errorMessage } from '@renderer/lib/api'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 import { MONSTER_STAT_FIELDS } from '@renderer/lib/monsterStats'
 import type { CombatResultEntry, CombatStart } from './CombatModal'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
@@ -25,7 +27,7 @@ function sortEntries(entries: readonly CombatResultEntry[]): CombatResultEntry[]
     (a, b) =>
       b.initiative - a.initiative ||
       (b.tieBreaker ?? 0) - (a.tieBreaker ?? 0) ||
-      a.name.localeCompare(b.name, 'ru')
+      a.name.localeCompare(b.name, getActiveLocale())
   )
 }
 
@@ -35,9 +37,9 @@ function initiativeLabel(entry: CombatResultEntry): string {
     : String(entry.initiative)
 }
 
-function entryMeta(entry: CombatResultEntry): string {
-  if (entry.kind === 'character') return entry.playerName ?? 'Без игрока'
-  return `HP ${entry.monster?.hitPoints ?? '—'}`
+function entryMeta(entry: CombatResultEntry, messages: Messages): string {
+  if (entry.kind === 'character') return entry.playerName ?? messages.games.combat.noPlayer
+  return fill(messages.games.combat.hpValue, { hp: entry.monster?.hitPoints ?? '—' })
 }
 
 /** Полноэкранный бой: очередь, текущий атакующий и кладбище. */
@@ -48,6 +50,7 @@ export function CombatScreen({
   onDefeatChange,
   onMonsterEscape
 }: CombatScreenProps): JSX.Element {
+  const { messages: m, fill } = useI18n()
   const [active, setActive] = useState<CombatResultEntry[]>(() =>
     sortEntries(initial.participants)
   )
@@ -180,8 +183,8 @@ export function CombatScreen({
     <main className="combat-screen">
       <header className="combat-screen__head">
         <div>
-          <p className="page-kicker">Схватка</p>
-          <h1>Очередь инициативы</h1>
+          <p className="page-kicker">{m.games.combat.kicker}</p>
+          <h1>{m.games.combat.title}</h1>
         </div>
         <button
           type="button"
@@ -189,7 +192,7 @@ export function CombatScreen({
           onClick={() => void finishCombat()}
           disabled={finishing}
         >
-          {finishing ? 'Заканчиваем…' : 'Закончить'}
+          {finishing ? m.games.combat.finishing : m.games.combat.finish}
         </button>
       </header>
 
@@ -201,8 +204,8 @@ export function CombatScreen({
             <CombatFocusCard entry={current} />
           ) : (
             <div className="combat-focus__empty">
-              <p>В схватке не осталось активных участников.</p>
-              <span>Оживите кого-нибудь из кладбища или введите резерв.</span>
+              <p>{m.games.combat.noActive}</p>
+              <span>{m.games.combat.reviveHint}</span>
             </div>
           )}
 
@@ -212,14 +215,14 @@ export function CombatScreen({
             onClick={nextTurn}
             disabled={active.length === 0}
           >
-            Следующий
+            {m.games.combat.next}
           </button>
         </section>
 
         <aside className="combat-side">
           <section className="combat-side__section" aria-labelledby="combat-queue-title">
             <header className="combat-side__head">
-              <h2 id="combat-queue-title">Очередь схватки</h2>
+              <h2 id="combat-queue-title">{m.games.combat.queueTitle}</h2>
               <span className="combat-side__count">{active.length}</span>
             </header>
 
@@ -243,7 +246,7 @@ export function CombatScreen({
                 ))}
               </ul>
             ) : (
-              <p className="combat-side__empty">Очередь пуста.</p>
+              <p className="combat-side__empty">{m.games.combat.queueEmpty}</p>
             )}
           </section>
 
@@ -252,7 +255,7 @@ export function CombatScreen({
             aria-labelledby="combat-reserves-title"
           >
             <header className="combat-side__head">
-              <h2 id="combat-reserves-title">Не участвуют</h2>
+              <h2 id="combat-reserves-title">{m.games.combat.reservesTitle}</h2>
               <span className="combat-side__count">{reserves.length}</span>
             </header>
 
@@ -273,7 +276,7 @@ export function CombatScreen({
                 ))}
               </ul>
             ) : (
-              <p className="combat-side__empty">Все добавленные участники уже в схватке.</p>
+              <p className="combat-side__empty">{m.games.combat.reservesEmpty}</p>
             )}
           </section>
         </aside>
@@ -281,7 +284,7 @@ export function CombatScreen({
 
       <section className="combat-graveyard" aria-labelledby="combat-graveyard-title">
         <header className="combat-side__head">
-          <h2 id="combat-graveyard-title">Кладбище</h2>
+          <h2 id="combat-graveyard-title">{m.games.combat.graveyardTitle}</h2>
           <span className="combat-side__count">{cemetery.length}</span>
         </header>
 
@@ -290,28 +293,32 @@ export function CombatScreen({
             {cemetery.map((entry) => (
               <li className="combat-graveyard__card" key={entry.key}>
                 <span className="combat-graveyard__name">{entry.name}</span>
-                <span className="combat-graveyard__meta">{entryMeta(entry)}</span>
+                <span className="combat-graveyard__meta">{entryMeta(entry, m)}</span>
                 <button
                   type="button"
                   className="button button--tiny combat-graveyard__revive"
                   onClick={() => revive(entry)}
                 >
-                  Оживить
+                  {m.games.combat.revive}
                 </button>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="combat-side__empty">Пока пусто.</p>
+          <p className="combat-side__empty">{m.games.combat.graveyardEmpty}</p>
         )}
       </section>
 
       <ConfirmDialog
         open={escapingEntry !== null}
-        title={escapingEntry ? `Побег: ${escapingEntry.name}` : 'Побег монстра'}
-        description="Монстр собирается сбежать из схватки в неизвестном направлении. Все правильно?"
-        confirmLabel="Да, сбегает"
-        cancelLabel="Отмена"
+        title={
+          escapingEntry
+            ? fill(m.games.combat.escapeTitle, { name: escapingEntry.name })
+            : m.games.combat.escapeDefaultTitle
+        }
+        description={m.games.combat.escapeDescription}
+        confirmLabel={m.games.combat.escapeConfirm}
+        cancelLabel={m.games.combat.escapeCancel}
         onConfirm={() => void confirmEscape()}
         onCancel={() => setEscapingEntry(null)}
       />
@@ -334,13 +341,15 @@ function QueueCard({
   onHpLive: (hitPoints: number) => void
   onHpCommit: (hitPoints: number) => void
 }): JSX.Element {
+  const { messages: m, fill } = useI18n()
+
   return (
     <article className={`combat-queue-card${current ? ' combat-queue-card--current' : ''}`}>
       <span className="combat-queue-card__body">
         <span className="combat-queue-card__name">{entry.name}</span>
         {entry.kind === 'monster' && entry.monster ? (
           <span className="combat-queue-card__meta combat-queue-card__hp">
-            HP
+            {m.games.combat.hp}
             <HpEditor
               value={entry.monster.hitPoints}
               label={entry.name}
@@ -349,11 +358,11 @@ function QueueCard({
             />
           </span>
         ) : (
-          <span className="combat-queue-card__meta">{entryMeta(entry)}</span>
+          <span className="combat-queue-card__meta">{entryMeta(entry, m)}</span>
         )}
       </span>
 
-      <span className="combat-queue-card__initiative" title="Инициатива">
+      <span className="combat-queue-card__initiative" title={m.games.combat.initiativeTitle}>
         {initiativeLabel(entry)}
       </span>
 
@@ -361,8 +370,8 @@ function QueueCard({
         <button
           type="button"
           className="combat-escape-button"
-          title="Убежать"
-          aria-label={`Монстр ${entry.name} убегает`}
+          title={m.games.combat.escape}
+          aria-label={fill(m.games.combat.escapeAria, { name: entry.name })}
           onClick={onEscape}
         >
           <IconRun width={15} height={15} />
@@ -373,8 +382,8 @@ function QueueCard({
         <button
           type="button"
           className="combat-defeat-button"
-          title="Повержен"
-          aria-label={`Повержен: ${entry.name}`}
+          title={m.games.combat.defeat}
+          aria-label={fill(m.games.combat.defeatAria, { name: entry.name })}
           onClick={onDefeat}
         >
           <IconSkull width={22} height={22} />
@@ -395,6 +404,7 @@ function HpEditor({
   onLive: (hitPoints: number) => void
   onCommit: (hitPoints: number) => void
 }): JSX.Element {
+  const { messages: m, fill } = useI18n()
   const [draft, setDraft] = useState(String(value))
 
   useEffect(() => {
@@ -440,7 +450,7 @@ function HpEditor({
       max={HP_MAX}
       inputMode="numeric"
       value={draft}
-      aria-label={`HP: ${label}`}
+      aria-label={fill(m.games.combat.hpAria, { name: label })}
       onChange={(event) => change(event.target.value)}
       onBlur={commit}
       onFocus={(event) => event.currentTarget.select()}
@@ -463,14 +473,16 @@ function ReserveCard({
   onJoin: () => void
   onEscape?: () => void
 }): JSX.Element {
+  const { messages: m, fill } = useI18n()
+
   return (
     <article className="combat-queue-card combat-queue-card--reserve">
       <span className="combat-queue-card__body">
         <span className="combat-queue-card__name">{entry.name}</span>
-        <span className="combat-queue-card__meta">{entryMeta(entry)}</span>
+        <span className="combat-queue-card__meta">{entryMeta(entry, m)}</span>
       </span>
 
-      <span className="combat-queue-card__initiative" title="Инициатива">
+      <span className="combat-queue-card__initiative" title={m.games.combat.initiativeTitle}>
         {initiativeLabel(entry)}
       </span>
 
@@ -478,8 +490,8 @@ function ReserveCard({
         <button
           type="button"
           className="combat-escape-button"
-          title="Убежать"
-          aria-label={`Монстр ${entry.name} убегает`}
+          title={m.games.combat.escape}
+          aria-label={fill(m.games.combat.escapeAria, { name: entry.name })}
           onClick={onEscape}
         >
           <IconRun width={15} height={15} />
@@ -491,13 +503,15 @@ function ReserveCard({
         className="button button--tiny button--primary combat-queue-card__join"
         onClick={onJoin}
       >
-        Вступить
+        {m.games.combat.join}
       </button>
     </article>
   )
 }
 
 function CombatFocusCard({ entry }: { entry: CombatResultEntry }): JSX.Element {
+  const { messages: m, fill } = useI18n()
+
   if (entry.kind === 'character') {
     const character = entry.character
 
@@ -505,30 +519,35 @@ function CombatFocusCard({ entry }: { entry: CombatResultEntry }): JSX.Element {
       <article className="combat-focus-card">
         <div className="combat-focus-card__art">
           {character?.image ? (
-            <img src={character.image} alt={`Портрет: ${entry.name}`} />
+            <img
+              src={character.image}
+              alt={fill(m.games.combat.portraitAlt, { name: entry.name })}
+            />
           ) : (
             <span className="combat-focus-card__initial">{entry.name.charAt(0).toUpperCase()}</span>
           )}
         </div>
 
         <div className="combat-focus-card__body">
-          <p className="combat-focus-card__kicker">Сейчас атакует · Персонаж</p>
+          <p className="combat-focus-card__kicker">{m.games.combat.attackingCharacter}</p>
           <h2>{entry.name}</h2>
           <p className="combat-focus-card__player">
-            Игрок: {entry.playerName ?? 'без игрока'}
+            {fill(m.games.combat.player, {
+              name: entry.playerName ?? m.games.combat.noPlayerInline
+            })}
           </p>
 
           <dl className="combat-focus-card__facts">
             <div>
-              <dt>Класс</dt>
+              <dt>{m.games.combat.classLabel}</dt>
               <dd>{character?.className || '—'}</dd>
             </div>
             <div>
-              <dt>Уровень</dt>
+              <dt>{m.games.combat.levelLabel}</dt>
               <dd>{character?.level ?? '—'}</dd>
             </div>
             <div>
-              <dt>Раса</dt>
+              <dt>{m.games.combat.raceLabel}</dt>
               <dd>{character?.race || '—'}</dd>
             </div>
           </dl>
@@ -544,7 +563,7 @@ function CombatFocusCard({ entry }: { entry: CombatResultEntry }): JSX.Element {
           ) : null}
 
           <p className="combat-focus-card__initiative">
-            Инициатива <strong>{initiativeLabel(entry)}</strong>
+            {m.games.combat.initiative} <strong>{initiativeLabel(entry)}</strong>
           </p>
         </div>
       </article>
@@ -560,8 +579,8 @@ function CombatFocusCard({ entry }: { entry: CombatResultEntry }): JSX.Element {
         <span
           className="combat-focus-card__dead"
           role="img"
-          aria-label="HP 0 — монстр не атакует, нужен спасбросок"
-          title="HP 0 — монстр не атакует, нужен спасбросок"
+          aria-label={m.games.combat.deadTitle}
+          title={m.games.combat.deadTitle}
         >
           <IconCoffin width={32} height={32} />
         </span>
@@ -572,20 +591,20 @@ function CombatFocusCard({ entry }: { entry: CombatResultEntry }): JSX.Element {
       </div>
 
       <div className="combat-focus-card__body">
-        <p className="combat-focus-card__kicker">Сейчас атакует · Монстр</p>
+        <p className="combat-focus-card__kicker">{m.games.combat.attackingMonster}</p>
         <h2>{entry.name}</h2>
 
         <dl className="combat-focus-card__facts">
           <div>
-            <dt>HP</dt>
+            <dt>{m.games.combat.hp}</dt>
             <dd className="combat-focus-card__hp">{monster?.hitPoints ?? '—'}</dd>
           </div>
           <div>
-            <dt>КЗ</dt>
+            <dt>{m.games.combat.ac}</dt>
             <dd>{monster?.armorClass ?? '—'}</dd>
           </div>
           <div>
-            <dt>КО</dt>
+            <dt>{m.games.combat.cr}</dt>
             <dd>{monster ? formatChallengeRating(monster.challengeRating) : '—'}</dd>
           </div>
         </dl>
@@ -625,11 +644,11 @@ function CombatFocusCard({ entry }: { entry: CombatResultEntry }): JSX.Element {
             ))}
           </ul>
         ) : (
-          <p className="combat-focus-card__no-abilities">Без способностей</p>
+          <p className="combat-focus-card__no-abilities">{m.games.combat.noAbilities}</p>
         )}
 
         <p className="combat-focus-card__initiative">
-          Инициатива <strong>{initiativeLabel(entry)}</strong>
+          {m.games.combat.initiative} <strong>{initiativeLabel(entry)}</strong>
         </p>
       </div>
     </article>

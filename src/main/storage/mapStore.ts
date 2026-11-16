@@ -11,6 +11,7 @@ import {
 import { JsonFileError, readJsonFile, withFileLock, writeJsonAtomic } from './jsonFile'
 import { listPlaceTypes } from './placeTypeStore'
 import { clearPlaceReferences } from './gameStore'
+import { fill, m } from '@shared/i18n'
 
 const LOCK_KEY = 'maps.json'
 
@@ -64,12 +65,12 @@ async function readMapsFile(): Promise<MapsFile> {
     if (error instanceof JsonFileError && error.code === 'ENOENT') {
       return (await migrateLegacyFile()) ?? emptyFile()
     }
-    throw new Error(`Не удалось прочитать карты: ${(error as Error).message}`)
+    throw new Error(fill(m().main.maps.readFailed, { error: (error as Error).message }))
   }
 
   const parsed = mapsFileSchema.safeParse(raw)
   if (!parsed.success) {
-    throw new Error('Файл карт повреждён и не может быть прочитан')
+    throw new Error(m().main.maps.corrupted)
   }
 
   return parsed.data
@@ -78,7 +79,7 @@ async function readMapsFile(): Promise<MapsFile> {
 function assertMapInput(input: GameMapInput): NormalizedMapInput {
   const normalized = normalizeMapInput(input)
   if (!normalized.name) {
-    throw new Error('Название карты не может быть пустым')
+    throw new Error(m().main.maps.nameRequired)
   }
   return normalized
 }
@@ -197,7 +198,7 @@ export async function updateMap(map: GameMap): Promise<GameMap> {
     const index = file.maps.findIndex((item) => item.id === map.id)
 
     if (index === -1) {
-      throw new Error('Карта не найдена — возможно, запись уже удалена')
+      throw new Error(m().main.maps.notFound)
     }
 
     const existing = file.maps[index]!

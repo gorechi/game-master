@@ -1,5 +1,6 @@
 import type { JSX } from 'react'
 import { isWebPreview } from '@renderer/lib/api'
+import { useMessages } from '@renderer/i18n/LocaleProvider'
 import type { Route } from '@renderer/lib/routes'
 import {
   IconBookmark,
@@ -29,6 +30,8 @@ export function Sidebar({
   onToggle,
   onNavigate
 }: SidebarProps): JSX.Element {
+  const m = useMessages()
+
   const active =
     route.name === 'game'
       ? 'games'
@@ -46,13 +49,13 @@ export function Sidebar({
         <span className="sidebar__die" aria-hidden="true">
           <IconD20 width={22} height={22} />
         </span>
-        <span className="sidebar__title">Game Master</span>
+        <span className="sidebar__title">{m.app.name}</span>
 
         <button
           type="button"
           className="sidebar__collapse"
-          title={collapsed ? 'Развернуть меню' : 'Свернуть меню'}
-          aria-label={collapsed ? 'Развернуть боковое меню' : 'Свернуть боковое меню'}
+          title={collapsed ? m.sidebar.expandMenu : m.sidebar.collapseMenu}
+          aria-label={collapsed ? m.sidebar.expandMenuLabel : m.sidebar.collapseMenuLabel}
           aria-expanded={!collapsed}
           onClick={onToggle}
         >
@@ -64,82 +67,82 @@ export function Sidebar({
         </button>
       </div>
 
-      <nav className="sidebar__nav" aria-label="Основная навигация">
+      <nav className="sidebar__nav" aria-label={m.sidebar.navigationLabel}>
         <button
           type="button"
           className={`nav-item${active === 'games' ? ' nav-item--active' : ''}`}
           aria-current={active === 'games' ? 'page' : undefined}
-          title={collapsed ? 'Игры' : undefined}
+          title={collapsed ? m.sidebar.games : undefined}
           onClick={() => onNavigate({ name: 'games' })}
         >
           <IconPlay />
-          <span>Игры</span>
+          <span>{m.sidebar.games}</span>
         </button>
 
         <button
           type="button"
           className={`nav-item${active === 'players' ? ' nav-item--active' : ''}`}
           aria-current={active === 'players' ? 'page' : undefined}
-          title={collapsed ? 'Игроки' : undefined}
+          title={collapsed ? m.sidebar.players : undefined}
           onClick={() => onNavigate({ name: 'players' })}
         >
           <IconUsers />
-          <span>Игроки</span>
+          <span>{m.sidebar.players}</span>
         </button>
 
         <button
           type="button"
           className={`nav-item${active === 'characters' ? ' nav-item--active' : ''}`}
           aria-current={active === 'characters' ? 'page' : undefined}
-          title={collapsed ? 'Персонажи' : undefined}
+          title={collapsed ? m.sidebar.characters : undefined}
           onClick={() => onNavigate({ name: 'characters' })}
         >
           <IconShield />
-          <span>Персонажи</span>
+          <span>{m.sidebar.characters}</span>
         </button>
 
         <button
           type="button"
           className={`nav-item${active === 'monsters' ? ' nav-item--active' : ''}`}
           aria-current={active === 'monsters' ? 'page' : undefined}
-          title={collapsed ? 'Бестиарий' : undefined}
+          title={collapsed ? m.sidebar.bestiary : undefined}
           onClick={() => onNavigate({ name: 'monsters' })}
         >
           <IconSkull />
-          <span>Бестиарий</span>
+          <span>{m.sidebar.bestiary}</span>
         </button>
 
         <button
           type="button"
           className={`nav-item${active === 'savedMonsters' ? ' nav-item--active' : ''}`}
           aria-current={active === 'savedMonsters' ? 'page' : undefined}
-          title={collapsed ? 'Уникальные существа' : undefined}
+          title={collapsed ? m.sidebar.savedMonsters : undefined}
           onClick={() => onNavigate({ name: 'savedMonsters' })}
         >
           <IconBookmark />
-          <span>Уникальные существа</span>
+          <span>{m.sidebar.savedMonsters}</span>
         </button>
 
         <button
           type="button"
           className={`nav-item${active === 'maps' ? ' nav-item--active' : ''}`}
           aria-current={active === 'maps' ? 'page' : undefined}
-          title={collapsed ? 'Карты' : undefined}
+          title={collapsed ? m.sidebar.maps : undefined}
           onClick={() => onNavigate({ name: 'maps' })}
         >
           <IconMap />
-          <span>Карты</span>
+          <span>{m.sidebar.maps}</span>
         </button>
 
         <button
           type="button"
           className={`nav-item${active === 'realms' ? ' nav-item--active' : ''}`}
           aria-current={active === 'realms' ? 'page' : undefined}
-          title={collapsed ? 'Сеттинги' : undefined}
+          title={collapsed ? m.sidebar.realms : undefined}
           onClick={() => onNavigate({ name: 'realms' })}
         >
           <IconGlobe />
-          <span>Сеттинги</span>
+          <span>{m.sidebar.realms}</span>
         </button>
       </nav>
 
@@ -149,29 +152,29 @@ export function Sidebar({
             type="button"
             className={`nav-item${active === 'data' ? ' nav-item--active' : ''}`}
             aria-current={active === 'data' ? 'page' : undefined}
-            title={collapsed ? 'Данные' : undefined}
+            title={collapsed ? m.sidebar.data : undefined}
             onClick={() => onNavigate({ name: 'data' })}
           >
             <IconDatabase />
-            <span>Данные</span>
+            <span>{m.sidebar.data}</span>
           </button>
 
           <button
             type="button"
             className={`nav-item${active === 'settings' ? ' nav-item--active' : ''}`}
             aria-current={active === 'settings' ? 'page' : undefined}
-            title={collapsed ? 'Настройки' : undefined}
+            title={collapsed ? m.sidebar.settings : undefined}
             onClick={() => onNavigate({ name: 'settings' })}
           >
             <IconGear />
-            <span>Настройки</span>
+            <span>{m.sidebar.settings}</span>
           </button>
         </div>
 
         {isWebPreview ? (
           <div className="sidebar__note">
-            Веб-предпросмотр
-            <span>данные в браузере</span>
+            {m.sidebar.webPreview}
+            <span>{m.sidebar.webPreviewData}</span>
           </div>
         ) : null}
       </div>

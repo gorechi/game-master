@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { m } from '@shared/i18n'
 import App from './App'
 import { readCachedTheme } from './lib/theme'
 import './fonts.css'
@@ -15,7 +16,7 @@ if (cachedTheme) {
 const container = document.getElementById('root')
 
 if (!container) {
-  throw new Error('Не найден корневой элемент приложения')
+  throw new Error(m().app.rootElementMissing)
 }
 
 createRoot(container).render(

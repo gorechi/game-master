@@ -3,6 +3,7 @@ import type { JSX } from 'react'
 import type { Monster } from '@shared/monster'
 import type { Realm } from '@shared/realm'
 import { formatChallengeRating } from '@shared/domain'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 import { Modal } from '../ui/Modal'
 import { Select } from '../ui/Select'
 
@@ -22,6 +23,7 @@ export function BaseMonsterModal({
   onClose,
   onChoose
 }: BaseMonsterModalProps): JSX.Element {
+  const { messages: m, fill } = useI18n()
   const [selectedId, setSelectedId] = useState('')
 
   useEffect(() => {
@@ -34,15 +36,15 @@ export function BaseMonsterModal({
   return (
     <Modal
       open={open}
-      title="Новый уникальный монстр"
-      description="Выберите базового монстра из бестиария, затем настройте экземпляр."
+      title={m.bestiary.base.title}
+      description={m.bestiary.base.description}
       size="md"
       panelClassName="modal--base-monster"
       onClose={onClose}
       footer={
         <>
           <button type="button" className="button" onClick={onClose}>
-            Отмена
+            {m.bestiary.base.cancel}
           </button>
           <button
             type="button"
@@ -50,29 +52,29 @@ export function BaseMonsterModal({
             disabled={!selected}
             onClick={() => selected && onChoose(selected)}
           >
-            Далее
+            {m.bestiary.base.next}
           </button>
         </>
       }
     >
       <div className="base-monster-picker">
         {monsters.length === 0 ? (
-          <p className="notice">
-            В бестиарии пока нет монстров. Сначала добавьте хотя бы одного в разделе «Монстры».
-          </p>
+          <p className="notice">{m.bestiary.base.emptyBestiary}</p>
         ) : (
           <div className="field">
-            <span className="field__label">Базовый монстр</span>
+            <span className="field__label">{m.bestiary.base.monsterLabel}</span>
             <Select
-              ariaLabel="Базовый монстр из бестиария"
+              ariaLabel={m.bestiary.base.monsterAria}
               value={selectedId}
               searchable
-              placeholder="Найти монстра…"
+              placeholder={m.bestiary.base.searchPlaceholder}
               options={monsters.map((monster) => ({
                 value: monster.id,
-                label: `${monster.name} · КО ${formatChallengeRating(
-                  monster.challengeRating
-                )} · ${realmNames.get(monster.realmId) ?? 'Без сеттинга'}`
+                label: fill(m.bestiary.base.option, {
+                  name: monster.name,
+                  cr: formatChallengeRating(monster.challengeRating),
+                  realm: realmNames.get(monster.realmId) ?? m.bestiary.saved.noRealm
+                })
               }))}
               onChange={setSelectedId}
             />
@@ -81,8 +83,7 @@ export function BaseMonsterModal({
 
         {selected ? (
           <p className="base-monster-picker__hint">
-            Будет создан отдельный экземпляр на основе «{selected.name}». Изменения не затронут
-            бестиарий.
+            {fill(m.bestiary.base.hint, { name: selected.name })}
           </p>
         ) : null}
       </div>

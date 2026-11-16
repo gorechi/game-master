@@ -3,7 +3,7 @@ import type { JSX } from 'react'
 import type { Game } from '@shared/game'
 import { formatChallengeRating } from '@shared/domain'
 import { api, errorMessage } from '@renderer/lib/api'
-import { pluralize } from '@renderer/lib/format'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 import { Modal } from '../ui/Modal'
 import { IconLock } from '../ui/icons'
 
@@ -26,6 +26,7 @@ export function GameFinishModal({
   onClose,
   onFinish
 }: GameFinishModalProps): JSX.Element {
+  const { messages: m, fill, plural } = useI18n()
   const [keepIds, setKeepIds] = useState<string[]>([])
   const [savedIds, setSavedIds] = useState<string[]>([])
   const [loadingSaved, setLoadingSaved] = useState(false)
@@ -100,19 +101,15 @@ export function GameFinishModal({
   return (
     <Modal
       open={open}
-      title="Завершение игры"
-      description={
-        game
-          ? `«${game.name}» будет переведена в статус «Закончена». Отметьте монстров, которых хотите сохранить для следующих игр.`
-          : undefined
-      }
+      title={m.games.finish.title}
+      description={game ? fill(m.games.finish.description, { name: game.name }) : undefined}
       size="lg"
       onClose={onClose}
       initialFocusRef={cancelRef}
       footer={
         <>
           <button ref={cancelRef} type="button" className="button" onClick={onClose} disabled={finishing}>
-            Отмена
+            {m.games.finish.cancel}
           </button>
           <button
             type="button"
@@ -120,7 +117,7 @@ export function GameFinishModal({
             onClick={() => void confirm()}
             disabled={finishing || loadingSaved || Boolean(loadError)}
           >
-            {finishing ? 'Завершаем…' : 'Закончить игру'}
+            {finishing ? m.games.finish.finishing : m.games.finish.submit}
           </button>
         </>
       }
@@ -129,28 +126,25 @@ export function GameFinishModal({
         {error ? <p className="notice notice--error">{error}</p> : null}
         {loadError ? (
           <p className="notice notice--error">
-            Не удалось проверить сохранённых монстров: {loadError}
+            {fill(m.games.finish.loadError, { error: loadError })}
           </p>
         ) : null}
 
-        <p className="notice">
-          Отмеченные монстры попадут в список уникальных существ — в бестиарий они не добавляются.
-          Неотмеченные останутся в завершённой игре и исчезнут вместе с ней. Монстры, которые уже
-          есть в списке сохранённых, отмечены всегда: снять отметку нельзя, удалить их можно только
-          на экране уникальных существ.
-        </p>
+        <p className="notice">{m.games.finish.notice}</p>
 
         {loadingSaved ? (
-          <p className="muted">Проверяем, какие монстры уже сохранены…</p>
+          <p className="muted">{m.games.finish.checkingSaved}</p>
         ) : null}
 
         {total > 0 ? (
           <>
             <div className="finish-game__summary">
+              <span>{plural(total, m.games.finish.monstersInGame)}</span>
               <span>
-                {total} {pluralize(total, 'монстр', 'монстра', 'монстров')} в игре
+                {kept > 0
+                  ? fill(m.games.finish.keeping, { count: kept })
+                  : m.games.finish.keepingNone}
               </span>
-              <span>{kept > 0 ? `сохраняем ${kept}` : 'не сохраняем ни одного'}</span>
             </div>
 
             <div className="finish-monster-list">
@@ -168,11 +162,7 @@ export function GameFinishModal({
                     ]
                       .filter(Boolean)
                       .join(' ')}
-                    title={
-                      locked
-                        ? 'Монстр уже в списке сохранённых — снять отметку нельзя'
-                        : undefined
-                    }
+                    title={locked ? m.games.finish.lockedTitle : undefined}
                   >
                     <input
                       type="checkbox"
@@ -185,8 +175,11 @@ export function GameFinishModal({
                     <span className="finish-monster-row__main">
                       <span className="finish-monster-row__name">{monster.name}</span>
                       <span className="finish-monster-row__meta">
-                        КО {formatChallengeRating(monster.challengeRating)} · КЗ{' '}
-                        {monster.armorClass} · ХП {monster.hitPoints}
+                        {fill(m.games.monsterStats, {
+                          cr: formatChallengeRating(monster.challengeRating),
+                          ac: monster.armorClass,
+                          hp: monster.hitPoints
+                        })}
                       </span>
                     </span>
 
@@ -194,12 +187,12 @@ export function GameFinishModal({
                       {locked ? (
                         <>
                           <IconLock width={11} height={11} />
-                          сохранён
+                          {m.games.finish.savedState}
                         </>
                       ) : checked ? (
-                        'остаётся'
+                        m.games.finish.keptState
                       ) : (
-                        'не сохранится'
+                        m.games.finish.notSavedState
                       )}
                     </span>
                   </label>
@@ -208,12 +201,10 @@ export function GameFinishModal({
             </div>
           </>
         ) : (
-          <p className="muted">В этой игре не было монстров.</p>
+          <p className="muted">{m.games.finish.noMonsters}</p>
         )}
 
-        <p className="game-editor__hint">
-          Уникальные существа хранятся отдельно и не меняют бестиарий.
-        </p>
+        <p className="game-editor__hint">{m.games.finish.hint}</p>
       </div>
     </Modal>
   )

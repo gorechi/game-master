@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { CSSProperties, JSX, KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
+import { useMessages } from '@renderer/i18n/LocaleProvider'
 import { IconChevronDown } from './icons'
 
 export interface SelectOption<T extends string> {
@@ -29,11 +30,13 @@ export function Select<T extends string>({
   options,
   onChange,
   ariaLabel,
-  placeholder = 'Выбрать',
+  placeholder,
   variant = 'field',
   disabled = false,
   searchable = false
 }: SelectProps<T>): JSX.Element {
+  const m = useMessages()
+  const placeholderText = placeholder ?? m.ui.select.placeholder
   const [open, setOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
   const [query, setQuery] = useState('')
@@ -252,7 +255,7 @@ export function Select<T extends string>({
             }
             autoComplete="off"
             disabled={disabled}
-            placeholder={placeholder}
+            placeholder={placeholderText}
             value={open ? query : (selected?.label ?? '')}
             onChange={(event) => filter(event.target.value)}
             onFocus={() => {
@@ -281,7 +284,7 @@ export function Select<T extends string>({
           onKeyDown={onKeyDown}
         >
           <span className={selected ? 'picker__value' : 'picker__placeholder'}>
-            {selected?.label ?? placeholder}
+            {selected?.label ?? placeholderText}
           </span>
           <IconChevronDown className="picker__chevron" width={14} height={14} />
         </button>
@@ -298,7 +301,7 @@ export function Select<T extends string>({
               aria-label={ariaLabel}
             >
               {visibleOptions.length === 0 ? (
-                <li className="picker__empty">Ничего не найдено</li>
+                <li className="picker__empty">{m.ui.select.empty}</li>
               ) : (
                 visibleOptions.map((option, index) => (
                   <li key={option.value}>

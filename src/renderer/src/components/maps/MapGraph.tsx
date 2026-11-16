@@ -3,6 +3,7 @@ import type { JSX, KeyboardEvent, PointerEvent } from 'react'
 import type { MapPath } from '@shared/map'
 import type { PlaceType } from '@shared/placeType'
 import { mapPathKey } from '@shared/domain'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 import {
   MAP_GRAPH_PADDING,
   MAP_NODE_HEIGHT,
@@ -135,6 +136,7 @@ export function MapGraph({
   scale = 1,
   showCanvas = false
 }: MapGraphProps): JSX.Element {
+  const { messages: m, fill } = useI18n()
   const dragRef = useRef<DragState | null>(null)
   const connectionRef = useRef<ConnectionDraft | null>(null)
   const graphRef = useRef<HTMLDivElement>(null)
@@ -156,8 +158,8 @@ export function MapGraph({
   if (layout.nodes.length === 0) {
     return (
       <div className="map-graph-empty">
-        <p>На карте пока нет мест.</p>
-        <span>Добавьте их в редакторе — и на карте появятся первые точки.</span>
+        <p>{m.maps.graph.emptyTitle}</p>
+        <span>{m.maps.graph.emptyHint}</span>
       </div>
     )
   }
@@ -364,7 +366,7 @@ export function MapGraph({
       className={`map-graph${showCanvas ? ' map-graph--canvas' : ''}`}
       style={{ width: layout.width, height: layout.height }}
       role="group"
-      aria-label={`Карта «${mapName}»`}
+      aria-label={fill(m.maps.graph.ariaLabel, { name: mapName })}
     >
       <svg
         className="map-graph__edges"
@@ -387,7 +389,7 @@ export function MapGraph({
                   vectorEffect="non-scaling-stroke"
                   onDoubleClick={() => onDisconnect(edge.from.id, edge.to.id)}
                 >
-                  <title>Двойной клик — удалить путь</title>
+                  <title>{m.maps.graph.removePathHint}</title>
                 </path>
               ) : null}
             </g>
@@ -431,15 +433,17 @@ export function MapGraph({
             role={linkedName ? 'button' : undefined}
             tabIndex={linkedName ? 0 : undefined}
             aria-label={
-              linkedName ? `${node.name}: перейти на карту «${linkedName}»` : undefined
+              linkedName
+                ? fill(m.maps.graph.linkedNodeLabel, { name: node.name, linked: linkedName })
+                : undefined
             }
             title={
               interactive
                 ? linkedName
-                  ? `Перетащите, чтобы сдвинуть. Нажмите, чтобы перейти на «${linkedName}»`
-                  : 'Перетащите, чтобы сдвинуть'
+                  ? fill(m.maps.graph.moveAndOpenHint, { name: linkedName })
+                  : m.maps.graph.moveHint
                 : linkedName
-                  ? `Открыть карту «${linkedName}»`
+                  ? fill(m.maps.graph.openMapHint, { name: linkedName })
                   : node.name
             }
             onClick={
@@ -479,8 +483,8 @@ export function MapGraph({
               <button
                 type="button"
                 className="map-node__description"
-                title="Описание места"
-                aria-label={`Описание локации «${node.name}»`}
+                title={m.maps.graph.descriptionTooltip}
+                aria-label={fill(m.maps.graph.descriptionLabel, { name: node.name })}
                 onPointerDown={(event) => event.stopPropagation()}
                 onPointerUp={(event) => event.stopPropagation()}
                 onKeyDown={(event) => event.stopPropagation()}
@@ -497,8 +501,8 @@ export function MapGraph({
               <button
                 type="button"
                 className="map-node__monsters"
-                title={`Монстры здесь: ${placeMonsters.join(', ')}`}
-                aria-label={`Монстры в локации «${node.name}»`}
+                title={fill(m.maps.graph.monstersTooltip, { names: placeMonsters.join(', ') })}
+                aria-label={fill(m.maps.graph.monstersLabel, { name: node.name })}
                 onPointerDown={(event) => event.stopPropagation()}
                 onPointerUp={(event) => event.stopPropagation()}
                 onKeyDown={(event) => event.stopPropagation()}
@@ -516,7 +520,7 @@ export function MapGraph({
             {interactive ? (
               <span
                 className="map-node__connector"
-                title="Потяните, чтобы провести путь"
+                title={m.maps.graph.connectHint}
                 aria-hidden="true"
                 onPointerDown={(event) => startConnection(event, node)}
                 onPointerMove={moveConnection}

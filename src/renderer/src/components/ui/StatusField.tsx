@@ -1,16 +1,17 @@
 import { useState } from 'react'
 import type { JSX, KeyboardEvent } from 'react'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 
 const STATUS_SUGGESTIONS = [
-  'Ранен',
-  'Отравлен',
-  'Проклят',
-  'В розыске',
-  'Скрывается',
-  'Благословлён',
-  'Истощён',
-  'Мёртв'
-]
+  'wounded',
+  'poisoned',
+  'cursed',
+  'wanted',
+  'hiding',
+  'blessed',
+  'exhausted',
+  'dead'
+] as const
 
 const MAX_STATUSES = 12
 
@@ -21,7 +22,9 @@ interface StatusFieldProps {
 
 /** Редактор статусов: чипы, подсказки и ввод по Enter/запятой. */
 export function StatusField({ value, onChange }: StatusFieldProps): JSX.Element {
+  const { messages: m, fill } = useI18n()
   const [draft, setDraft] = useState('')
+  const suggestions = STATUS_SUGGESTIONS.map((status) => m.people.statusField.suggestions[status])
 
   function addStatus(raw: string): void {
     const status = raw.trim().replace(/,$/, '')
@@ -55,7 +58,7 @@ export function StatusField({ value, onChange }: StatusFieldProps): JSX.Element 
 
   return (
     <div className="field">
-      <span className="field__label">Статусы</span>
+      <span className="field__label">{m.people.statusField.label}</span>
 
       <div className="tags-field">
         {value.length > 0 ? (
@@ -66,7 +69,7 @@ export function StatusField({ value, onChange }: StatusFieldProps): JSX.Element 
                 <button
                   type="button"
                   onClick={() => removeStatus(status)}
-                  aria-label={`Убрать статус ${status}`}
+                  aria-label={fill(m.people.statusField.removeAria, { status })}
                 >
                   ×
                 </button>
@@ -81,8 +84,8 @@ export function StatusField({ value, onChange }: StatusFieldProps): JSX.Element 
           maxLength={40}
           placeholder={
             value.length >= MAX_STATUSES
-              ? `Достигнут лимит: ${MAX_STATUSES}`
-              : 'Введите статус и нажмите Enter'
+              ? fill(m.people.statusField.limitReached, { count: MAX_STATUSES })
+              : m.people.statusField.placeholder
           }
           disabled={value.length >= MAX_STATUSES}
           onChange={(event) => setDraft(event.target.value)}
@@ -94,16 +97,18 @@ export function StatusField({ value, onChange }: StatusFieldProps): JSX.Element 
       </div>
 
       <div className="tags-field__suggestions">
-        {STATUS_SUGGESTIONS.filter((status) => !value.includes(status)).map((status) => (
-          <button
-            key={status}
-            type="button"
-            className="tags-field__suggestion"
-            onClick={() => addStatus(status)}
-          >
-            + {status}
-          </button>
-        ))}
+        {suggestions
+          .filter((status) => !value.includes(status))
+          .map((status) => (
+            <button
+              key={status}
+              type="button"
+              className="tags-field__suggestion"
+              onClick={() => addStatus(status)}
+            >
+              + {status}
+            </button>
+          ))}
       </div>
     </div>
   )

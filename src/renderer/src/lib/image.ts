@@ -1,3 +1,5 @@
+import { m } from '@shared/i18n'
+
 const MAX_SOURCE_BYTES = 8 * 1024 * 1024
 const MAX_DIMENSION = 720
 
@@ -5,7 +7,7 @@ function readAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => resolve(String(reader.result))
-    reader.onerror = () => reject(new Error('Не удалось прочитать файл изображения'))
+    reader.onerror = () => reject(new Error(m().ui.image.readFailed))
     reader.readAsDataURL(file)
   })
 }
@@ -14,7 +16,7 @@ function loadImage(source: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image()
     image.onload = () => resolve(image)
-    image.onerror = () => reject(new Error('Не удалось открыть изображение'))
+    image.onerror = () => reject(new Error(m().ui.image.openFailed))
     image.src = source
   })
 }
@@ -25,10 +27,10 @@ function loadImage(source: string): Promise<HTMLImageElement> {
  */
 export async function prepareCharacterImage(file: File): Promise<string> {
   if (!file.type.startsWith('image/')) {
-    throw new Error('Выберите файл изображения (png, jpeg или webp)')
+    throw new Error(m().ui.image.chooseFile)
   }
   if (file.size > MAX_SOURCE_BYTES) {
-    throw new Error('Изображение больше 8 МБ — выберите файл поменьше')
+    throw new Error(m().ui.image.tooLarge)
   }
 
   const source = await readAsDataUrl(file)
@@ -44,7 +46,7 @@ export async function prepareCharacterImage(file: File): Promise<string> {
 
   const context = canvas.getContext('2d')
   if (!context) {
-    throw new Error('Не удалось подготовить изображение')
+    throw new Error(m().ui.image.prepareFailed)
   }
 
   context.imageSmoothingQuality = 'high'

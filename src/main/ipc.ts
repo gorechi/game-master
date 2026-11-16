@@ -9,6 +9,7 @@ import { placeTypeInputSchema, placeTypeSchema } from '@shared/placeType'
 import { gameMapInputSchema, gameMapSchema } from '@shared/map'
 import { isGameStatus } from '@shared/gameStatus'
 import { isThemeName, type SettingsPatch } from '@shared/settings'
+import { fill, isLocaleCode, m, setActiveLocale } from '@shared/i18n'
 import { IPC, type AppInfo } from '@shared/api'
 import { applyWindowTheme } from './window'
 import { addPlayer, listPlayers, removePlayer, updatePlayer } from './storage/playerStore'
@@ -61,7 +62,7 @@ import {
 
 function assertId(value: unknown): string {
   if (typeof value !== 'string' || value.length === 0 || value.length > 64) {
-    throw new Error('Некорректный идентификатор')
+    throw new Error(m().main.ipc.invalidId)
   }
   return value
 }
@@ -69,18 +70,18 @@ function assertId(value: unknown): string {
 async function assertRealmExists(realmId: string): Promise<void> {
   const realms = await listRealms()
   if (!realms.some((realm) => realm.id === realmId)) {
-    throw new Error('Сеттинг не найден — возможно, он был удалён')
+    throw new Error(m().main.realms.notFound)
   }
 }
 
 function parsePlayerInput(value: unknown): PlayerInput {
   if (!value || typeof value !== 'object') {
-    throw new Error('Некорректные данные игрока')
+    throw new Error(m().main.ipc.invalidPlayer)
   }
 
   const { firstName, lastName } = value as Record<string, unknown>
   if (typeof firstName !== 'string' || typeof lastName !== 'string') {
-    throw new Error('Некорректные данные игрока')
+    throw new Error(m().main.ipc.invalidPlayer)
   }
 
   return { firstName, lastName }
@@ -88,21 +89,24 @@ function parsePlayerInput(value: unknown): PlayerInput {
 
 function parseSettingsPatch(value: unknown): SettingsPatch {
   if (!value || typeof value !== 'object') {
-    throw new Error('Некорректные настройки')
+    throw new Error(m().main.ipc.invalidSettings)
   }
 
-  const { theme } = value as Record<string, unknown>
+  const { theme, locale } = value as Record<string, unknown>
   if (theme !== undefined && !isThemeName(theme)) {
-    throw new Error('Некорректная тема оформления')
+    throw new Error(m().main.ipc.invalidTheme)
+  }
+  if (locale !== undefined && !isLocaleCode(locale)) {
+    throw new Error(m().main.ipc.invalidLocale)
   }
 
-  return { theme }
+  return { theme, locale }
 }
 
 function parseMonsterIds(value: unknown): string[] {
   if (value === undefined) return []
   if (!Array.isArray(value)) {
-    throw new Error('Некорректный список монстров')
+    throw new Error(m().main.ipc.invalidMonsterList)
   }
 
   return value.filter(
@@ -129,7 +133,7 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(IPC.appOpenDataFolder, async (): Promise<void> => {
     const error = await shell.openPath(app.getPath('userData'))
-    if (error) throw new Error(`Не удалось открыть папку: ${error}`)
+    if (error) throw new Error(fill(m().main.ipc.openFolderFailed, { error }))
   })
 
   ipcMain.handle(IPC.updatesCheck, () => checkForUpdates())
@@ -155,7 +159,7 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(IPC.gameSetStatus, (_event, id: unknown, status: unknown) => {
     if (!isGameStatus(status)) {
-      throw new Error('Некорректный статус игры')
+      throw new Error(m().main.ipc.invalidGameStatus)
     }
     return setGameStatus(assertId(id), status)
   })
@@ -300,7 +304,7 @@ export function registerIpcHandlers(): void {
 
     if (!realms.some((realm) => realm.id === realmId)) return
     if (realms.length <= 1) {
-      throw new Error('Нельзя удалить последний сеттинг')
+      throw new Error(m().main.realms.lastRemovalForbidden)
     }
 
     const [games, characters, monsters, maps, savedMonsters, placeTypes] = await Promise.all([
@@ -321,9 +325,7 @@ export function registerIpcHandlers(): void {
       placeTypes.some((placeType) => placeType.realmId === realmId)
 
     if (hasData) {
-      throw new Error(
-        'В сеттинге есть игры, персонажи, монстры, карты или иконки мест — сначала удалите их'
-      )
+      throw new Error(m().main.realms.notEmpty)
     }
 
     await removeRealm(realmId)
@@ -333,6 +335,7 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(IPC.settingsUpdate, async (_event, patch: unknown) => {
     const next = await updateSettings(parseSettingsPatch(patch))
+    setActiveLocale(next.locale)
     applyWindowTheme(next.theme)
     return next
   })

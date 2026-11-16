@@ -8,13 +8,17 @@ import {
   type AppSettings,
   type SettingsPatch
 } from '@shared/settings'
+import { DEFAULT_LOCALE, LOCALE_CODES, type LocaleCode } from '@shared/i18n'
 import { JsonFileError, readJsonFile, withFileLock, writeJsonAtomic } from './jsonFile'
 
 const LOCK_KEY = 'settings.json'
 
 const settingsFileSchema = z.object({
   schemaVersion: z.number().int().min(1),
-  theme: z.enum(THEMES)
+  theme: z.enum(THEMES),
+  locale: z
+    .enum(LOCALE_CODES as [LocaleCode, ...LocaleCode[]])
+    .default(DEFAULT_LOCALE)
 })
 
 function settingsFile(): string {
@@ -44,7 +48,8 @@ export async function updateSettings(patch: SettingsPatch): Promise<AppSettings>
     const current = await getSettings()
     const next: AppSettings = {
       ...current,
-      ...(patch.theme ? { theme: patch.theme } : {})
+      ...(patch.theme ? { theme: patch.theme } : {}),
+      ...(patch.locale ? { locale: patch.locale } : {})
     }
 
     await writeJsonAtomic(settingsFile(), next)

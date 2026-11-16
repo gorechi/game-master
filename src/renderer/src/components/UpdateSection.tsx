@@ -1,6 +1,6 @@
 import type { JSX } from 'react'
 import { GITHUB_RELEASES_URL, type UpdateState, type UpdateStatus } from '@shared/update'
-import { formatDate } from '../lib/format'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 import { IconCheck, IconClose, IconDownload } from './ui/icons'
 
 interface UpdateSectionProps {
@@ -11,17 +11,15 @@ interface UpdateSectionProps {
 
 /** Блок настроек с состоянием проверки обновлений и ссылкой на релизы. */
 export function UpdateSection({ update, checking, onCheck }: UpdateSectionProps): JSX.Element {
+  const { messages: m, fill, formatDate } = useI18n()
   const status: UpdateStatus = checking ? 'checking' : (update?.status ?? 'idle')
   const releaseUrl = update?.releaseUrl ?? GITHUB_RELEASES_URL
 
   return (
     <section className="settings-block" aria-labelledby="settings-updates">
       <div className="settings-block__head">
-        <h2 id="settings-updates">Обновления</h2>
-        <p className="muted">
-          Приложение проверяет последний релиз на GitHub. Автоматической установки нет: установщик
-          нужно скачать и запустить вручную.
-        </p>
+        <h2 id="settings-updates">{m.updates.section.title}</h2>
+        <p className="muted">{m.updates.section.description}</p>
       </div>
 
       <div className={`update-status update-status--${status}`}>
@@ -40,55 +38,66 @@ export function UpdateSection({ update, checking, onCheck }: UpdateSectionProps)
         <div className="update-status__text">
           {status === 'checking' ? (
             <>
-              <strong>Проверяем обновления…</strong>
-              <span>Запрашиваем последний релиз на GitHub.</span>
+              <strong>{m.updates.section.checkingTitle}</strong>
+              <span>{m.updates.section.checkingHint}</span>
             </>
           ) : status === 'available' ? (
             <>
-              <strong>Доступна новая версия {update?.latestVersion}</strong>
+              <strong>
+                {fill(m.updates.section.availableTitle, {
+                  version: update?.latestVersion ?? ''
+                })}
+              </strong>
               <span>
-                У вас {update?.currentVersion}. Скачайте установщик на странице релизов и запустите
-                его — данные и настройки сохранятся.
+                {fill(m.updates.section.availableHint, {
+                  current: update?.currentVersion ?? ''
+                })}
               </span>
             </>
           ) : status === 'latest' ? (
             <>
-              <strong>У вас последняя версия</strong>
-              <span>Версия {update?.currentVersion} — самая свежая.</span>
+              <strong>{m.updates.section.latestTitle}</strong>
+              <span>
+                {fill(m.updates.section.latestHint, { version: update?.currentVersion ?? '' })}
+              </span>
             </>
           ) : status === 'error' ? (
             <>
-              <strong>Не удалось проверить обновления</strong>
-              <span>{update?.error ?? 'Проверьте подключение к интернету и попробуйте снова.'}</span>
+              <strong>{m.updates.section.errorTitle}</strong>
+              <span>{update?.error ?? m.updates.section.errorHint}</span>
             </>
           ) : (
             <>
-              <strong>Проверка ещё не выполнялась</strong>
-              <span>Текущая версия {update?.currentVersion ?? '—'}.</span>
+              <strong>{m.updates.section.idleTitle}</strong>
+              <span>
+                {fill(m.updates.section.idleHint, { version: update?.currentVersion ?? '—' })}
+              </span>
             </>
           )}
         </div>
 
         {status === 'available' ? (
           <a className="button button--primary" href={releaseUrl} target="_blank" rel="noreferrer">
-            Страница релизов
+            {m.updates.section.releases}
           </a>
         ) : null}
 
         {status === 'error' ? (
           <a className="button" href={releaseUrl} target="_blank" rel="noreferrer">
-            Проверить самому
+            {m.updates.section.checkYourself}
           </a>
         ) : null}
       </div>
 
       <div className="update-status__foot">
         <span className="muted">
-          {update?.checkedAt ? `Проверено ${formatDate(update.checkedAt)}` : 'Проверка не выполнялась'}
+          {update?.checkedAt
+            ? fill(m.updates.section.checkedAt, { date: formatDate(update.checkedAt) })
+            : m.updates.section.notChecked}
         </span>
 
         <button type="button" className="button" onClick={onCheck} disabled={checking}>
-          {checking ? 'Проверяем…' : 'Проверить снова'}
+          {checking ? m.updates.section.checking : m.updates.section.checkAgain}
         </button>
       </div>
     </section>

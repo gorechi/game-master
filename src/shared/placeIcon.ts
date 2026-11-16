@@ -1,9 +1,11 @@
+import { fill, m } from './i18n'
+
 /**
  * Правила иконок мест и автоматическая починка SVG.
  *
- * Функции чистые и не зависят от Electron: их используют и renderer,
- * и main. Иконка хранится как inline-SVG и должна быть безопасной:
- * только простые фигуры, currentColor и никаких внешних ссылок.
+ * Функции не зависят от Electron: их используют и renderer, и main.
+ * Иконка хранится как inline-SVG и должна быть безопасной: только
+ * простые фигуры, currentColor и никаких внешних ссылок.
  */
 
 const ALLOWED_TAGS = new Set([
@@ -56,8 +58,9 @@ const ALLOWED_ATTRS = new Set([
 ])
 
 /** Короткая формулировка требований — показывается пользователю. */
-export const PLACE_ICON_REQUIREMENTS =
-  'Иконка должна быть контурной SVG 24×24: fill="none", stroke="currentColor", без заливок, текста, растровых изображений, градиентов и внешних ссылок.'
+export function placeIconRequirements(): string {
+  return m().realms.placeIcon.requirements
+}
 
 export interface PlaceIconCheck {
   ok: boolean
@@ -168,46 +171,47 @@ function textContentWithoutTags(html: string): string {
  */
 export function validatePlaceIcon(svg: string): PlaceIconCheck {
   const problems: string[] = []
+  const messages = m().realms.placeIcon
   const source = svg.trim()
 
-  if (!source) return { ok: false, problems: ['Файл пуст.'] }
+  if (!source) return { ok: false, problems: [messages.emptyFile] }
   if (source.length > 20_000) {
-    problems.push('SVG слишком большой: допустимо не больше 20 КБ.')
+    problems.push(messages.tooLarge)
   }
   if (!source.startsWith('<svg') || !/<\/svg>\s*$/i.test(source)) {
-    return { ok: false, problems: ['Не найден цельный элемент <svg>…</svg>.'] }
+    return { ok: false, problems: [messages.noWholeSvg] }
   }
   if ((source.match(/<svg\b/gi) ?? []).length !== 1) {
-    problems.push('Внутри иконки не должно быть вложенных <svg>.')
+    problems.push(messages.nestedSvg)
   }
 
   const openMatch = source.match(/^<svg\b([^>]*)>/i)
   const root = openMatch ? parseOpenTag(openMatch[0]) : null
-  if (!root) return { ok: false, problems: ['Не удалось прочитать корневой <svg>.'] }
+  if (!root) return { ok: false, problems: [messages.rootUnreadable] }
 
   if (attr(root.attrs, 'viewBox') !== '0 0 24 24') {
-    problems.push('Нужен viewBox="0 0 24 24".')
+    problems.push(messages.viewBoxRequired)
   }
   if (attr(root.attrs, 'fill') !== 'none') {
-    problems.push('У корневого <svg> должен быть fill="none".')
+    problems.push(messages.rootFill)
   }
   if (attr(root.attrs, 'stroke') !== 'currentColor') {
-    problems.push('У корневого <svg> должен быть stroke="currentColor".')
+    problems.push(messages.rootStroke)
   }
 
   const strokeWidth = Number(attr(root.attrs, 'stroke-width'))
   if (!Number.isFinite(strokeWidth) || strokeWidth < 1.2 || strokeWidth > 2) {
-    problems.push('stroke-width должен быть числом от 1.2 до 2.')
+    problems.push(messages.strokeWidthRange)
   }
   if (attr(root.attrs, 'stroke-linecap') !== 'round') {
-    problems.push('Нужен stroke-linecap="round".')
+    problems.push(messages.linecapRound)
   }
   if (attr(root.attrs, 'stroke-linejoin') !== 'round') {
-    problems.push('Нужен stroke-linejoin="round".')
+    problems.push(messages.linejoinRound)
   }
 
   if (/\b(url|href|xlink:href)\s*\(/i.test(source)) {
-    problems.push('Ссылки на градиенты, маски и внешние ресурсы запрещены.')
+    problems.push(messages.externalLinks)
   }
 
   // Корневой тег тоже проверяем: обработчики вроде onload недопустимы.
@@ -215,14 +219,14 @@ export function validatePlaceIcon(svg: string): PlaceIconCheck {
     const name = rawName.toLowerCase()
     if (name === 'xmlns') continue
     if (name.startsWith('on') || name === 'style' || name === 'href' || name === 'xlink:href') {
-      problems.push(`Атрибут ${rawName} запрещён.`)
+      problems.push(fill(messages.attrForbidden, { name: rawName }))
       continue
     }
     if (!ALLOWED_ATTRS.has(name)) {
-      problems.push(`Атрибут ${rawName} не поддерживается.`)
+      problems.push(fill(messages.attrUnsupported, { name: rawName }))
     }
     if (value.includes('url(')) {
-      problems.push('Ссылки на градиенты, маски и внешние ресурсы запрещены.')
+      problems.push(messages.externalLinks)
     }
   }
 
@@ -233,10 +237,10 @@ export function validatePlaceIcon(svg: string): PlaceIconCheck {
   for (const match of tags) {
     const name = match[1]!.toLowerCase()
     if (!ALLOWED_TAGS.has(name)) {
-      problems.push(`Элемент <${name}> не поддерживается.`)
+      problems.push(fill(messages.elementUnsupported, { name }))
     }
     if (name === 'svg') {
-      problems.push('Внутри иконки не должно быть вложенных <svg>.')
+      problems.push(messages.nestedSvg)
     }
     if (DRAWABLE_TAGS.has(name)) drawableCount += 1
   }
@@ -249,39 +253,39 @@ export function validatePlaceIcon(svg: string): PlaceIconCheck {
       const name = rawName.toLowerCase()
 
       if (name.startsWith('on') || name === 'style' || name === 'href' || name === 'xlink:href') {
-        problems.push(`Атрибут ${rawName} запрещён.`)
+        problems.push(fill(messages.attrForbidden, { name: rawName }))
         continue
       }
       if (!ALLOWED_ATTRS.has(name)) {
-        problems.push(`Атрибут ${rawName} не поддерживается.`)
+        problems.push(fill(messages.attrUnsupported, { name: rawName }))
         continue
       }
       if (value.includes('url(')) {
-        problems.push('Ссылки на градиенты, маски и внешние ресурсы запрещены.')
+        problems.push(messages.externalLinks)
       }
       if (name === 'fill' && value.trim().toLowerCase() !== 'none') {
-        problems.push('Заливки запрещены: допустим только fill="none".')
+        problems.push(messages.fillForbidden)
       }
       if (name === 'stroke' && value.trim().toLowerCase() !== 'currentcolor') {
-        problems.push('Цвет линий должен наследоваться: stroke="currentColor".')
+        problems.push(messages.strokeInherit)
       }
       if (name === 'stroke-width') {
         const width = Number(value)
         if (!Number.isFinite(width) || width < 1.2 || width > 2) {
-          problems.push('stroke-width должен быть числом от 1.2 до 2.')
+          problems.push(messages.strokeWidthRange)
         }
       }
       if (name === 'vector-effect' && value !== 'non-scaling-stroke') {
-        problems.push('vector-effect может быть только non-scaling-stroke.')
+        problems.push(messages.vectorEffect)
       }
     }
   }
 
   if (textContentWithoutTags(inner)) {
-    problems.push('Текст внутри иконки запрещён.')
+    problems.push(messages.textForbidden)
   }
   if (drawableCount === 0) {
-    problems.push('В иконке нет контура: нужен хотя бы один path, circle или rect.')
+    problems.push(messages.noOutline)
   }
 
   return { ok: problems.length === 0, problems }
@@ -295,6 +299,7 @@ export function validatePlaceIcon(svg: string): PlaceIconCheck {
  */
 export function repairPlaceIcon(source: string): PlaceIconRepair {
   const fixes = new Set<string>()
+  const messages = m().realms.placeIcon
   const fail = (problems: string[]): PlaceIconRepair => ({
     ok: false,
     svg: null,
@@ -303,7 +308,7 @@ export function repairPlaceIcon(source: string): PlaceIconRepair {
   })
 
   let text = source.replace(/^\uFEFF/, '').trim()
-  if (!text) return fail(['Файл пуст.'])
+  if (!text) return fail([messages.emptyFile])
 
   const withoutJunk = text
     .replace(/<!--[\s\S]*?-->/g, '')
@@ -312,13 +317,13 @@ export function repairPlaceIcon(source: string): PlaceIconRepair {
     .trim()
 
   if (withoutJunk !== text) {
-    fixes.add('убран служебный текст и комментарии')
+    fixes.add(messages.fixRemovedJunk)
     text = withoutJunk
   }
 
   const extracted = extractRoot(text)
   if (!extracted) {
-    return fail(['Не найден цельный элемент <svg>…</svg>.'])
+    return fail([messages.noWholeSvg])
   }
 
   const rootAttrs = extracted.openTag.attrs
@@ -326,7 +331,7 @@ export function repairPlaceIcon(source: string): PlaceIconRepair {
 
   for (const tag of SERVICE_TAGS) {
     const result = removeServiceElement(inner, tag)
-    if (result.removed) fixes.add('удалены служебные элементы (title, desc, defs)')
+    if (result.removed) fixes.add(messages.fixServiceElements)
     inner = result.html
   }
 
@@ -336,19 +341,15 @@ export function repairPlaceIcon(source: string): PlaceIconRepair {
 
   for (const name of tagNames) {
     if (name === 'svg') {
-      return fail(['Вложенные <svg> нельзя исправить автоматически.'])
+      return fail([messages.nestedSvgRepair])
     }
     if (!ALLOWED_TAGS.has(name)) {
-      return fail([
-        `В иконке есть элемент <${name}>. Такие элементы (текст, картинки, градиенты, ссылки) нельзя безопасно превратить в контур.`
-      ])
+      return fail([fill(messages.unsafeElement, { name })])
     }
   }
 
   if (/\burl\s*\(/i.test(inner)) {
-    return fail([
-      'Иконка ссылается на градиент, маску или другой элемент. Такие ссылки нельзя исправить автоматически.'
-    ])
+    return fail([messages.gradientLinks])
   }
 
   const viewBoxValue =
@@ -358,12 +359,12 @@ export function repairPlaceIcon(source: string): PlaceIconRepair {
       : null)
 
   if (!viewBoxValue) {
-    return fail(['Не указан viewBox — иконку нельзя корректно вписать в 24×24.'])
+    return fail([messages.missingViewBox])
   }
 
   const box = parseNumbers(viewBoxValue)
   if (box.length !== 4 || box[2]! <= 0 || box[3]! <= 0) {
-    return fail(['viewBox должен содержать четыре числа: minX minY width height.'])
+    return fail([messages.viewBoxNumbers])
   }
 
   const [minX, minY, boxWidth, boxHeight] = box as [number, number, number, number]
@@ -486,25 +487,25 @@ export function repairPlaceIcon(source: string): PlaceIconRepair {
     return serializeTag({ ...tag, attrs })
   })
 
-  if (removedAttributes) fixes.add('убраны лишние атрибуты (style, id, class, обработчики)')
-  if (flattenedFills) fixes.add('заливки заменены контуром')
-  if (recoloredStrokes) fixes.add('цвет линий приведён к currentColor')
-  if (fixedWidths) fixes.add('толщина линий приведена к 1.5')
-  if (removedBackground) fixes.add('убран фон на весь холст')
+  if (removedAttributes) fixes.add(messages.fixAttributes)
+  if (flattenedFills) fixes.add(messages.fixFills)
+  if (recoloredStrokes) fixes.add(messages.fixStrokes)
+  if (fixedWidths) fixes.add(messages.fixStrokeWidth)
+  if (removedBackground) fixes.add(messages.fixBackground)
 
   if (needsScale) {
     const translateX = formatNumber((24 - boxWidth * scale) / 2 - minX * scale)
     const translateY = formatNumber((24 - boxHeight * scale) / 2 - minY * scale)
     inner = `<g transform="translate(${translateX} ${translateY}) scale(${formatNumber(scale)})">${inner}</g>`
-    fixes.add('масштаб приведён к 24×24')
+    fixes.add(messages.fixScale)
   }
 
   const rootWidth = Number(attr(rootAttrs, 'stroke-width'))
   const strokeWidth = Number.isFinite(rootWidth) && rootWidth >= 1.2 && rootWidth <= 2 ? rootWidth : 1.5
-  if (strokeWidth !== rootWidth) fixes.add('толщина линий приведена к 1.5')
+  if (strokeWidth !== rootWidth) fixes.add(messages.fixStrokeWidth)
 
   if (attr(rootAttrs, 'fill') !== 'none' || attr(rootAttrs, 'stroke') !== 'currentColor') {
-    fixes.add('добавлены обязательные атрибуты контура')
+    fixes.add(messages.fixRequiredAttrs)
   }
 
   const svg = [

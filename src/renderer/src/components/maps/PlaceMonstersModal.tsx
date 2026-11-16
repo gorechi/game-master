@@ -1,6 +1,7 @@
 import type { JSX } from 'react'
 import type { GameMonster } from '@shared/game'
 import { formatChallengeRating } from '@shared/domain'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 import { Modal } from '../ui/Modal'
 import { IconMonsterFace } from '../ui/icons'
 
@@ -18,20 +19,22 @@ export function PlaceMonstersModal({
   monsters,
   onClose
 }: PlaceMonstersModalProps): JSX.Element {
+  const { messages: m, fill } = useI18n()
+
   return (
     <Modal
       open={open}
-      title="Монстры в локации"
+      title={m.maps.monsters.title}
       description={placeName}
       onClose={onClose}
       footer={
         <button type="button" className="button" onClick={onClose}>
-          Закрыть
+          {m.maps.monsters.close}
         </button>
       }
     >
       {monsters.length === 0 ? (
-        <p className="muted">В этой локации нет живых монстров.</p>
+        <p className="muted">{m.maps.monsters.empty}</p>
       ) : (
         <ul className="place-monsters">
           {monsters.map((monster) => (
@@ -42,7 +45,10 @@ export function PlaceMonstersModal({
               <span className="place-monsters__body">
                 <span className="place-monsters__name">{monster.name}</span>
                 <span className="place-monsters__meta">
-                  ХП {monster.hitPoints} · КО {formatChallengeRating(monster.challengeRating)}
+                  {fill(m.maps.monsters.stats, {
+                    hp: monster.hitPoints,
+                    cr: formatChallengeRating(monster.challengeRating)
+                  })}
                 </span>
                 {monster.statuses.length > 0 ? (
                   <span className="place-monsters__statuses">

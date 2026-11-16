@@ -4,6 +4,7 @@ import type { MonsterAbility, MonsterInput } from '@shared/monster'
 import type { Realm } from '@shared/realm'
 import { createMonsterAbility } from '@shared/domain'
 import { errorMessage } from '@renderer/lib/api'
+import { useMessages } from '@renderer/i18n/LocaleProvider'
 import { MONSTER_STAT_FIELDS } from '@renderer/lib/monsterStats'
 import { Modal } from '../ui/Modal'
 import { Select } from '../ui/Select'
@@ -86,6 +87,7 @@ export function MonsterFormModal({
   onClose,
   onSubmit
 }: MonsterFormModalProps): JSX.Element {
+  const m = useMessages()
   const minHitPoints = allowZeroHitPoints ? 0 : 1
   const [name, setName] = useState('')
   const [realmId, setRealmId] = useState('')
@@ -155,7 +157,7 @@ export function MonsterFormModal({
 
     const trimmedName = name.trim()
     if (!trimmedName) {
-      setError('Укажите название монстра')
+      setError(m.bestiary.form.nameRequired)
       nameRef.current?.focus()
       return
     }
@@ -165,12 +167,12 @@ export function MonsterFormModal({
     )
 
     if (filledAbilities.some((ability) => !ability.name.trim())) {
-      setError('Укажите название для каждой способности')
+      setError(m.bestiary.form.abilityNameRequired)
       return
     }
 
     if (realms && !realmId) {
-      setError('Выберите сеттинг монстра')
+      setError(m.bestiary.form.realmRequired)
       return
     }
 
@@ -218,7 +220,7 @@ export function MonsterFormModal({
       footer={
         <>
           <button type="button" className="button" onClick={onClose} disabled={saving}>
-            Отмена
+            {m.bestiary.form.cancel}
           </button>
           <button
             type="submit"
@@ -226,7 +228,7 @@ export function MonsterFormModal({
             className="button button--primary"
             disabled={saving || (Boolean(realms) && !realmId)}
           >
-            {saving ? 'Сохраняем…' : 'Сохранить'}
+            {saving ? m.bestiary.form.saving : m.bestiary.form.save}
           </button>
         </>
       }
@@ -239,31 +241,29 @@ export function MonsterFormModal({
       >
         {realms && realms.length > 0 ? (
           <div className="field">
-            <span className="field__label">Сеттинг *</span>
+            <span className="field__label">{m.bestiary.form.realmLabel}</span>
             <Select
-              ariaLabel="Сеттинг монстра"
+              ariaLabel={m.bestiary.form.realmAria}
               value={realmId}
-              placeholder="Выберите сеттинг"
+              placeholder={m.bestiary.form.realmPlaceholder}
               disabled={lockRealm}
               options={realms.map((realm) => ({ value: realm.id, label: realm.name }))}
               onChange={setRealmId}
             />
             <span className="game-editor__hint">
-              {lockRealm
-                ? 'Сеттинг задаётся при создании и не меняется.'
-                : 'Монстр будет доступен в играх и бестиарии этого сеттинга.'}
+              {lockRealm ? m.bestiary.form.realmHintLocked : m.bestiary.form.realmHint}
             </span>
           </div>
         ) : null}
 
         <label className="field">
-          <span className="field__label">Название</span>
+          <span className="field__label">{m.bestiary.form.nameLabel}</span>
           <input
             ref={nameRef}
             className="input"
             value={name}
             maxLength={100}
-            placeholder="Скелет-стражник"
+            placeholder={m.bestiary.form.namePlaceholder}
             autoComplete="off"
             onChange={(event) => setName(event.target.value)}
           />
@@ -287,13 +287,11 @@ export function MonsterFormModal({
           ))}
         </div>
 
-        <p className="game-editor__hint">
-          Значение характеристики — от 1 до 30. Модификатор считается автоматически.
-        </p>
+        <p className="game-editor__hint">{m.bestiary.form.scoresHint}</p>
 
         <div className="monster-form__vitals">
           <label className="field">
-            <span className="field__label">Класс опасности</span>
+            <span className="field__label">{m.bestiary.form.challengeRatingLabel}</span>
             <input
               className="input"
               type="number"
@@ -312,7 +310,7 @@ export function MonsterFormModal({
           </label>
 
           <label className="field">
-            <span className="field__label">Класс защиты</span>
+            <span className="field__label">{m.bestiary.form.armorClassLabel}</span>
             <input
               className="input"
               type="number"
@@ -330,7 +328,7 @@ export function MonsterFormModal({
           </label>
 
           <label className="field">
-            <span className="field__label">Здоровье</span>
+            <span className="field__label">{m.bestiary.form.hitPointsLabel}</span>
             <input
               className="input"
               type="number"
@@ -351,13 +349,11 @@ export function MonsterFormModal({
         </div>
 
         <div className="field">
-          <span className="field__label">Способности</span>
+          <span className="field__label">{m.bestiary.form.abilitiesLabel}</span>
 
           <div className="abilities-editor">
             {abilities.length === 0 ? (
-              <p className="abilities-editor__empty">
-                Пока ни одной способности. Добавьте первую — каждая способность это отдельное поле.
-              </p>
+              <p className="abilities-editor__empty">{m.bestiary.form.abilitiesEmpty}</p>
             ) : null}
 
             {abilities.map((ability) => (
@@ -367,15 +363,15 @@ export function MonsterFormModal({
                     className="input"
                     value={ability.name}
                     maxLength={80}
-                    placeholder="Название способности"
+                    placeholder={m.bestiary.form.abilityNamePlaceholder}
                     autoFocus={ability.id === justAddedId}
                     onChange={(event) => updateAbility(ability.id, { name: event.target.value })}
                   />
                   <button
                     type="button"
                     className="icon-button icon-button--danger"
-                    title="Удалить способность"
-                    aria-label="Удалить способность"
+                    title={m.bestiary.form.removeAbility}
+                    aria-label={m.bestiary.form.removeAbility}
                     onClick={() => removeAbility(ability.id)}
                   >
                     <IconTrash />
@@ -387,7 +383,7 @@ export function MonsterFormModal({
                   value={ability.description}
                   maxLength={2000}
                   rows={2}
-                  placeholder="Что делает способность"
+                  placeholder={m.bestiary.form.abilityDescriptionPlaceholder}
                   onChange={(event) =>
                     updateAbility(ability.id, { description: event.target.value })
                   }
@@ -397,7 +393,7 @@ export function MonsterFormModal({
 
             <button type="button" className="button button--dashed" onClick={addAbility}>
               <IconPlus width={16} height={16} />
-              Добавить способность
+              {m.bestiary.form.addAbility}
             </button>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { app, net } from 'electron'
+import { fill, m } from '@shared/i18n'
 import {
   GITHUB_LATEST_RELEASE_API,
   isVersionNewer,
@@ -54,7 +55,7 @@ async function runCheck(): Promise<UpdateState> {
     })
 
     if (!response.ok) {
-      throw new Error(`GitHub ответил с кодом ${response.status}`)
+      throw new Error(fill(m().updates.errors.http, { status: response.status }))
     }
 
     const payload = (await response.json()) as { tag_name?: unknown; html_url?: unknown }
@@ -62,7 +63,7 @@ async function runCheck(): Promise<UpdateState> {
       typeof payload.tag_name === 'string' ? normalizeVersion(payload.tag_name) : ''
 
     if (!latestVersion || !parseVersion(latestVersion)) {
-      throw new Error('GitHub вернул релиз без понятного номера версии')
+      throw new Error(m().updates.errors.badVersion)
     }
 
     state = {
@@ -90,10 +91,10 @@ async function runCheck(): Promise<UpdateState> {
 function describeError(error: unknown): string {
   if (error instanceof Error) {
     if (error.name === 'TimeoutError' || error.name === 'AbortError') {
-      return 'Истекло время ожидания ответа GitHub'
+      return m().updates.errors.timeout
     }
     if (/fetch|net::|ENOTFOUND|ECONN|EAI_AGAIN/i.test(error.message)) {
-      return 'Не удалось связаться с GitHub'
+      return m().updates.errors.network
     }
     return error.message
   }

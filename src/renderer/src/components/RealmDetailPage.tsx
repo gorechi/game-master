@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { FormEvent, JSX } from 'react'
 import type { Realm } from '@shared/realm'
 import { api, errorMessage } from '@renderer/lib/api'
+import { useMessages } from '@renderer/i18n/LocaleProvider'
 import { RealmIconsSection } from './realms/RealmIconsSection'
 
 interface RealmDetailPageProps {
@@ -18,6 +19,7 @@ export function RealmDetailPage({
   onBack,
   onChanged
 }: RealmDetailPageProps): JSX.Element {
+  const m = useMessages()
   const [tab, setTab] = useState<RealmTab>('about')
   const [name, setName] = useState(realm?.name ?? '')
   const [description, setDescription] = useState(realm?.description ?? '')
@@ -36,7 +38,7 @@ export function RealmDetailPage({
 
     const trimmed = name.trim()
     if (!trimmed) {
-      setError('Укажите название сеттинга')
+      setError(m.realms.form.nameRequired)
       return
     }
 
@@ -62,22 +64,22 @@ export function RealmDetailPage({
             className="button button--ghost button--tiny page-back"
             onClick={onBack}
           >
-            ← Сеттинги
+            {m.realms.detail.back}
           </button>
 
           {!realm ? (
-            <p className="notice">Сеттинг не найден — возможно, он был удалён.</p>
+            <p className="notice">{m.realms.detail.notFound}</p>
           ) : (
             <>
               <header className="page-head">
                 <div>
-                  <p className="page-kicker">Сеттинг</p>
+                  <p className="page-kicker">{m.realms.detail.kicker}</p>
                   <h1>{realm.name}</h1>
-                  <p className="muted">{realm.description || 'Без описания'}</p>
+                  <p className="muted">{realm.description || m.realms.noDescription}</p>
                 </div>
               </header>
 
-              <div className="realm-tabs" role="tablist" aria-label="Разделы сеттинга">
+              <div className="realm-tabs" role="tablist" aria-label={m.realms.detail.tabsLabel}>
                 <button
                   type="button"
                   role="tab"
@@ -87,7 +89,7 @@ export function RealmDetailPage({
                   className={`realm-tab${tab === 'about' ? ' realm-tab--active' : ''}`}
                   onClick={() => setTab('about')}
                 >
-                  Основное
+                  {m.realms.detail.aboutTab}
                 </button>
                 <button
                   type="button"
@@ -98,7 +100,7 @@ export function RealmDetailPage({
                   className={`realm-tab${tab === 'icons' ? ' realm-tab--active' : ''}`}
                   onClick={() => setTab('icons')}
                 >
-                  Иконки
+                  {m.realms.detail.iconsTab}
                 </button>
               </div>
 
@@ -118,8 +120,8 @@ export function RealmDetailPage({
                   className="settings-block"
                 >
                   <div className="settings-block__head">
-                    <h2>Основное</h2>
-                    <p className="muted">Название и описание сеттинга.</p>
+                    <h2>{m.realms.detail.aboutTitle}</h2>
+                    <p className="muted">{m.realms.detail.aboutDescription}</p>
                   </div>
 
                   <form
@@ -128,25 +130,25 @@ export function RealmDetailPage({
                     noValidate
                   >
                     <label className="field">
-                      <span className="field__label">Название</span>
+                      <span className="field__label">{m.realms.form.nameLabel}</span>
                       <input
                         className="input"
                         value={name}
                         maxLength={100}
-                        placeholder="D&D, Киберпанк, Дальний космос…"
+                        placeholder={m.realms.form.namePlaceholder}
                         autoComplete="off"
                         onChange={(event) => setName(event.target.value)}
                       />
                     </label>
 
                     <label className="field">
-                      <span className="field__label">Описание</span>
+                      <span className="field__label">{m.realms.form.descriptionLabel}</span>
                       <textarea
                         className="input realm-form__description"
                         value={description}
                         maxLength={2000}
                         rows={4}
-                        placeholder="Жанр, атмосфера, особенности мира…"
+                        placeholder={m.realms.form.descriptionPlaceholder}
                         onChange={(event) => setDescription(event.target.value)}
                       />
                     </label>
@@ -159,7 +161,7 @@ export function RealmDetailPage({
                         className="button button--primary"
                         disabled={saving}
                       >
-                        {saving ? 'Сохраняем…' : 'Сохранить сеттинг'}
+                        {saving ? m.realms.form.saving : m.realms.form.save}
                       </button>
                     </div>
                   </form>

@@ -5,7 +5,7 @@ import type { Realm } from '@shared/realm'
 import type { PlaceType } from '@shared/placeType'
 import { canonicalMapPath } from '@shared/domain'
 import { api, errorMessage } from '@renderer/lib/api'
-import { pluralize } from '@renderer/lib/format'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 import { editorLayout, type MapPoint } from '@renderer/lib/mapLayout'
 import { IconPencil, IconSave, IconUndo } from './ui/icons'
 import { MapExitFrame } from './maps/MapExitFrame'
@@ -73,6 +73,7 @@ export function MapGraphPage({
   onBack,
   onOpenMap
 }: MapGraphPageProps): JSX.Element {
+  const { messages: m, plural } = useI18n()
   const [map, setMap] = useState<GameMap | null | undefined>(undefined)
   const [placeTypes, setPlaceTypes] = useState<PlaceType[]>([])
   const [linkedMapNames, setLinkedMapNames] = useState<Record<string, string>>({})
@@ -362,27 +363,23 @@ export function MapGraphPage({
             className="button button--ghost button--tiny page-back"
             onClick={onBack}
           >
-            ← Карты
+            {m.maps.graphPage.back}
           </button>
 
           <header className="page-head">
             <div>
-              <p className="page-kicker">Карта</p>
-              <h1>{map ? map.name : 'Карта'}</h1>
+              <p className="page-kicker">{m.maps.graphPage.kicker}</p>
+              <h1>{map ? map.name : m.maps.graphPage.titleFallback}</h1>
               <p className="muted">
                 {map
-                  ? `${map.places.length} ${pluralize(
+                  ? `${map.places.length} ${plural(
                       map.places.length,
-                      'место',
-                      'места',
-                      'мест'
-                    )} · ${displayPaths.length} ${pluralize(
+                      m.maps.graphPage.placeCount
+                    )} · ${displayPaths.length} ${plural(
                       displayPaths.length,
-                      'путь',
-                      'пути',
-                      'путей'
+                      m.maps.graphPage.pathCount
                     )}`
-                  : 'Загружаем карту…'}
+                  : m.maps.graphPage.loading}
               </p>
             </div>
 
@@ -390,7 +387,7 @@ export function MapGraphPage({
               <div className="map-view-actions">
                 <button className="button" onClick={() => setEditing(true)}>
                   <IconPencil width={15} height={15} />
-                  Редактировать
+                  {m.maps.graphPage.edit}
                 </button>
               </div>
             ) : null}
@@ -402,37 +399,37 @@ export function MapGraphPage({
 
         {map === null ? (
           <div className="empty">
-            <p>Карта не найдена — возможно, запись уже удалена.</p>
+            <p>{m.maps.graphPage.notFound}</p>
             <button className="button" onClick={onBack}>
-              Вернуться к картам
+              {m.maps.graphPage.backToMaps}
             </button>
           </div>
         ) : map === undefined ? (
-          <p className="muted">Загружаем карту…</p>
+          <p className="muted">{m.maps.graphPage.loading}</p>
         ) : (
           <section className="map-graph-card">
             <div className="map-graph-card__bar">
               <div className="map-graph-card__legend">
-                <span title="Двойной клик по пути удаляет его">
+                <span title={m.maps.graphPage.pathTooltip}>
                   <i className="map-legend__line" aria-hidden="true" />
-                  Путь между местами
+                  {m.maps.graphPage.pathLegend}
                 </span>
                 <span>
                   <span className="map-exit-mark" aria-hidden="true">
                     <MapExitFrame strokeWidth={3.4} />
                   </span>
-                  Выход на другую карту
+                  {m.maps.graphPage.exitLegend}
                 </span>
               </div>
 
               <div className="map-graph-actions">
                 <div className="map-zoom">
-                  <span className="map-zoom__hint">Колесо — масштаб</span>
+                  <span className="map-zoom__hint">{m.maps.graphPage.zoomHint}</span>
                   <button
                     type="button"
                     className="map-zoom__value"
-                    title="Сбросить масштаб"
-                    aria-label="Сбросить масштаб карты"
+                    title={m.maps.graphPage.resetZoom}
+                    aria-label={m.maps.graphPage.resetZoomLabel}
                     onClick={resetZoom}
                   >
                     {Math.round(zoom * 100)}%
@@ -444,8 +441,8 @@ export function MapGraphPage({
                     <button
                       type="button"
                       className="icon-button map-tool map-tool--save"
-                      title="Сохранить изменения"
-                      aria-label="Сохранить изменения карты"
+                      title={m.maps.graphPage.saveChanges}
+                      aria-label={m.maps.graphPage.saveChangesLabel}
                       onClick={() => void saveChanges()}
                       disabled={savingChanges}
                     >
@@ -454,8 +451,8 @@ export function MapGraphPage({
                     <button
                       type="button"
                       className="icon-button map-tool"
-                      title="Сбросить изменения"
-                      aria-label="Вернуть сохранённое состояние карты"
+                      title={m.maps.graphPage.resetChanges}
+                      aria-label={m.maps.graphPage.resetChangesLabel}
                       onClick={resetChanges}
                       disabled={savingChanges}
                     >

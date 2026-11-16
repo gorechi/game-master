@@ -1,4 +1,5 @@
 import type { JSX } from 'react'
+import { useMessages } from '@renderer/i18n/LocaleProvider'
 import { IconD20 } from './ui/icons'
 
 /**
@@ -7,12 +8,14 @@ import { IconD20 } from './ui/icons'
  * (titleBarOverlay на Windows, traffic lights на macOS).
  */
 export function WindowTitleBar(): JSX.Element {
+  const m = useMessages()
+
   return (
     <header className="window-titlebar" aria-hidden="true">
       <span className="window-titlebar__mark">
         <IconD20 width={16} height={16} />
       </span>
-      <span className="window-titlebar__title">Game Master</span>
+      <span className="window-titlebar__title">{m.app.name}</span>
     </header>
   )
 }

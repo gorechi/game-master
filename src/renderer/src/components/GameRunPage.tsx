@@ -4,6 +4,7 @@ import type { Game, GameMonster } from '@shared/game'
 import type { GameMap } from '@shared/map'
 import type { PlaceType } from '@shared/placeType'
 import { api, errorMessage } from '@renderer/lib/api'
+import { useMessages } from '@renderer/i18n/LocaleProvider'
 import { GameFinishModal } from './games/GameFinishModal'
 import {
   CombatModal,
@@ -23,6 +24,7 @@ interface GameRunPageProps {
 
 /** Режим проведения: карта, заметки и кнопка схватки. */
 export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
+  const m = useMessages()
   const [game, setGame] = useState<Game | null | undefined>(undefined)
   const [maps, setMaps] = useState<GameMap[]>([])
   const [activeMapId, setActiveMapId] = useState<string | null>(null)
@@ -284,13 +286,13 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
     <main className="run-screen">
       {game === null ? (
         <div className="run-message">
-          <p>Игра не найдена — возможно, запись удалили.</p>
+          <p>{m.games.run.notFound}</p>
           <button type="button" className="button" onClick={handleBack}>
-            Вернуться
+            {m.games.run.back}
           </button>
         </div>
       ) : game === undefined ? (
-        <div className="run-message run-message--muted">Загружаем игру…</div>
+        <div className="run-message run-message--muted">{m.games.run.loading}</div>
       ) : (
         <>
           <section className="run-screen__map">
@@ -298,24 +300,24 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
               <button
                 type="button"
                 className="run-map-tool run-map-tool--back"
-                title="Вернуться к играм"
-                aria-label="Вернуться к играм"
+                title={m.games.run.backToGames}
+                aria-label={m.games.run.backToGames}
                 onClick={handleBack}
               >
                 <IconArrowLeft width={16} height={16} />
-                <span>К играм</span>
+                <span>{m.games.run.toGames}</span>
               </button>
 
               {game.status === 'running' || game.status === 'paused' ? (
                 <button
                   type="button"
                   className="run-map-tool run-map-tool--finish"
-                  title="Закончить игру"
-                  aria-label="Закончить игру"
+                  title={m.games.run.finishTitle}
+                  aria-label={m.games.run.finishTitle}
                   onClick={() => setConfirmFinish(true)}
                 >
                   <IconFlag width={16} height={16} />
-                  <span>Закончить</span>
+                  <span>{m.games.run.finish}</span>
                 </button>
               ) : null}
             </div>
@@ -337,7 +339,7 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
               />
             ) : (
               <div className="run-map-empty">
-                <p>Карта не выбрана</p>
+                <p>{m.games.run.noMap}</p>
               </div>
             )}
           </section>
@@ -347,19 +349,19 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
               <button
                 type="button"
                 className="run-notes__expand"
-                title="Развернуть заметки поверх карты"
-                aria-label="Развернуть заметки поверх карты"
+                title={m.games.run.expandNotesTitle}
+                aria-label={m.games.run.expandNotesTitle}
                 onClick={() => setNotesExpanded(true)}
               >
                 <IconExpand width={14} height={14} />
-                Развернуть
+                {m.games.run.expandNotes}
               </button>
 
               <textarea
                 className="run-notes__input"
                 value={notes}
                 readOnly={game.status === 'finished'}
-                placeholder="Заметки…"
+                placeholder={m.games.run.notesPlaceholder}
                 spellCheck={false}
                 onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
                   setNotes(event.target.value)
@@ -372,14 +374,14 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
               type="button"
               className="combat-button"
               disabled={game.status !== 'running'}
-              title="Схватка"
+              title={m.games.run.combat}
               onClick={() => setCombatOpen(true)}
             >
               <span className="combat-button__sheen" aria-hidden="true" />
               <span className="combat-button__icon" aria-hidden="true">
                 <IconSwords width={30} height={30} />
               </span>
-              <span className="combat-button__label">Схватка</span>
+              <span className="combat-button__label">{m.games.run.combat}</span>
             </button>
           </section>
 
@@ -388,12 +390,12 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
               className="run-notes-overlay"
               role="dialog"
               aria-modal="true"
-              aria-label="Заметки мастера"
+              aria-label={m.games.run.notesTitle}
             >
               <header className="run-notes-overlay__head">
                 <div>
-                  <p className="page-kicker">Заметки</p>
-                  <h2>Заметки мастера</h2>
+                  <p className="page-kicker">{m.games.run.notesKicker}</p>
+                  <h2>{m.games.run.notesTitle}</h2>
                 </div>
                 <button
                   type="button"
@@ -401,7 +403,7 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
                   onClick={collapseNotes}
                 >
                   <IconCollapse width={14} height={14} />
-                  Свернуть
+                  {m.games.run.collapseNotes}
                 </button>
               </header>
 
@@ -409,7 +411,7 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
                 className="run-notes-overlay__input"
                 value={notes}
                 readOnly={game.status === 'finished'}
-                placeholder="Заметки…"
+                placeholder={m.games.run.notesPlaceholder}
                 spellCheck={false}
                 autoFocus
                 onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>

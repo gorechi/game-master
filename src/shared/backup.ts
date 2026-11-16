@@ -8,6 +8,7 @@ import { placeTypeSchema } from './placeType'
 import { playerSchema } from './player'
 import { realmSchema } from './realm'
 import { THEMES, type ThemeName } from './settings'
+import { DEFAULT_LOCALE, LOCALE_CODES, m, type LocaleCode } from './i18n'
 
 /** Полный резервный файл приложения. */
 export const BACKUP_FORMAT = 'game-master-backup'
@@ -24,12 +25,9 @@ export const BACKUP_FREQUENCIES = [
 
 export type BackupFrequency = (typeof BACKUP_FREQUENCIES)[number]
 
-export const BACKUP_FREQUENCY_LABELS: Record<BackupFrequency, string> = {
-  off: 'Не делать автоматический бэкап',
-  onClose: 'При каждом закрытии приложения',
-  daily: 'Один раз в день',
-  every2Days: 'Один раз в два дня',
-  every3Days: 'Один раз в три дня'
+/** Подписи частот на языке текущей локали. */
+export function getBackupFrequencyLabels(): Record<BackupFrequency, string> {
+  return m().backup.frequencies
 }
 
 export const AUTO_BACKUP_FILENAME_PREFIX = 'game-master-backup-auto-'
@@ -48,7 +46,10 @@ export const backupDataSchema = z
     presetCatalogVersion: z.number().int().min(0).default(0),
     seededPresetKeys: z.array(z.string().min(1).max(80)).max(500).default([]),
     settings: z.object({
-      theme: z.enum(THEMES)
+      theme: z.enum(THEMES),
+      locale: z
+        .enum(LOCALE_CODES as [LocaleCode, ...LocaleCode[]])
+        .default(DEFAULT_LOCALE)
     })
   })
   .strict()
@@ -81,19 +82,31 @@ export const backupFileSchema = z
     const mapsById = new Map(data.maps.map((map) => [map.id, map]))
 
     if (data.realms.length === 0) {
-      issue('В бэкапе должен быть хотя бы один сеттинг', ['data', 'realms'])
+      issue(m().backup.validation.realmRequired, ['data', 'realms'])
     }
-    if (!uniqueIds(data.realms)) issue('В бэкапе повторяются id сеттингов', ['data', 'realms'])
-    if (!uniqueIds(data.placeTypes)) issue('В бэкапе повторяются id иконок', ['data', 'placeTypes'])
-    if (!uniqueIds(data.monsters)) issue('В бэкапе повторяются id монстров', ['data', 'monsters'])
+    if (!uniqueIds(data.realms)) {
+      issue(m().backup.validation.duplicateRealmIds, ['data', 'realms'])
+    }
+    if (!uniqueIds(data.placeTypes)) {
+      issue(m().backup.validation.duplicatePlaceTypeIds, ['data', 'placeTypes'])
+    }
+    if (!uniqueIds(data.monsters)) {
+      issue(m().backup.validation.duplicateMonsterIds, ['data', 'monsters'])
+    }
     if (!uniqueIds(data.gameMonsters)) {
-      issue('В бэкапе повторяются id уникальных существ', ['data', 'gameMonsters'])
+      issue(m().backup.validation.duplicateUniqueMonsterIds, ['data', 'gameMonsters'])
     }
-    if (!uniqueIds(data.maps)) issue('В бэкапе повторяются id карт', ['data', 'maps'])
-    if (!uniqueIds(data.games)) issue('В бэкапе повторяются id игр', ['data', 'games'])
-    if (!uniqueIds(data.players)) issue('В бэкапе повторяются id игроков', ['data', 'players'])
+    if (!uniqueIds(data.maps)) {
+      issue(m().backup.validation.duplicateMapIds, ['data', 'maps'])
+    }
+    if (!uniqueIds(data.games)) {
+      issue(m().backup.validation.duplicateGameIds, ['data', 'games'])
+    }
+    if (!uniqueIds(data.players)) {
+      issue(m().backup.validation.duplicatePlayerIds, ['data', 'players'])
+    }
     if (!uniqueIds(data.characters)) {
-      issue('В бэкапе повторяются id персонажей', ['data', 'characters'])
+      issue(m().backup.validation.duplicateCharacterIds, ['data', 'characters'])
     }
 
     const checkRealm = (
@@ -101,7 +114,7 @@ export const backupFileSchema = z
       path: (string | number)[]
     ): void => {
       if (!realmIds.has(realmId)) {
-        issue('Запись ссылается на сеттинг, которого нет в бэкапе', path)
+        issue(m().backup.validation.missingRealm, path)
       }
     }
 
@@ -110,7 +123,7 @@ export const backupFileSchema = z
       if (game.mapId) {
         const map = mapsById.get(game.mapId)
         if (!map || map.realmId !== game.realmId) {
-          issue('Игра ссылается на карту, которой нет в этом сеттинге', [
+          issue(m().backup.validation.gameMapMissing, [
             'data',
             'games',
             index,
@@ -124,7 +137,7 @@ export const backupFileSchema = z
 
       game.monsterPlacements.forEach((placement, placementIndex) => {
         if (!gameMonsterIds.has(placement.monsterId)) {
-          issue('Размещение ссылается на монстра, которого нет в игре', [
+          issue(m().backup.validation.placementMissingMonster, [
             'data',
             'games',
             index,
@@ -134,7 +147,7 @@ export const backupFileSchema = z
           ])
         }
         if (placedMonsterIds.has(placement.monsterId)) {
-          issue('У монстра несколько размещений в одной игре', [
+          issue(m().backup.validation.duplicatePlacement, [
             'data',
             'games',
             index,
@@ -147,7 +160,7 @@ export const backupFileSchema = z
 
         const map = mapsById.get(placement.mapId)
         if (!map || map.realmId !== game.realmId) {
-          issue('Размещение ссылается на недоступную карту', [
+          issue(m().backup.validation.placementMissingMap, [
             'data',
             'games',
             index,
@@ -156,7 +169,7 @@ export const backupFileSchema = z
             'mapId'
           ])
         } else if (!map.places.some((place) => place.id === placement.placeId)) {
-          issue('Размещение ссылается на место, которого нет на карте', [
+          issue(m().backup.validation.placementMissingPlace, [
             'data',
             'games',
             index,
@@ -170,7 +183,7 @@ export const backupFileSchema = z
       const defeatedMonsterIds = new Set<string>()
       game.defeatedMonsterIds.forEach((monsterId, monsterIndex) => {
         if (!gameMonsterIds.has(monsterId)) {
-          issue('Поверженный монстр отсутствует в игре', [
+          issue(m().backup.validation.defeatedMissingMonster, [
             'data',
             'games',
             index,
@@ -179,7 +192,7 @@ export const backupFileSchema = z
           ])
         }
         if (defeatedMonsterIds.has(monsterId)) {
-          issue('Поверженный монстр указан несколько раз', [
+          issue(m().backup.validation.duplicateDefeatedMonster, [
             'data',
             'games',
             index,
@@ -207,7 +220,7 @@ export const backupFileSchema = z
     data.maps.forEach((map, mapIndex) => {
       checkRealm(map.realmId, ['data', 'maps', mapIndex, 'realmId'])
       if (!uniqueIds(map.places)) {
-        issue('На карте есть места с одинаковыми id', [
+        issue(m().backup.validation.duplicatePlaceIds, [
           'data',
           'maps',
           mapIndex,
@@ -222,7 +235,7 @@ export const backupFileSchema = z
           place.placeTypeId &&
           iconRealmById.get(place.placeTypeId) !== map.realmId
         ) {
-          issue('Место ссылается на иконку, которой нет в этом сеттинге', [
+          issue(m().backup.validation.placeMissingIcon, [
             'data',
             'maps',
             mapIndex,
@@ -238,7 +251,7 @@ export const backupFileSchema = z
             linkedMap.realmId !== map.realmId ||
             place.linkedMapId === map.id
           ) {
-            issue('Место ссылается на недоступную карту', [
+            issue(m().backup.validation.placeMissingMap, [
               'data',
               'maps',
               mapIndex,
@@ -252,7 +265,7 @@ export const backupFileSchema = z
 
       map.paths.forEach((path, pathIndex) => {
         if (!placeIds.has(path.a) || !placeIds.has(path.b) || path.a === path.b) {
-          issue('Путь карты ссылается на несуществующее место', [
+          issue(m().backup.validation.pathMissingPlace, [
             'data',
             'maps',
             mapIndex,

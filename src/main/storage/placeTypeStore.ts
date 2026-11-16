@@ -12,6 +12,7 @@ import { DEFAULT_REALM_ID } from '@shared/realm'
 import { validatePlaceIcon } from '@shared/placeIcon'
 import { applyPresetIconCatalog, type PresetPlaceIcon } from '@shared/presetIcons'
 import { JsonFileError, readJsonFile, withFileLock, writeJsonAtomic } from './jsonFile'
+import { fill, m } from '@shared/i18n'
 
 const LOCK_KEY = 'placeTypes.json'
 
@@ -37,12 +38,12 @@ async function readPlaceTypesFile(): Promise<PlaceTypesFile> {
     if (error instanceof JsonFileError && error.code === 'ENOENT') {
       return emptyFile()
     }
-    throw new Error(`Не удалось прочитать иконки мест: ${(error as Error).message}`)
+    throw new Error(fill(m().main.placeTypes.readFailed, { error: (error as Error).message }))
   }
 
   const parsed = placeTypesFileSchema.safeParse(raw)
   if (!parsed.success) {
-    throw new Error('Файл иконок мест повреждён и не может быть прочитан')
+    throw new Error(m().main.placeTypes.corrupted)
   }
 
   return parsed.data
@@ -53,7 +54,9 @@ function assertPlaceTypeInput(input: PlaceTypeInput): { iconSvg: string } {
 
   const check = validatePlaceIcon(normalized.iconSvg)
   if (!check.ok) {
-    throw new Error(`Иконка не соответствует требованиям: ${check.problems.join(' ')}`)
+    throw new Error(
+      fill(m().main.placeTypes.iconInvalid, { problems: check.problems.join(' ') })
+    )
   }
 
   return normalized
@@ -140,7 +143,7 @@ export async function updatePlaceType(placeType: PlaceType): Promise<PlaceType> 
     const index = file.placeTypes.findIndex((item) => item.id === placeType.id)
 
     if (index === -1) {
-      throw new Error('Иконка не найдена — возможно, запись уже удалена')
+      throw new Error(m().main.placeTypes.notFound)
     }
 
     const updated: PlaceType = {

@@ -4,7 +4,7 @@ import type { Player } from '@shared/player'
 import type { CharacterProfile } from '@shared/characterProfile'
 import type { Realm } from '@shared/realm'
 import { api, errorMessage } from '@renderer/lib/api'
-import { pluralize } from '@renderer/lib/format'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 import { CharacterCard } from './character/CharacterCard'
 import { CharacterFormModal } from './character/CharacterFormModal'
 import { ConfirmDialog } from './ui/ConfirmDialog'
@@ -22,6 +22,7 @@ export function CharactersPage({
   onOpenPlayers,
   onOpenPlayer
 }: CharactersPageProps): JSX.Element {
+  const { messages: m, fill, plural } = useI18n()
   const [players, setPlayers] = useState<Player[]>([])
   const [characters, setCharacters] = useState<CharacterProfile[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -75,10 +76,8 @@ export function CharactersPage({
       <div className="page__inner">
         <header className="page-head">
           <div>
-            <h1>Персонажи</h1>
-            <p className="muted">
-              Герои игроков: у одного человека может быть несколько персонажей.
-            </p>
+            <h1>{m.people.charactersPage.title}</h1>
+            <p className="muted">{m.people.charactersPage.description}</p>
           </div>
           <button
             className="button button--primary"
@@ -86,7 +85,7 @@ export function CharactersPage({
             disabled={players.length === 0}
           >
             <IconPlus width={16} height={16} />
-            Добавить персонажа
+            {m.people.charactersPage.add}
           </button>
         </header>
 
@@ -94,32 +93,32 @@ export function CharactersPage({
 
         {noPlayers ? (
           <div className="notice notice--action">
-            <span>Сначала добавьте хотя бы одного игрока — персонаж должен за кем-то числиться.</span>
+            <span>{m.people.charactersPage.noPlayers}</span>
             <button className="button button--tiny" onClick={onOpenPlayers}>
-              Перейти к игрокам
+              {m.people.charactersPage.goToPlayers}
             </button>
           </div>
         ) : null}
 
         {characters === null ? (
-          <p className="muted">Загружаем персонажей…</p>
+          <p className="muted">{m.people.charactersPage.loading}</p>
         ) : characters.length === 0 ? (
           <div className="empty empty--action">
             <p>
               {players.length === 0
-                ? 'Как только появятся игроки, здесь можно будет создать их героев.'
-                : 'Пока ни одного персонажа. Добавьте первого — с портретом, классом и статусами.'}
+                ? m.people.charactersPage.emptyNoPlayers
+                : m.people.charactersPage.empty}
             </p>
             {players.length > 0 ? (
               <button className="button" onClick={() => setEditing('new')}>
-                Добавить персонажа
+                {m.people.charactersPage.add}
               </button>
             ) : null}
           </div>
         ) : (
           <>
             <p className="list-caption">
-              {characters.length} {pluralize(characters.length, 'персонаж', 'персонажа', 'персонажей')}
+              {plural(characters.length, m.people.charactersPage.characterCount)}
             </p>
 
             <ul className="hero-grid">
@@ -127,7 +126,9 @@ export function CharactersPage({
                 <CharacterCard
                   key={character.id}
                   profile={character}
-                  realmName={realmNames.get(character.realmId) ?? 'Без сеттинга'}
+                  realmName={
+                    realmNames.get(character.realmId) ?? m.people.charactersPage.noRealm
+                  }
                   player={character.playerId ? playerById.get(character.playerId) : undefined}
                   onEdit={() => setEditing(character)}
                   onDelete={() => setDeleting(character)}
@@ -153,10 +154,10 @@ export function CharactersPage({
 
       <ConfirmDialog
         open={deleting !== null}
-        title="Удалить персонажа?"
+        title={m.people.charactersPage.deleteTitle}
         description={
           deleting
-            ? `«${deleting.name}» будет удалён вместе с портретом и статусами. Это действие нельзя отменить.`
+            ? fill(m.people.charactersPage.deleteDescription, { name: deleting.name })
             : undefined
         }
         onCancel={() => setDeleting(null)}

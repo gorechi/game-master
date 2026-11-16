@@ -10,7 +10,7 @@ import {
   setPlaceConnections
 } from '@shared/domain'
 import { api, errorMessage } from '@renderer/lib/api'
-import { pluralize } from '@renderer/lib/format'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 import { Modal } from '../ui/Modal'
 import { Select } from '../ui/Select'
 import { IconPencil, IconPlus, IconTrash } from '../ui/icons'
@@ -36,6 +36,7 @@ export function MapFormModal({
   onClose,
   onSaved
 }: MapFormModalProps): JSX.Element {
+  const { messages: m, fill, plural } = useI18n()
   const [name, setName] = useState('')
   const [realmId, setRealmId] = useState('')
   const [places, setPlaces] = useState<MapPlace[]>([])
@@ -160,13 +161,13 @@ export function MapFormModal({
 
     const trimmed = name.trim()
     if (!trimmed) {
-      setError('Укажите название карты')
+      setError(m.maps.mapForm.nameRequired)
       nameRef.current?.focus()
       return
     }
 
     if (!realmId) {
-      setError('Выберите сеттинг карты')
+      setError(m.maps.mapForm.realmRequired)
       return
     }
 
@@ -194,15 +195,15 @@ export function MapFormModal({
     <>
       <Modal
         open={open}
-        title={map ? 'Редактировать карту' : 'Новая карта'}
-        description="Пространство, в котором проходит игра. Добавьте места и соедините их путями."
+        title={map ? m.maps.mapForm.editTitle : m.maps.mapForm.createTitle}
+        description={m.maps.mapForm.description}
         size="lg"
         onClose={onClose}
         initialFocusRef={nameRef}
         footer={
           <>
             <button type="button" className="button" onClick={onClose} disabled={saving}>
-              Отмена
+              {m.maps.mapForm.cancel}
             </button>
             <button
               type="submit"
@@ -210,58 +211,51 @@ export function MapFormModal({
               className="button button--primary"
               disabled={saving}
             >
-              {saving ? 'Сохраняем…' : 'Сохранить карту'}
+              {saving ? m.maps.mapForm.saving : m.maps.mapForm.save}
             </button>
           </>
         }
       >
         <form id={formId} className="map-editor" onSubmit={(event) => void submit(event)}>
           <label className="field">
-            <span className="field__label">Название карты</span>
+            <span className="field__label">{m.maps.mapForm.nameLabel}</span>
             <input
               ref={nameRef}
               className="input"
               value={name}
               maxLength={120}
-              placeholder="Королевство пепельных дорог"
+              placeholder={m.maps.mapForm.namePlaceholder}
               autoComplete="off"
               onChange={(event) => setName(event.target.value)}
             />
           </label>
 
           <div className="field">
-            <span className="field__label">Сеттинг *</span>
+            <span className="field__label">{m.maps.mapForm.realmLabel}</span>
             <Select
-              ariaLabel="Сеттинг карты"
+              ariaLabel={m.maps.mapForm.realmAriaLabel}
               value={realmId}
-              placeholder="Выберите сеттинг"
+              placeholder={m.maps.mapForm.realmPlaceholder}
               disabled={realms.length === 0}
               options={realms.map((realm) => ({ value: realm.id, label: realm.name }))}
               onChange={changeRealm}
             />
-            <p className="game-editor__hint">
-              Карта принадлежит выбранному сеттингу. При смене сеттинга иконки всех мест
-              сбрасываются.
-            </p>
+            <p className="game-editor__hint">{m.maps.mapForm.realmHint}</p>
           </div>
 
           {realms.length === 0 ? (
-            <p className="notice notice--error">
-              Нет доступных сеттингов. Создайте сеттинг, чтобы добавлять карты.
-            </p>
+            <p className="notice notice--error">{m.maps.mapForm.noRealms}</p>
           ) : null}
 
           {map && realmId && realmId !== map.realmId && map.places.some((place) => place.placeTypeId) ? (
-            <p className="notice notice--error">
-              При сохранении карты в другом сеттинге иконки всех мест будут сброшены.
-            </p>
+            <p className="notice notice--error">{m.maps.mapForm.realmChangeWarning}</p>
           ) : null}
 
           <section className="editor-section">
             <header className="editor-section__head">
-              <h3>Места</h3>
+              <h3>{m.maps.mapForm.placesTitle}</h3>
               <span className="editor-section__count">
-                {places.length} {pluralize(places.length, 'место', 'места', 'мест')}
+                {places.length} {plural(places.length, m.maps.mapForm.placeCount)}
               </span>
             </header>
 
@@ -270,7 +264,11 @@ export function MapFormModal({
                 className="input"
                 value={placeName}
                 maxLength={100}
-                placeholder={realmId ? 'Название нового места' : 'Сначала выберите сеттинг'}
+                placeholder={
+                  realmId
+                    ? m.maps.mapForm.placePlaceholder
+                    : m.maps.mapForm.placePlaceholderNoRealm
+                }
                 autoComplete="off"
                 disabled={!realmId}
                 onChange={(event) => setPlaceName(event.target.value)}
@@ -287,17 +285,15 @@ export function MapFormModal({
                 disabled={!realmId || !placeName.trim()}
               >
                 <IconPlus width={15} height={15} />
-                Добавить место
+                {m.maps.mapForm.addPlace}
               </button>
             </div>
 
-            <p className="game-editor__hint">
-              Иконка выбирается в карточке места — нажмите на карандаш рядом с названием.
-            </p>
+            <p className="game-editor__hint">{m.maps.mapForm.iconHint}</p>
 
             {places.length === 0 ? (
               <div className="map-place-list map-place-list--empty">
-                <p>Пока ни одного места. Добавьте первое — с него начнётся карта.</p>
+                <p>{m.maps.mapForm.emptyPlaces}</p>
               </div>
             ) : (
               <ul className="map-place-list">
@@ -312,24 +308,29 @@ export function MapFormModal({
                     <li key={place.id} className="map-place-row">
                       <span className="map-place-row__name">{place.name}</span>
                       {placeType ? (
-                        <span className="map-place-row__icon" title="Иконка места">
+                        <span
+                          className="map-place-row__icon"
+                          title={m.maps.mapForm.placeIconTooltip}
+                        >
                           <PlaceTypeIcon svg={placeType.iconSvg} size={14} />
                         </span>
                       ) : null}
-                      {place.isExit ? <span className="map-badge">Выход</span> : null}
+                      {place.isExit ? (
+                        <span className="map-badge">{m.maps.mapForm.exitBadge}</span>
+                      ) : null}
                       {linkedName ? (
                         <span className="map-place-row__link">→ {linkedName}</span>
                       ) : null}
                       <span className="map-place-row__meta">
-                        {links} {pluralize(links, 'путь', 'пути', 'путей')}
+                        {links} {plural(links, m.maps.mapForm.pathCount)}
                       </span>
 
                       <div className="map-place-row__actions">
                         <button
                           type="button"
                           className="icon-button"
-                          title="Редактировать место и пути"
-                          aria-label={`Редактировать место ${place.name}`}
+                          title={m.maps.mapForm.editPlace}
+                          aria-label={fill(m.maps.mapForm.editPlaceLabel, { name: place.name })}
                           onClick={() => setEditingPlaceId(place.id)}
                         >
                           <IconPencil />
@@ -337,8 +338,10 @@ export function MapFormModal({
                         <button
                           type="button"
                           className="icon-button icon-button--danger"
-                          title="Удалить место"
-                          aria-label={`Удалить место ${place.name}`}
+                          title={m.maps.mapForm.deletePlace}
+                          aria-label={fill(m.maps.mapForm.deletePlaceLabel, {
+                            name: place.name
+                          })}
                           onClick={() => removePlace(place.id)}
                         >
                           <IconTrash />
@@ -350,11 +353,7 @@ export function MapFormModal({
               </ul>
             )}
 
-            <p className="game-editor__hint">
-              Откройте место, чтобы отметить, с какими местами оно связано. Пути двусторонние:
-              связь сразу появится у второго места. У выхода можно выбрать карту, на которую
-              он ведёт.
-            </p>
+            <p className="game-editor__hint">{m.maps.mapForm.connectionsHint}</p>
           </section>
 
           {error ? <p className="notice notice--error">{error}</p> : null}

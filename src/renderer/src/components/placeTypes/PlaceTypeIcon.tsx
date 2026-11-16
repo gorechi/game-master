@@ -1,5 +1,6 @@
 import type { JSX } from 'react'
 import { validatePlaceIcon } from '@shared/placeIcon'
+import { useMessages } from '@renderer/i18n/LocaleProvider'
 
 interface PlaceTypeIconProps {
   svg: string
@@ -13,6 +14,7 @@ interface PlaceTypeIconProps {
  * старый или повреждённый файл.
  */
 export function PlaceTypeIcon({ svg, size = 24, className }: PlaceTypeIconProps): JSX.Element {
+  const m = useMessages()
   const classes = `place-type-icon${className ? ` ${className}` : ''}`
   const style = { width: size, height: size }
 
@@ -21,7 +23,7 @@ export function PlaceTypeIcon({ svg, size = 24, className }: PlaceTypeIconProps)
       <span
         className={`${classes} place-type-icon--broken`}
         style={style}
-        title="Иконка не прошла проверку"
+        title={m.realms.placeIcon.brokenTitle}
         aria-hidden="true"
       >
         !

@@ -4,6 +4,7 @@ import { bootstrapUserData } from './bootstrap'
 import { registerIpcHandlers } from './ipc'
 import { registerAutoBackupOnQuit, runAutoBackupIfDue } from './backupService'
 import { getSettings } from './storage/settingsStore'
+import { setActiveLocale } from '@shared/i18n'
 import { createMainWindow, getMainWindow } from './window'
 
 const isDev = !app.isPackaged
@@ -73,6 +74,9 @@ if (!app.requestSingleInstanceLock()) {
     registerIpcHandlers()
     registerAutoBackupOnQuit()
 
+    const settings = await getSettings()
+    setActiveLocale(settings.locale)
+
     try {
       await bootstrapUserData()
     } catch (error) {
@@ -80,7 +84,6 @@ if (!app.requestSingleInstanceLock()) {
       console.error('Не удалось применить встроенный набор иконок:', error)
     }
 
-    const settings = await getSettings()
     createMainWindow(settings.theme)
 
     // Бэкап не должен задерживать появление окна.

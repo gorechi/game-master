@@ -1,6 +1,8 @@
 import type { JSX } from 'react'
-import { themeLabels, type AppSettings, type ThemeName } from '@shared/settings'
+import { LOCALE_CODES, LOCALE_LABELS, type LocaleCode } from '@shared/i18n'
+import type { AppSettings, ThemeName } from '@shared/settings'
 import type { UpdateState } from '@shared/update'
+import { useMessages } from '@renderer/i18n/LocaleProvider'
 import { UpdateSection } from './UpdateSection'
 import { IconCheck } from './ui/icons'
 
@@ -9,6 +11,7 @@ interface SettingsSectionProps {
   update: UpdateState | null
   checkingUpdates: boolean
   onThemeChange: (theme: ThemeName) => void
+  onLocaleChange: (locale: LocaleCode) => void
   onCheckUpdates: () => void
 }
 
@@ -18,14 +21,17 @@ export function SettingsSection({
   update,
   checkingUpdates,
   onThemeChange,
+  onLocaleChange,
   onCheckUpdates
 }: SettingsSectionProps): JSX.Element {
+  const m = useMessages()
+
   return (
     <div className="settings">
       <section className="settings-block" aria-labelledby="settings-theme">
         <div className="settings-block__head">
-          <h2 id="settings-theme">Оформление</h2>
-          <p className="muted">Тема применяется сразу и запоминается между запусками.</p>
+          <h2 id="settings-theme">{m.settings.appearance.title}</h2>
+          <p className="muted">{m.settings.appearance.description}</p>
         </div>
 
         <div className="theme-grid">
@@ -37,6 +43,37 @@ export function SettingsSection({
               onSelect={() => onThemeChange(theme)}
             />
           ))}
+        </div>
+      </section>
+
+      <section className="settings-block" aria-labelledby="settings-language">
+        <div className="settings-block__head">
+          <h2 id="settings-language">{m.settings.language.title}</h2>
+          <p className="muted">{m.settings.language.description}</p>
+        </div>
+
+        <div className="language-grid" role="group" aria-label={m.settings.language.label}>
+          {LOCALE_CODES.map((locale) => {
+            const active = settings.locale === locale
+
+            return (
+              <button
+                key={locale}
+                type="button"
+                className={`language-card${active ? ' language-card--active' : ''}`}
+                aria-pressed={active}
+                onClick={() => onLocaleChange(locale)}
+              >
+                <span className="language-card__name">{LOCALE_LABELS[locale]}</span>
+                {active ? (
+                  <span className="language-card__mark">
+                    <IconCheck width={14} height={14} />
+                    {m.settings.language.selected}
+                  </span>
+                ) : null}
+              </button>
+            )
+          })}
         </div>
       </section>
 
@@ -52,6 +89,8 @@ interface ThemeCardProps {
 }
 
 function ThemeCard({ theme, active, onSelect }: ThemeCardProps): JSX.Element {
+  const m = useMessages()
+
   return (
     <button
       type="button"
@@ -68,12 +107,14 @@ function ThemeCard({ theme, active, onSelect }: ThemeCardProps): JSX.Element {
       </span>
 
       <span className="theme-card__row">
-        <span className="theme-card__name">{themeLabels[theme]}</span>
-        <span className="theme-card__kind">{theme === 'dark' ? 'тёмная' : 'светлая'}</span>
+        <span className="theme-card__name">{m.settings.themes[theme]}</span>
+        <span className="theme-card__kind">
+          {theme === 'dark' ? m.settings.appearance.dark : m.settings.appearance.light}
+        </span>
         {active ? (
           <span className="theme-card__mark">
             <IconCheck width={14} height={14} />
-            выбрана
+            {m.settings.appearance.selected}
           </span>
         ) : null}
       </span>

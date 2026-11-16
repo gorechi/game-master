@@ -9,6 +9,7 @@ import {
   type PlayersFile
 } from '@shared/player'
 import { JsonFileError, readJsonFile, withFileLock, writeJsonAtomic } from './jsonFile'
+import { fill, m } from '@shared/i18n'
 
 const LOCK_KEY = 'players.json'
 
@@ -33,12 +34,12 @@ async function readPlayersFile(): Promise<PlayersFile> {
     if (error instanceof JsonFileError && error.code === 'ENOENT') {
       return emptyFile()
     }
-    throw new Error(`Не удалось прочитать базу игроков: ${(error as Error).message}`)
+    throw new Error(fill(m().main.players.readFailed, { error: (error as Error).message }))
   }
 
   const parsed = playersFileSchema.safeParse(raw)
   if (!parsed.success) {
-    throw new Error('Файл базы игроков повреждён и не может быть прочитан')
+    throw new Error(m().main.players.corrupted)
   }
 
   return parsed.data
@@ -47,7 +48,7 @@ async function readPlayersFile(): Promise<PlayersFile> {
 function assertName(input: PlayerInput): PlayerInput {
   const normalized = normalizePlayerInput(input)
   if (!normalized.firstName) {
-    throw new Error('Имя игрока не может быть пустым')
+    throw new Error(m().main.players.nameRequired)
   }
   return normalized
 }
@@ -80,7 +81,7 @@ export async function updatePlayer(player: Player): Promise<Player> {
     const index = file.players.findIndex((item) => item.id === player.id)
 
     if (index === -1) {
-      throw new Error('Игрок не найден — возможно, запись уже удалена')
+      throw new Error(m().main.players.notFound)
     }
 
     const updated: Player = {

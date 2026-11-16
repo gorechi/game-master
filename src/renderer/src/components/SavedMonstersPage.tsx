@@ -4,7 +4,7 @@ import type { GameMonsterEntry } from '@shared/gameMonster'
 import type { Monster, MonsterInput } from '@shared/monster'
 import type { Realm } from '@shared/realm'
 import { api, errorMessage } from '@renderer/lib/api'
-import { pluralize } from '@renderer/lib/format'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 import { ConfirmDialog } from './ui/ConfirmDialog'
 import { IconPlus } from './ui/icons'
 import { MonsterCard } from './monsters/MonsterCard'
@@ -13,6 +13,7 @@ import { BaseMonsterModal } from './savedMonsters/BaseMonsterModal'
 
 /** Сохранённые игровые монстры: уникальные экземпляры вне бестиария. */
 export function SavedMonstersPage({ realms }: { realms: readonly Realm[] }): JSX.Element {
+  const { messages: m, fill, plural } = useI18n()
   const [monsters, setMonsters] = useState<GameMonsterEntry[] | null>(null)
   const [bestiary, setBestiary] = useState<Monster[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -80,11 +81,11 @@ export function SavedMonstersPage({ realms }: { realms: readonly Realm[] }): JSX
 
   const formOpen = baseMonster !== null || editing !== null
   const formInitial = baseMonster ?? editing
-  const formTitle = editing ? 'Редактировать уникального монстра' : 'Настройка уникального монстра'
+  const formTitle = editing ? m.bestiary.saved.editTitle : m.bestiary.saved.createTitle
   const formDescription = editing
-    ? 'Изменяется только этот экземпляр. Бестиарий остаётся нетронутым.'
+    ? m.bestiary.saved.editDescription
     : baseMonster
-      ? `Экземпляр на основе «${baseMonster.name}». Изменения не затрагивают бестиарий.`
+      ? fill(m.bestiary.saved.createDescription, { name: baseMonster.name })
       : undefined
 
   return (
@@ -92,37 +93,30 @@ export function SavedMonstersPage({ realms }: { realms: readonly Realm[] }): JSX
       <div className="page__inner">
         <header className="page-head">
           <div>
-            <h1>Уникальные существа</h1>
-            <p className="muted">
-              Уникальные экземпляры для будущих игр. Это отдельная библиотека — бестиарий она
-              не меняет.
-            </p>
+            <h1>{m.bestiary.saved.title}</h1>
+            <p className="muted">{m.bestiary.saved.description}</p>
           </div>
           <button className="button button--primary" onClick={() => setChoosingBase(true)}>
             <IconPlus width={16} height={16} />
-            Создать монстра
+            {m.bestiary.saved.create}
           </button>
         </header>
 
         {error ? <p className="notice notice--error">{error}</p> : null}
 
         {monsters === null ? (
-          <p className="muted">Загружаем сохранённых монстров…</p>
+          <p className="muted">{m.bestiary.saved.loading}</p>
         ) : monsters.length === 0 ? (
           <div className="empty empty--action">
-            <p>
-              Пока ни одного сохранённого монстра. Создайте уникального или сохраните монстров
-              при завершении игры.
-            </p>
+            <p>{m.bestiary.saved.empty}</p>
             <button className="button" onClick={() => setChoosingBase(true)}>
-              Создать монстра
+              {m.bestiary.saved.create}
             </button>
           </div>
         ) : (
           <>
             <p className="list-caption">
-              {monsters.length} {pluralize(monsters.length, 'монстр', 'монстра', 'монстров')} в
-              библиотеке
+              {plural(monsters.length, m.bestiary.saved.libraryCount)}
             </p>
 
             <ul className="monster-list">
@@ -130,8 +124,8 @@ export function SavedMonstersPage({ realms }: { realms: readonly Realm[] }): JSX
                 <MonsterCard
                   key={monster.id}
                   monster={monster}
-                  realmName={realmNames.get(monster.realmId) ?? 'Без сеттинга'}
-                  badge="Уникальный"
+                  realmName={realmNames.get(monster.realmId) ?? m.bestiary.saved.noRealm}
+                  badge={m.bestiary.saved.uniqueBadge}
                   statuses={monster.statuses}
                   onEdit={() => setEditing(monster)}
                   onDelete={() => setDeleting(monster)}
@@ -168,10 +162,10 @@ export function SavedMonstersPage({ realms }: { realms: readonly Realm[] }): JSX
 
       <ConfirmDialog
         open={deleting !== null}
-        title="Удалить сохранённого монстра?"
+        title={m.bestiary.saved.deleteTitle}
         description={
           deleting
-            ? `«${deleting.name}» будет удалён из библиотеки уникальных монстров. Это действие нельзя отменить.`
+            ? fill(m.bestiary.saved.deleteDescription, { name: deleting.name })
             : undefined
         }
         onCancel={() => setDeleting(null)}

@@ -9,9 +9,10 @@ import type { Realm } from '@shared/realm'
 import { gameStatusLabels } from '@shared/gameStatus'
 import { formatChallengeRating } from '@shared/domain'
 import {
-  DATA_EXPORT_KIND_LABELS,
+  DATA_PACK_EXTENSION,
   countDataPack,
   createDataPack,
+  dataExportKindLabels,
   dataPackSchema,
   type DataExportKind,
   type DataImportFile,
@@ -20,7 +21,9 @@ import {
   type DataPack,
   type DataPackCounts
 } from '@shared/dataPack'
+import { fill, m, type Messages, type PluralForms } from '@shared/i18n'
 import { api, errorMessage } from '@renderer/lib/api'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 import { BackupPanel } from './BackupPanel'
 import { Modal } from './ui/Modal'
 import { Select } from './ui/Select'
@@ -74,31 +77,6 @@ const EMPTY_SOURCES: DataSources = {
   placeTypes: []
 }
 
-const TAB_LABELS: Record<DataTab, string> = {
-  games: 'Игры',
-  maps: 'Карты',
-  monsters: 'Монстры',
-  uniqueMonsters: 'Уникальные существа',
-  realms: 'Сеттинги',
-  backup: 'Бэкап'
-}
-
-const TAB_DESCRIPTIONS: Record<ExchangeTab, string> = {
-  games: 'Выберите игры. В пакет войдут их карты, связанные карты, иконки и монстры внутри игр.',
-  maps: 'Выберите карты. При экспорте можно добавить связанные карты или оставить только выбранные.',
-  monsters: 'Выберите монстров из бестиария. Игроки и персонажи в пакет не попадают.',
-  uniqueMonsters: 'Выберите уникальных существ. Их можно перенести отдельно от игр.',
-  realms: 'Выберите один сеттинг. В пакет войдут только его игры, карты, монстры, существа и иконки.'
-}
-
-const TAB_EXPORT_HINTS: Record<ExchangeTab, string> = {
-  games: 'Пакет игр',
-  maps: 'Пакет карт',
-  monsters: 'Пакет бестиария',
-  uniqueMonsters: 'Пакет уникальных существ',
-  realms: 'Пакет сеттинга'
-}
-
 const KIND_TAB: Record<DataExportKind, ExchangeTab> = {
   games: 'games',
   maps: 'maps',
@@ -120,30 +98,24 @@ function kindForTab(tab: ExchangeTab): DataExportKind {
   return tab === 'realms' ? 'realm' : tab
 }
 
-function plural(count: number, one: string, few: string, many: string): string {
-  const mod10 = count % 10
-  const mod100 = count % 100
-  if (mod10 === 1 && mod100 !== 11) return `${count} ${one}`
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
-    return `${count} ${few}`
-  }
-  return `${count} ${many}`
-}
-
-function describeCounts(counts: DataPackCounts): string {
+function describeCounts(
+  counts: DataPackCounts,
+  messages: Messages['data'],
+  pluralize: (count: number, forms: PluralForms) => string
+): string {
   const parts: string[] = []
 
-  if (counts.games > 0) parts.push(plural(counts.games, 'игра', 'игры', 'игр'))
-  if (counts.maps > 0) parts.push(plural(counts.maps, 'карта', 'карты', 'карт'))
-  if (counts.monsters > 0) parts.push(plural(counts.monsters, 'монстр', 'монстра', 'монстров'))
+  if (counts.games > 0) parts.push(pluralize(counts.games, messages.plural.games))
+  if (counts.maps > 0) parts.push(pluralize(counts.maps, messages.plural.maps))
+  if (counts.monsters > 0) parts.push(pluralize(counts.monsters, messages.plural.monsters))
   if (counts.uniqueMonsters > 0) {
-    parts.push(plural(counts.uniqueMonsters, 'существо', 'существа', 'существ'))
+    parts.push(pluralize(counts.uniqueMonsters, messages.plural.uniqueMonsters))
   }
   if (counts.placeTypes > 0) {
-    parts.push(plural(counts.placeTypes, 'иконка', 'иконки', 'иконок'))
+    parts.push(pluralize(counts.placeTypes, messages.plural.placeTypes))
   }
 
-  return parts.length > 0 ? parts.join(' · ') : 'пустой пакет'
+  return parts.length > 0 ? parts.join(' · ') : messages.emptyPack
 }
 
 function parsePackText(text: string): DataPack {
@@ -152,7 +124,7 @@ function parsePackText(text: string): DataPack {
   try {
     json = JSON.parse(text) as unknown
   } catch {
-    throw new Error('Файл повреждён: внутри не JSON')
+    throw new Error(m().data.errors.notJson)
   }
 
   const parsed = dataPackSchema.safeParse(json)
@@ -161,7 +133,10 @@ function parsePackText(text: string): DataPack {
   const first = parsed.error.issues[0]
   const where = first?.path.length ? ` (${first.path.join('.')})` : ''
   throw new Error(
-    `Файл не является корректным пакетом Game Master${where}: ${first?.message ?? 'неизвестная ошибка'}`
+    fill(m().data.errors.invalidPack, {
+      where,
+      reason: first?.message ?? m().data.errors.unknown
+    })
   )
 }
 
@@ -170,6 +145,7 @@ export function DataPage({
   onRealmsChanged,
   onAppDataRestored
 }: DataPageProps): JSX.Element {
+  const { messages: m, fill, plural } = useI18n()
   const [activeTab, setActiveTab] = useState<DataTab>('games')
   const [sources, setSources] = useState<DataSources>(EMPTY_SOURCES)
   const [selection, setSelection] = useState<Partial<Record<ExchangeTab, Set<string>>>>({})
@@ -251,8 +227,8 @@ export function DataPage({
         id: game.id,
         realmId: game.realmId,
         title: game.name,
-        meta: `${realmNames.get(game.realmId) ?? 'Без сеттинга'} · ${gameStatusLabels[game.status]}`,
-        detail: `${plural(game.monsters.length, 'монстр', 'монстра', 'монстров')} в игре`
+        meta: `${realmNames.get(game.realmId) ?? m.data.items.withoutRealm} · ${gameStatusLabels[game.status]}`,
+        detail: plural(game.monsters.length, m.data.plural.monstersInGame)
       }))
     }
 
@@ -261,12 +237,10 @@ export function DataPage({
         id: map.id,
         realmId: map.realmId,
         title: map.name,
-        meta: realmNames.get(map.realmId) ?? 'Без сеттинга',
-        detail: `${plural(map.places.length, 'место', 'места', 'мест')} · ${plural(
+        meta: realmNames.get(map.realmId) ?? m.data.items.withoutRealm,
+        detail: `${plural(map.places.length, m.data.plural.places)} · ${plural(
           map.paths.length,
-          'связь',
-          'связи',
-          'связей'
+          m.data.plural.paths
         )}`
       }))
     }
@@ -276,8 +250,12 @@ export function DataPage({
         id: monster.id,
         realmId: monster.realmId,
         title: monster.name,
-        meta: realmNames.get(monster.realmId) ?? 'Без сеттинга',
-        detail: `КО ${formatChallengeRating(monster.challengeRating)} · КЗ ${monster.armorClass} · ${monster.hitPoints} ХП`
+        meta: realmNames.get(monster.realmId) ?? m.data.items.withoutRealm,
+        detail: fill(m.data.items.monsterStats, {
+          cr: formatChallengeRating(monster.challengeRating),
+          ac: monster.armorClass,
+          hp: monster.hitPoints
+        })
       }))
     }
 
@@ -286,8 +264,12 @@ export function DataPage({
         id: monster.id,
         realmId: monster.realmId,
         title: monster.name,
-        meta: realmNames.get(monster.realmId) ?? 'Без сеттинга',
-        detail: `КО ${formatChallengeRating(monster.challengeRating)} · КЗ ${monster.armorClass} · ${monster.hitPoints} ХП`
+        meta: realmNames.get(monster.realmId) ?? m.data.items.withoutRealm,
+        detail: fill(m.data.items.monsterStats, {
+          cr: formatChallengeRating(monster.challengeRating),
+          ac: monster.armorClass,
+          hp: monster.hitPoints
+        })
       }))
     }
 
@@ -306,17 +288,21 @@ export function DataPage({
         id: realm.id,
         realmId: realm.id,
         title: realm.name,
-        meta: describeCounts({
-          games: games.length,
-          maps: maps.length,
-          monsters: monsters.length,
-          uniqueMonsters: unique.length,
-          placeTypes: icons.length
-        }),
-        detail: realm.description || 'Без описания'
+        meta: describeCounts(
+          {
+            games: games.length,
+            maps: maps.length,
+            monsters: monsters.length,
+            uniqueMonsters: unique.length,
+            placeTypes: icons.length
+          },
+          m.data,
+          plural
+        ),
+        detail: realm.description || m.data.items.withoutDescription
       }
     })
-  }, [activeTab, realmNames, realms, sources])
+  }, [activeTab, fill, m, plural, realmNames, realms, sources])
 
   const realmFilter =
     activeTab === 'backup' ? 'all' : (realmFilters[activeTab] ?? 'all')
@@ -429,14 +415,14 @@ export function DataPage({
         ...(exportKind === 'maps' && mapLinks ? { mapLinks } : {})
       })
       if (result) {
-        const linkNote =
-          mapLinks === 'selectedOnly'
-            ? ' Связи с другими картами в файле удалены.'
-            : ''
+        const counts = describeCounts(result.counts, m.data, plural)
         setExportNotice(
-          `Файл сохранён: ${result.fileName}. В пакете: ${describeCounts(
-            result.counts
-          )}.${linkNote}`
+          mapLinks === 'selectedOnly'
+            ? fill(m.data.export.savedWithRemovedLinks, {
+                fileName: result.fileName,
+                counts
+              })
+            : fill(m.data.export.saved, { fileName: result.fileName, counts })
         )
       }
     } catch (error) {
@@ -463,7 +449,10 @@ export function DataPage({
       setImportDraft(null)
       setImportSuccess(null)
       setImportError(
-        `Это пакет «${DATA_EXPORT_KIND_LABELS[draft.pack.kind]}». Откройте вкладку «${TAB_LABELS[targetTab]}».`
+        fill(m.data.errors.wrongTab, {
+          kind: dataExportKindLabels()[draft.pack.kind],
+          tab: m.data.tabs[targetTab]
+        })
       )
       return
     }
@@ -495,7 +484,7 @@ export function DataPage({
 
   async function readDroppedFile(file: File): Promise<void> {
     if (file.size > 25 * 1024 * 1024) {
-      throw new Error('Файл слишком большой для пакета Game Master')
+      throw new Error(m.data.errors.tooLarge)
     }
 
     const pack = parsePackText(await file.text())
@@ -522,11 +511,11 @@ export function DataPage({
     if (!importDraft) return
 
     if (importDraft.pack.kind === 'realm' && !realmName.trim()) {
-      setImportError('Укажите название нового сеттинга')
+      setImportError(m.data.errors.realmNameRequired)
       return
     }
     if (importDraft.pack.kind !== 'realm' && !targetRealmId) {
-      setImportError('Выберите сеттинг, в который нужно импортировать данные')
+      setImportError(m.data.errors.targetRealmRequired)
       return
     }
 
@@ -546,7 +535,7 @@ export function DataPage({
       const targetName =
         importDraft.pack.kind === 'realm'
           ? realmName.trim()
-          : (realmNames.get(targetRealmId) ?? 'выбранный сеттинг')
+          : (realmNames.get(targetRealmId) ?? m.data.import.selectedRealm)
 
       setImportSuccess({ result, realmName: targetName })
       setImportDraft(null)
@@ -562,7 +551,7 @@ export function DataPage({
 
   const realmOptions = realms.map((realm) => ({ value: realm.id, label: realm.name }))
   const realmFilterOptions = [
-    { value: 'all', label: 'Все сеттинги' },
+    { value: 'all', label: m.data.export.allRealms },
     ...realmOptions
   ]
   const isRealmPackage = importDraft?.pack.kind === 'realm'
@@ -574,15 +563,12 @@ export function DataPage({
       <div className="page__inner data-page">
         <header className="page-head">
           <div>
-            <h1>Данные</h1>
-            <p className="muted">
-              Перенос игр, карт, монстров, уникальных существ и сеттингов между
-              установками. Игроки и персонажи не экспортируются.
-            </p>
+            <h1>{m.data.title}</h1>
+            <p className="muted">{m.data.description}</p>
           </div>
         </header>
 
-        <div className="data-tabs" role="tablist" aria-label="Разделы данных">
+        <div className="data-tabs" role="tablist" aria-label={m.data.tabs.label}>
           {TABS.map((tab) => (
             <button
               key={tab}
@@ -592,7 +578,7 @@ export function DataPage({
               className={`data-tab${activeTab === tab ? ' data-tab--active' : ''}`}
               onClick={() => setActiveTab(tab)}
             >
-              {TAB_LABELS[tab]}
+              {m.data.tabs[tab]}
             </button>
           ))}
         </div>
@@ -607,8 +593,8 @@ export function DataPage({
         ) : (
           <>
             <div className="data-tab-intro">
-              <h2>{TAB_LABELS[activeTab]}</h2>
-              <p className="muted">{TAB_DESCRIPTIONS[activeTab]}</p>
+              <h2>{m.data.tabs[activeTab]}</h2>
+              <p className="muted">{m.data.tabDescriptions[activeTab]}</p>
             </div>
 
             {loadError ? <p className="notice notice--error">{loadError}</p> : null}
@@ -617,23 +603,26 @@ export function DataPage({
               <section className="data-panel" aria-labelledby="data-export-title">
                 <div className="data-panel__head">
                   <div>
-                    <h2 id="data-export-title">Экспорт</h2>
-                    <p className="muted">{TAB_EXPORT_HINTS[activeTab]}</p>
+                    <h2 id="data-export-title">{m.data.export.title}</h2>
+                    <p className="muted">{m.data.exportHints[activeTab]}</p>
                   </div>
                   <span className="data-counter">
-                    {selectedItems.length} из {filteredExportItems.length}
+                    {fill(m.data.export.counter, {
+                      selected: selectedItems.length,
+                      total: filteredExportItems.length
+                    })}
                   </span>
                 </div>
 
                 {activeTab !== 'realms' ? (
                   <label className="field data-filter">
-                    <span className="field__label">Фильтр по сеттингу</span>
+                    <span className="field__label">{m.data.export.filterLabel}</span>
                     <Select<string>
                       value={realmFilter}
                       options={realmFilterOptions}
                       onChange={changeRealmFilter}
-                      ariaLabel="Фильтр по сеттингу"
-                      placeholder="Все сеттинги"
+                      ariaLabel={m.data.export.filterAriaLabel}
+                      placeholder={m.data.export.filterPlaceholder}
                       searchable={realmFilterOptions.length > 9}
                     />
                   </label>
@@ -647,10 +636,12 @@ export function DataPage({
                       onClick={selectAll}
                       disabled={filteredExportItems.length === 0}
                     >
-                      Выбрать все
+                      {m.data.export.selectAll}
                     </button>
                   ) : (
-                    <span className="muted data-toolbar__hint">Выберите один сеттинг</span>
+                    <span className="muted data-toolbar__hint">
+                      {m.data.export.selectOneRealm}
+                    </span>
                   )}
                   <button
                     type="button"
@@ -658,19 +649,19 @@ export function DataPage({
                     onClick={clearSelection}
                     disabled={selectedItems.length === 0}
                   >
-                    Снять выбор
+                    {m.data.export.clearSelection}
                   </button>
                 </div>
 
                 {loading ? (
-                  <p className="muted">Загрузка данных…</p>
+                  <p className="muted">{m.data.export.loading}</p>
                 ) : filteredExportItems.length === 0 ? (
                   <div className="empty">
                     {activeTab === 'realms'
-                      ? 'Сеттингов пока нет.'
+                      ? m.data.export.noRealms
                       : realmFilter !== 'all'
-                        ? 'В выбранном сеттинге пока нечего экспортировать.'
-                        : 'Здесь пока нечего экспортировать.'}
+                        ? m.data.export.nothingInRealm
+                        : m.data.export.nothing}
                   </div>
                 ) : (
                   <ul className="data-choice-list">
@@ -707,24 +698,30 @@ export function DataPage({
                     ) : exportPreview.counts ? (
                       activeTab === 'maps' && mapExportHasLinks ? (
                         <>
-                          <span className="data-summary__title">Со связанными картами</span>
+                          <span className="data-summary__title">
+                            {m.data.export.withLinkedMaps}
+                          </span>
                           <span className="data-summary__counts">
-                            {describeCounts(exportPreview.counts)}
+                            {describeCounts(exportPreview.counts, m.data, plural)}
                           </span>
                           {selectedOnlyPreview ? (
                             <>
-                              <span className="data-summary__title">Только выбранные карты</span>
+                              <span className="data-summary__title">
+                                {m.data.export.selectedMapsOnly}
+                              </span>
                               <span className="data-summary__counts">
-                                {describeCounts(selectedOnlyPreview)}
+                                {describeCounts(selectedOnlyPreview, m.data, plural)}
                               </span>
                             </>
                           ) : null}
                         </>
                       ) : (
                         <>
-                          <span className="data-summary__title">В пакет войдёт</span>
+                          <span className="data-summary__title">
+                            {m.data.export.packWillInclude}
+                          </span>
                           <span className="data-summary__counts">
-                            {describeCounts(exportPreview.counts)}
+                            {describeCounts(exportPreview.counts, m.data, plural)}
                           </span>
                         </>
                       )
@@ -747,7 +744,7 @@ export function DataPage({
                       Boolean(exportPreview?.error)
                     }
                   >
-                    {exporting ? 'Экспорт…' : 'Экспортировать'}
+                    {exporting ? m.data.export.exporting : m.data.export.submit}
                   </button>
                 </div>
               </section>
@@ -755,11 +752,8 @@ export function DataPage({
               <section className="data-panel data-panel--import" aria-labelledby="data-import-title">
                 <div className="data-panel__head">
                   <div>
-                    <h2 id="data-import-title">Импорт</h2>
-                    <p className="muted">
-                      Пакет проверяется до записи. Все идентификаторы создаются заново,
-                      связи внутри пакета сохраняются.
-                    </p>
+                    <h2 id="data-import-title">{m.data.import.title}</h2>
+                    <p className="muted">{m.data.import.description}</p>
                   </div>
                 </div>
 
@@ -771,10 +765,13 @@ export function DataPage({
                     importSuccess.result.counts.monsters > 0 ||
                     importSuccess.result.counts.uniqueMonsters > 0 ||
                     importSuccess.result.counts.placeTypes > 0
-                      ? `Импортировано в «${importSuccess.realmName}»: ${describeCounts(
-                          importSuccess.result.counts
-                        )}.`
-                      : `Сеттинг «${importSuccess.realmName}» создан без сущностей.`}
+                      ? fill(m.data.import.success, {
+                          realm: importSuccess.realmName,
+                          counts: describeCounts(importSuccess.result.counts, m.data, plural)
+                        })
+                      : fill(m.data.import.emptyRealmCreated, {
+                          realm: importSuccess.realmName
+                        })}
                   </p>
                 ) : null}
 
@@ -790,8 +787,10 @@ export function DataPage({
                     onDragLeave={() => setDragging(false)}
                     onDrop={(event) => void handleDrop(event)}
                   >
-                    <strong className="data-drop__title">Выберите файл .gmpack</strong>
-                    <span className="data-drop__hint">или перетащите его сюда</span>
+                    <strong className="data-drop__title">
+                      {fill(m.data.import.dropTitle, { extension: DATA_PACK_EXTENSION })}
+                    </strong>
+                    <span className="data-drop__hint">{m.data.import.dropHint}</span>
                   </button>
                 ) : (
                   <div className="data-import">
@@ -799,8 +798,10 @@ export function DataPage({
                       <div>
                         <strong>{importDraft.fileName}</strong>
                         <p className="muted">
-                          Пакет «{DATA_EXPORT_KIND_LABELS[importDraft.pack.kind]}» ·{' '}
-                          {describeCounts(importDraft.counts)}
+                          {fill(m.data.import.packSummary, {
+                            kind: dataExportKindLabels()[importDraft.pack.kind],
+                            counts: describeCounts(importDraft.counts, m.data, plural)
+                          })}
                         </p>
                       </div>
                       <button
@@ -812,17 +813,15 @@ export function DataPage({
                         }}
                         disabled={importing}
                       >
-                        Убрать
+                        {m.data.import.remove}
                       </button>
                     </div>
 
                     {isRealmPackage ? (
                       <div className="data-import__fields">
-                        <p className="muted">
-                          Будет создан новый сеттинг. Его название можно изменить.
-                        </p>
+                        <p className="muted">{m.data.import.newRealmHint}</p>
                         <label className="field">
-                          <span className="field__label">Название сеттинга</span>
+                          <span className="field__label">{m.data.import.realmNameLabel}</span>
                           <input
                             className="input"
                             value={realmName}
@@ -831,7 +830,9 @@ export function DataPage({
                           />
                         </label>
                         <label className="field">
-                          <span className="field__label">Описание</span>
+                          <span className="field__label">
+                            {m.data.import.descriptionLabel}
+                          </span>
                           <textarea
                             className="input"
                             value={realmDescription}
@@ -844,20 +845,19 @@ export function DataPage({
                     ) : (
                       <div className="data-import__fields">
                         <label className="field">
-                          <span className="field__label">Сеттинг для импорта</span>
+                          <span className="field__label">
+                            {m.data.import.targetRealmLabel}
+                          </span>
                           <Select<string>
                             value={targetRealmId}
                             options={realmOptions}
                             onChange={setTargetRealmId}
-                            ariaLabel="Сеттинг для импорта"
-                            placeholder="Выберите сеттинг"
+                            ariaLabel={m.data.import.targetRealmAriaLabel}
+                            placeholder={m.data.import.targetRealmPlaceholder}
                             searchable={realmOptions.length > 8}
                           />
                         </label>
-                        <p className="muted">
-                          Импортированные записи будут привязаны только к выбранному
-                          сеттингу.
-                        </p>
+                        <p className="muted">{m.data.import.targetRealmHint}</p>
                       </div>
                     )}
 
@@ -868,7 +868,7 @@ export function DataPage({
                         onClick={() => void handleImport()}
                         disabled={importDisabled}
                       >
-                        {importing ? 'Импорт…' : 'Импортировать'}
+                        {importing ? m.data.import.submitting : m.data.import.submit}
                       </button>
                     </div>
                   </div>
@@ -881,8 +881,8 @@ export function DataPage({
 
       <Modal
         open={mapExportPromptOpen}
-        title="Экспорт карт со связями"
-        description="У выбранных карт есть выходы на другие карты. Что включить в файл экспорта?"
+        title={m.data.export.modalTitle}
+        description={m.data.export.modalDescription}
         onClose={() => setMapExportPromptOpen(false)}
         footer={
           <>
@@ -894,7 +894,7 @@ export function DataPage({
                 void handleExport('selectedOnly')
               }}
             >
-              Только выбранные карты
+              {m.data.export.modalSelectedOnly}
             </button>
             <button
               type="button"
@@ -904,15 +904,12 @@ export function DataPage({
                 void handleExport('includeLinked')
               }}
             >
-              Включить связанные карты
+              {m.data.export.modalIncludeLinked}
             </button>
           </>
         }
       >
-        <p className="muted">
-          При экспорте только выбранных карт ссылки на другие карты будут удалены
-          из файла. В самих картах ничего не изменится.
-        </p>
+        <p className="muted">{m.data.export.modalBody}</p>
       </Modal>
     </main>
   )

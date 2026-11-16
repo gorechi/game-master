@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { JSX } from 'react'
 import { errorMessage } from '@renderer/lib/api'
+import { useMessages } from '@renderer/i18n/LocaleProvider'
 import { Modal } from '../ui/Modal'
 
 interface PlaceDescriptionModalProps {
@@ -19,6 +20,7 @@ export function PlaceDescriptionModal({
   onClose,
   onSave
 }: PlaceDescriptionModalProps): JSX.Element {
+  const m = useMessages()
   const [draft, setDraft] = useState(value)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -49,7 +51,7 @@ export function PlaceDescriptionModal({
   return (
     <Modal
       open={open}
-      title="Описание места"
+      title={m.maps.description.title}
       description={placeName}
       size="lg"
       onClose={onClose}
@@ -57,7 +59,7 @@ export function PlaceDescriptionModal({
       footer={
         <>
           <button type="button" className="button" onClick={onClose} disabled={saving}>
-            Отмена
+            {m.maps.description.cancel}
           </button>
           <button
             type="button"
@@ -65,7 +67,7 @@ export function PlaceDescriptionModal({
             onClick={() => void save()}
             disabled={saving}
           >
-            {saving ? 'Сохраняем…' : 'Сохранить описание'}
+            {saving ? m.maps.description.saving : m.maps.description.save}
           </button>
         </>
       }
@@ -73,14 +75,14 @@ export function PlaceDescriptionModal({
       {error ? <p className="notice notice--error">{error}</p> : null}
 
       <label className="field">
-        <span className="field__label">Заметки мастера</span>
+        <span className="field__label">{m.maps.description.notesLabel}</span>
         <textarea
           ref={textareaRef}
           className="input place-description-input"
           value={draft}
           rows={12}
           maxLength={20000}
-          placeholder="Что важно помнить об этом месте? Кто здесь живёт, что случилось, какие тайны и подсказки нужно не забыть…"
+          placeholder={m.maps.description.notesPlaceholder}
           onChange={(event) => setDraft(event.target.value)}
         />
       </label>

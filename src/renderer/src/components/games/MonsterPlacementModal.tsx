@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { JSX } from 'react'
 import type { GameMap } from '@shared/map'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 import { Modal } from '../ui/Modal'
 import { Select } from '../ui/Select'
 
@@ -28,6 +29,7 @@ export function MonsterPlacementModal({
   onClose,
   onSave
 }: MonsterPlacementModalProps): JSX.Element {
+  const { messages: m, fill } = useI18n()
   const [mapId, setMapId] = useState('')
   const [placeId, setPlaceId] = useState('')
 
@@ -55,13 +57,13 @@ export function MonsterPlacementModal({
   return (
     <Modal
       open={open}
-      title="Размещение монстра"
-      description={`Монстр: ${monsterName}`}
+      title={m.games.placement.title}
+      description={fill(m.games.placement.description, { name: monsterName })}
       onClose={onClose}
       footer={
         <>
           <button type="button" className="button" onClick={onClose}>
-            Отмена
+            {m.games.placement.cancel}
           </button>
           <button
             type="button"
@@ -69,14 +71,14 @@ export function MonsterPlacementModal({
             disabled={!mapId || !placeId}
             onClick={() => onSave(mapId, placeId)}
           >
-            Сохранить
+            {m.games.placement.save}
           </button>
         </>
       }
     >
       <div className="monster-placement">
         <label className="field">
-          <span className="field__label">Карта</span>
+          <span className="field__label">{m.games.placement.mapLabel}</span>
           <Select<string>
             value={mapId}
             options={maps.map((map) => ({ value: map.id, label: map.name }))}
@@ -84,32 +86,32 @@ export function MonsterPlacementModal({
               setMapId(value)
               setPlaceId('')
             }}
-            ariaLabel="Карта для размещения монстра"
-            placeholder="Выберите карту"
+            ariaLabel={m.games.placement.mapAria}
+            placeholder={m.games.placement.mapPlaceholder}
             searchable={maps.length > 8}
           />
         </label>
 
         <label className="field">
-          <span className="field__label">Место</span>
+          <span className="field__label">{m.games.placement.placeLabel}</span>
           <Select<string>
             value={placeId}
             options={placeOptions}
             onChange={setPlaceId}
-            ariaLabel="Место на карте"
-            placeholder={mapId ? 'Выберите место' : 'Сначала выберите карту'}
+            ariaLabel={m.games.placement.placeAria}
+            placeholder={
+              mapId ? m.games.placement.placePlaceholder : m.games.placement.chooseMapFirst
+            }
             disabled={!mapId || placeOptions.length === 0}
             searchable={placeOptions.length > 8}
           />
         </label>
 
         {selectedMap && places.length === 0 ? (
-          <p className="notice">На этой карте пока нет мест.</p>
+          <p className="notice">{m.games.placement.noPlaces}</p>
         ) : null}
 
-        <p className="game-editor__hint">
-          Место хранится только в форме игры и не записывается в карточку монстра.
-        </p>
+        <p className="game-editor__hint">{m.games.placement.hint}</p>
       </div>
     </Modal>
   )

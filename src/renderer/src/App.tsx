@@ -2,7 +2,9 @@ import { useCallback, useEffect, useState } from 'react'
 import type { JSX } from 'react'
 import type { Realm } from '@shared/realm'
 import { DEFAULT_SETTINGS, type AppSettings, type ThemeName } from '@shared/settings'
+import { getMessages, type LocaleCode } from '@shared/i18n'
 import type { UpdateState } from '@shared/update'
+import { LocaleProvider } from './i18n/LocaleProvider'
 import { Sidebar } from './components/Sidebar'
 import { GamesPage } from './components/GamesPage'
 import { GameRunPage } from './components/GameRunPage'
@@ -21,6 +23,7 @@ import { WindowTitleBar } from './components/WindowTitleBar'
 import { UpdateNotice } from './components/UpdateNotice'
 import { api, isWebPreview } from './lib/api'
 import { applyTheme } from './lib/theme'
+import { readCachedLocale } from './lib/locale'
 import type { Route } from './lib/routes'
 
 const USER_AGENT = typeof navigator === 'undefined' ? '' : navigator.userAgent
@@ -42,7 +45,10 @@ function readSidebarCollapsed(): boolean {
 
 export default function App(): JSX.Element {
   const [route, setRoute] = useState<Route>({ name: 'games' })
-  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS)
+  const [settings, setSettings] = useState<AppSettings>(() => ({
+    ...DEFAULT_SETTINGS,
+    locale: readCachedLocale() ?? DEFAULT_SETTINGS.locale
+  }))
   const [realms, setRealms] = useState<Realm[]>([])
   const [updateState, setUpdateState] = useState<UpdateState | null>(null)
   const [checkingUpdates, setCheckingUpdates] = useState(false)
@@ -74,6 +80,11 @@ export default function App(): JSX.Element {
     applyTheme(theme)
     setSettings((previous) => ({ ...previous, theme }))
     void api.settings.update({ theme }).catch(() => undefined)
+  }, [])
+
+  const changeLocale = useCallback((locale: LocaleCode): void => {
+    setSettings((previous) => ({ ...previous, locale }))
+    void api.settings.update({ locale }).catch(() => undefined)
   }, [])
 
   const checkUpdates = useCallback(async (): Promise<void> => {
@@ -123,12 +134,15 @@ export default function App(): JSX.Element {
     applyTheme(loadedSettings.theme)
   }, [])
 
+  const messages = getMessages(settings.locale)
+
   return (
-    <div
-      className={`app-shell${IS_WINDOWS ? ' app-shell--win' : ''}${
-        IS_MAC ? ' app-shell--mac' : ''
-      }`}
-    >
+    <LocaleProvider locale={settings.locale}>
+      <div
+        className={`app-shell${IS_WINDOWS ? ' app-shell--win' : ''}${
+          IS_MAC ? ' app-shell--mac' : ''
+        }`}
+      >
       {SHOW_WINDOW_TITLEBAR ? <WindowTitleBar /> : null}
 
       {updateState?.status === 'available' &&
@@ -175,7 +189,11 @@ export default function App(): JSX.Element {
           <PlayerCharactersPage
             playerId={route.id}
             realms={realms}
-            backLabel={route.from === 'characters' ? 'Персонажи' : 'Игроки'}
+            backLabel={
+              route.from === 'characters'
+                ? messages.app.backToCharacters
+                : messages.app.backToPlayers
+            }
             onBack={() =>
               setRoute(
                 route.from === 'characters' ? { name: 'characters' } : { name: 'players' }
@@ -242,11 +260,13 @@ export default function App(): JSX.Element {
             update={updateState}
             checkingUpdates={checkingUpdates}
             onThemeChange={changeTheme}
+            onLocaleChange={changeLocale}
             onCheckUpdates={() => void checkUpdates()}
           />
         ) : null}
       </div>
       </div>
-    </div>
+      </div>
+    </LocaleProvider>
   )
 }

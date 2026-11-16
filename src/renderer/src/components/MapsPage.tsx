@@ -3,7 +3,7 @@ import type { JSX } from 'react'
 import type { GameMap } from '@shared/map'
 import type { Realm } from '@shared/realm'
 import { api, errorMessage } from '@renderer/lib/api'
-import { pluralize } from '@renderer/lib/format'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 import { ConfirmDialog } from './ui/ConfirmDialog'
 import { Select } from './ui/Select'
 import { IconMap, IconPencil, IconPlus, IconTrash } from './ui/icons'
@@ -18,6 +18,7 @@ type MapFormState = { mode: 'create' } | { mode: 'edit'; map: GameMap }
 
 /** Карты: пространства, в которых проходят игры. */
 export function MapsPage({ realms, onOpenMap }: MapsPageProps): JSX.Element {
+  const { messages: m, fill, plural } = useI18n()
   const [maps, setMaps] = useState<GameMap[] | null>(null)
   const [filter, setFilter] = useState('all')
   const [error, setError] = useState<string | null>(null)
@@ -71,10 +72,8 @@ export function MapsPage({ realms, onOpenMap }: MapsPageProps): JSX.Element {
       <div className="page__inner">
         <header className="page-head">
           <div>
-            <h1>Карты</h1>
-            <p className="muted">
-              Пространства, в которых проходят игры: места и пути между ними.
-            </p>
+            <h1>{m.maps.page.title}</h1>
+            <p className="muted">{m.maps.page.description}</p>
           </div>
           <button
             className="button button--primary"
@@ -82,18 +81,18 @@ export function MapsPage({ realms, onOpenMap }: MapsPageProps): JSX.Element {
             onClick={openCreate}
           >
             <IconPlus width={16} height={16} />
-            Создать карту
+            {m.maps.page.create}
           </button>
         </header>
 
         <div className="map-filter-bar">
-          <span className="map-filter-bar__label">Сеттинг</span>
+          <span className="map-filter-bar__label">{m.maps.page.filterLabel}</span>
           <div className="map-filter-bar__select">
             <Select
-              ariaLabel="Фильтр карт по сеттингу"
+              ariaLabel={m.maps.page.filterAriaLabel}
               value={filter}
               options={[
-                { value: 'all', label: 'Все сеттинги' },
+                { value: 'all', label: m.maps.page.allRealms },
                 ...realms.map((realm) => ({ value: realm.id, label: realm.name }))
               ]}
               onChange={setFilter}
@@ -104,20 +103,20 @@ export function MapsPage({ realms, onOpenMap }: MapsPageProps): JSX.Element {
         {error ? <p className="notice notice--error">{error}</p> : null}
 
         {maps === null ? (
-          <p className="muted">Загружаем карты…</p>
+          <p className="muted">{m.maps.page.loading}</p>
         ) : maps.length === 0 ? (
           <div className="empty empty--action">
-            <p>Пока ни одной карты. Создайте первую — добавьте места и соедините их путями.</p>
+            <p>{m.maps.page.empty}</p>
             <button className="button" disabled={!canCreate} onClick={openCreate}>
-              Создать карту
+              {m.maps.page.create}
             </button>
           </div>
         ) : filteredMaps.length === 0 ? (
           <div className="empty empty--action">
-            <p>В выбранном сеттинге пока нет карт.</p>
+            <p>{m.maps.page.emptyFiltered}</p>
             <div className="map-filter-empty-actions">
               <button type="button" className="button" onClick={() => setFilter('all')}>
-                Показать все карты
+                {m.maps.page.showAll}
               </button>
               <button
                 type="button"
@@ -125,16 +124,17 @@ export function MapsPage({ realms, onOpenMap }: MapsPageProps): JSX.Element {
                 disabled={!canCreate}
                 onClick={openCreate}
               >
-                Создать карту
+                {m.maps.page.create}
               </button>
             </div>
           </div>
         ) : (
           <>
             <p className="list-caption">
-              {filteredMaps.length}{' '}
-              {pluralize(filteredMaps.length, 'карта', 'карты', 'карт')}
-              {filter !== 'all' ? ` · всего ${maps.length}` : ''}
+              {filteredMaps.length} {plural(filteredMaps.length, m.maps.page.cardCount)}
+              {filter !== 'all'
+                ? ` · ${fill(m.maps.page.total, { count: maps.length })}`
+                : ''}
             </p>
 
             <ul className="map-list">
@@ -148,12 +148,12 @@ export function MapsPage({ realms, onOpenMap }: MapsPageProps): JSX.Element {
                     <h3 className="map-card__name">{map.name}</h3>
                     <span className="map-card__meta">
                       <span className="map-card__realm">
-                        {realmNames.get(map.realmId) ?? 'Без сеттинга'}
+                        {realmNames.get(map.realmId) ?? m.maps.page.noRealm}
                       </span>
                       {' · '}
                       {map.places.length}{' '}
-                      {pluralize(map.places.length, 'место', 'места', 'мест')} ·{' '}
-                      {map.paths.length} {pluralize(map.paths.length, 'путь', 'пути', 'путей')}
+                      {plural(map.places.length, m.maps.page.placeCount)} ·{' '}
+                      {map.paths.length} {plural(map.paths.length, m.maps.page.pathCount)}
                     </span>
                   </div>
 
@@ -163,13 +163,13 @@ export function MapsPage({ realms, onOpenMap }: MapsPageProps): JSX.Element {
                       className="button button--tiny button--primary"
                       onClick={() => onOpenMap(map.id)}
                     >
-                      Просмотр
+                      {m.maps.page.view}
                     </button>
                     <button
                       type="button"
                       className="icon-button"
-                      title="Редактировать"
-                      aria-label={`Редактировать карту ${map.name}`}
+                      title={m.maps.page.edit}
+                      aria-label={fill(m.maps.page.editAriaLabel, { name: map.name })}
                       onClick={() => setForm({ mode: 'edit', map })}
                     >
                       <IconPencil />
@@ -177,8 +177,8 @@ export function MapsPage({ realms, onOpenMap }: MapsPageProps): JSX.Element {
                     <button
                       type="button"
                       className="icon-button icon-button--danger"
-                      title="Удалить"
-                      aria-label={`Удалить карту ${map.name}`}
+                      title={m.maps.page.delete}
+                      aria-label={fill(m.maps.page.deleteAriaLabel, { name: map.name })}
                       onClick={() => setDeleting(map)}
                     >
                       <IconTrash />
@@ -206,10 +206,10 @@ export function MapsPage({ realms, onOpenMap }: MapsPageProps): JSX.Element {
 
       <ConfirmDialog
         open={deleting !== null}
-        title="Удалить карту?"
+        title={m.maps.page.deleteTitle}
         description={
           deleting
-            ? `«${deleting.name}» и все её места и пути будут удалены. Ссылки выходов на эту карту в других картах будут очищены. Это действие нельзя отменить.`
+            ? fill(m.maps.page.deleteDescription, { name: deleting.name })
             : undefined
         }
         onCancel={() => setDeleting(null)}

@@ -11,6 +11,7 @@ import {
   type CharactersFile
 } from '@shared/characterProfile'
 import { JsonFileError, readJsonFile, withFileLock, writeJsonAtomic } from './jsonFile'
+import { fill, m } from '@shared/i18n'
 
 const LOCK_KEY = 'characters.json'
 
@@ -31,12 +32,14 @@ async function readCharactersFile(): Promise<CharactersFile> {
     if (error instanceof JsonFileError && error.code === 'ENOENT') {
       return emptyFile()
     }
-    throw new Error(`Не удалось прочитать базу персонажей: ${(error as Error).message}`)
+    throw new Error(
+      fill(m().main.characters.readFailed, { error: (error as Error).message })
+    )
   }
 
   const parsed = charactersFileSchema.safeParse(raw)
   if (!parsed.success) {
-    throw new Error('Файл базы персонажей повреждён и не может быть прочитан')
+    throw new Error(m().main.characters.corrupted)
   }
 
   return parsed.data
@@ -45,7 +48,7 @@ async function readCharactersFile(): Promise<CharactersFile> {
 function assertName(input: CharacterProfileInput): NormalizedCharacterProfileInput {
   const normalized = normalizeCharacterProfileInput(input)
   if (!normalized.name) {
-    throw new Error('Имя персонажа не может быть пустым')
+    throw new Error(m().main.characters.nameRequired)
   }
   return normalized
 }
@@ -84,7 +87,7 @@ export async function updateCharacter(profile: CharacterProfile): Promise<Charac
     const index = file.characters.findIndex((item) => item.id === profile.id)
 
     if (index === -1) {
-      throw new Error('Персонаж не найден — возможно, запись уже удалена')
+      throw new Error(m().main.characters.notFound)
     }
 
     const updated: CharacterProfile = {

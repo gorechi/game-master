@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import type { FormEvent, JSX } from 'react'
 import type { GameMap, MapPlace } from '@shared/map'
 import type { PlaceType } from '@shared/placeType'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 import { Modal } from '../ui/Modal'
 import { Select } from '../ui/Select'
 import { IconPencil } from '../ui/icons'
@@ -42,6 +43,7 @@ export function PlaceFormModal({
   onClose,
   onSave
 }: PlaceFormModalProps): JSX.Element {
+  const { messages: m, fill } = useI18n()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [descriptionOpen, setDescriptionOpen] = useState(false)
@@ -80,7 +82,7 @@ export function PlaceFormModal({
     const trimmed = name.trim()
 
     if (!trimmed) {
-      setError('Укажите название места')
+      setError(m.maps.placeForm.nameRequired)
       nameRef.current?.focus()
       return
     }
@@ -97,7 +99,7 @@ export function PlaceFormModal({
 
   const descriptionPreview = description.trim()
     ? description.trim().replace(/\s+/g, ' ').slice(0, 180)
-    : 'Добавьте описание, заметки и важные детали этого места.'
+    : m.maps.placeForm.emptyDescription
 
   const selectedIcon = placeTypes.find((icon) => icon.id === placeTypeId) ?? null
 
@@ -105,18 +107,18 @@ export function PlaceFormModal({
     <>
       <Modal
         open={open}
-        title={place ? 'Место' : 'Новое место'}
-      description="Название, иконка, выход на другую карту и пути к другим местам. Путь всегда двусторонний."
+        title={place ? m.maps.placeForm.title : m.maps.placeForm.createTitle}
+      description={m.maps.placeForm.description}
       size="md"
       onClose={onClose}
       initialFocusRef={nameRef}
       footer={
         <>
           <button type="button" className="button" onClick={onClose}>
-            Отмена
+            {m.maps.placeForm.cancel}
           </button>
           <button type="submit" form={formId} className="button button--primary">
-            Сохранить место
+            {m.maps.placeForm.save}
           </button>
         </>
       }
@@ -124,7 +126,7 @@ export function PlaceFormModal({
       <form id={formId} className="map-place-editor" onSubmit={submit} noValidate>
         <div className="place-description-bar">
           <div className="place-description-bar__text">
-            <span className="field__label">Описание места</span>
+            <span className="field__label">{m.maps.placeForm.descriptionLabel}</span>
             <p className={`place-description-bar__preview${description.trim() ? '' : ' muted'}`}>
               {descriptionPreview}
             </p>
@@ -132,8 +134,8 @@ export function PlaceFormModal({
           <button
             type="button"
             className="place-description-bar__edit"
-            title="Редактировать описание"
-            aria-label="Редактировать описание места"
+            title={m.maps.placeForm.editDescription}
+            aria-label={m.maps.placeForm.editDescriptionLabel}
             onClick={() => setDescriptionOpen(true)}
           >
             <IconPencil width={22} height={22} />
@@ -141,26 +143,30 @@ export function PlaceFormModal({
         </div>
 
         <label className="field">
-          <span className="field__label">Название места</span>
+          <span className="field__label">{m.maps.placeForm.nameLabel}</span>
           <input
             ref={nameRef}
             className="input"
             value={name}
             maxLength={100}
-            placeholder="Таверна «Пьяный гоблин»"
+            placeholder={m.maps.placeForm.namePlaceholder}
             autoComplete="off"
             onChange={(event) => setName(event.target.value)}
           />
         </label>
 
         <div className="field">
-          <span className="field__label">Иконка</span>
+          <span className="field__label">{m.maps.placeForm.iconLabel}</span>
           {placeTypes.length > 0 ? (
             <button
               type="button"
               className={`place-icon-select${selectedIcon ? '' : ' place-icon-select--empty'}`}
-              title={selectedIcon ? 'Изменить иконку' : 'Выбрать иконку'}
-              aria-label={selectedIcon ? 'Изменить иконку' : 'Выбрать иконку'}
+              title={
+                selectedIcon ? m.maps.placeForm.changeIcon : m.maps.placeForm.chooseIcon
+              }
+              aria-label={
+                selectedIcon ? m.maps.placeForm.changeIcon : m.maps.placeForm.chooseIcon
+              }
               aria-haspopup="dialog"
               onClick={() => setIconPickerOpen(true)}
             >
@@ -169,9 +175,7 @@ export function PlaceFormModal({
               </span>
             </button>
           ) : (
-            <span className="game-editor__hint">
-              В сеттинге пока нет иконок. Добавьте их на экране сеттинга.
-            </span>
+            <span className="game-editor__hint">{m.maps.placeForm.noIcons}</span>
           )}
         </div>
 
@@ -183,25 +187,23 @@ export function PlaceFormModal({
             onChange={(event) => setIsExit(event.target.checked)}
           />
           <span>
-            <strong>Выход из карты</strong>
-            <small>Место, через которое можно перейти на другую карту.</small>
+            <strong>{m.maps.placeForm.exitTitle}</strong>
+            <small>{m.maps.placeForm.exitHint}</small>
           </span>
         </label>
 
         {isExit ? (
           <div className="field">
-            <span className="field__label">Выход ведёт на карту</span>
+            <span className="field__label">{m.maps.placeForm.exitTargetLabel}</span>
             {otherMaps.length === 0 ? (
-              <p className="abilities-editor__empty">
-                Других карт пока нет. Создайте их в разделе «Карты», чтобы связать выход.
-              </p>
+              <p className="abilities-editor__empty">{m.maps.placeForm.noOtherMaps}</p>
             ) : (
               <Select
-                ariaLabel="Карта, на которую ведёт выход"
+                ariaLabel={m.maps.placeForm.exitTargetAriaLabel}
                 value={linkedMapId ?? ''}
-                placeholder="Не выбрано"
+                placeholder={m.maps.placeForm.notChosen}
                 options={[
-                  { value: '', label: 'Не выбрано' },
+                  { value: '', label: m.maps.placeForm.notChosen },
                   ...otherMaps.map((map) => ({ value: map.id, label: map.name }))
                 ]}
                 onChange={(value) => setLinkedMapId(value || null)}
@@ -212,14 +214,14 @@ export function PlaceFormModal({
 
         <section className="map-connection-section">
           <header className="editor-section__head">
-            <h3>Пути</h3>
-            <span className="editor-section__count">выбрано {connections.length}</span>
+            <h3>{m.maps.placeForm.pathsTitle}</h3>
+            <span className="editor-section__count">
+              {fill(m.maps.placeForm.chosenCount, { count: connections.length })}
+            </span>
           </header>
 
           {otherPlaces.length === 0 ? (
-            <p className="notice">
-              На карте пока нет других мест. Добавьте их, чтобы проложить пути.
-            </p>
+            <p className="notice">{m.maps.placeForm.noOtherPlaces}</p>
           ) : (
             <div className="map-connection-list">
               {otherPlaces.map((other) => {
@@ -237,7 +239,9 @@ export function PlaceFormModal({
                       onChange={() => toggleConnection(other.id)}
                     />
                     <span className="map-connection-row__name">{other.name}</span>
-                    {other.isExit ? <span className="map-badge">Выход</span> : null}
+                    {other.isExit ? (
+                      <span className="map-badge">{m.maps.placeForm.exitBadge}</span>
+                    ) : null}
                   </label>
                 )
               })}
@@ -251,7 +255,7 @@ export function PlaceFormModal({
 
       <PlaceDescriptionModal
         open={descriptionOpen}
-        placeName={name.trim() || 'Место'}
+        placeName={name.trim() || m.maps.placeForm.placeFallback}
         value={description}
         onClose={() => setDescriptionOpen(false)}
         onSave={(value) => {
@@ -262,7 +266,7 @@ export function PlaceFormModal({
 
       <PlaceIconPickerModal
         open={iconPickerOpen}
-        placeName={name.trim() || 'Место'}
+        placeName={name.trim() || m.maps.placeForm.placeFallback}
         value={placeTypeId}
         placeTypes={placeTypes}
         onClose={() => setIconPickerOpen(false)}

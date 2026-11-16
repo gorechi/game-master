@@ -19,6 +19,7 @@ import {
   type BackupFrequency
 } from '@shared/backup'
 import { SETTINGS_SCHEMA_VERSION } from '@shared/settings'
+import { fill, m } from '@shared/i18n'
 import { GAMES_FILE_SCHEMA_VERSION } from '@shared/game'
 import { GAME_MONSTERS_FILE_SCHEMA_VERSION } from '@shared/gameMonster'
 import { PLAYERS_FILE_SCHEMA_VERSION } from '@shared/player'
@@ -36,6 +37,7 @@ import { listMaps } from './storage/mapStore'
 import { listRealms } from './storage/realmStore'
 import { getPlaceTypesState } from './storage/placeTypeStore'
 import { getSettings } from './storage/settingsStore'
+import { setActiveLocale } from '@shared/i18n'
 import {
   getBackupSettings,
   isBackupFrequency,
@@ -69,7 +71,10 @@ function parseBackup(value: unknown): BackupFile {
   const first = parsed.error.issues[0]
   const where = first?.path.length ? ` (${first.path.join('.')})` : ''
   throw new Error(
-    `Файл не является корректным бэкапом Game Master${where}: ${first?.message ?? 'неизвестная ошибка'}`
+    fill(m().backup.service.errors.invalidBackup, {
+      where,
+      reason: first?.message ?? m().backup.service.errors.unknown
+    })
   )
 }
 
@@ -116,7 +121,7 @@ export async function createBackupFile(): Promise<BackupFile> {
       placeTypes: placeTypesState.placeTypes,
       presetCatalogVersion: placeTypesState.presetCatalogVersion,
       seededPresetKeys: placeTypesState.seededPresetKeys,
-      settings: { theme: settings.theme }
+      settings: { theme: settings.theme, locale: settings.locale }
     }
   })
 }
@@ -124,9 +129,11 @@ export async function createBackupFile(): Promise<BackupFile> {
 export async function saveManualBackup(): Promise<BackupManualResult | null> {
   const backup = await createBackupFile()
   const choice = await dialog.showSaveDialog({
-    title: 'Сохранение бэкапа Game Master',
+    title: m().backup.service.dialogs.saveTitle,
     defaultPath: path.join(app.getPath('documents'), manualBackupName()),
-    filters: [{ name: 'Бэкап Game Master', extensions: [BACKUP_EXTENSION] }]
+    filters: [
+      { name: m().backup.service.dialogs.filterName, extensions: [BACKUP_EXTENSION] }
+    ]
   })
 
   if (choice.canceled || !choice.filePath) return null
@@ -146,9 +153,14 @@ export async function saveManualBackup(): Promise<BackupManualResult | null> {
 
 export async function chooseBackupFile(): Promise<BackupFileSelection | null> {
   const choice = await dialog.showOpenDialog({
-    title: 'Загрузка бэкапа Game Master',
+    title: m().backup.service.dialogs.openTitle,
     properties: ['openFile'],
-    filters: [{ name: 'Бэкап Game Master', extensions: [BACKUP_EXTENSION, 'json'] }]
+    filters: [
+      {
+        name: m().backup.service.dialogs.filterName,
+        extensions: [BACKUP_EXTENSION, 'json']
+      }
+    ]
   })
 
   const filePath = choice.filePaths[0]
@@ -156,7 +168,7 @@ export async function chooseBackupFile(): Promise<BackupFileSelection | null> {
 
   const stat = await fs.stat(filePath)
   if (stat.size > MAX_BACKUP_BYTES) {
-    throw new Error('Файл бэкапа слишком большой')
+    throw new Error(m().backup.service.errors.tooLarge)
   }
 
   const raw = await fs.readFile(filePath, 'utf8')
@@ -165,7 +177,7 @@ export async function chooseBackupFile(): Promise<BackupFileSelection | null> {
   try {
     json = JSON.parse(raw) as unknown
   } catch {
-    throw new Error('Файл повреждён: внутри не JSON')
+    throw new Error(m().backup.service.errors.notJson)
   }
 
   const backup = parseBackup(json)
@@ -188,7 +200,7 @@ async function replaceDataFile(name: string, data: unknown): Promise<void> {
 
 export async function restoreBackup(requestValue: unknown): Promise<BackupRestoreResult> {
   if (!requestValue || typeof requestValue !== 'object') {
-    throw new Error('Некорректный запрос восстановления')
+    throw new Error(m().backup.service.errors.invalidRestoreRequest)
   }
 
   const request = requestValue as Partial<BackupRestoreRequest>
@@ -235,8 +247,11 @@ export async function restoreBackup(requestValue: unknown): Promise<BackupRestor
   })
   await replaceDataFile('settings.json', {
     schemaVersion: SETTINGS_SCHEMA_VERSION,
-    theme: backup.data.settings.theme
+    theme: backup.data.settings.theme,
+    locale: backup.data.settings.locale
   })
+
+  setActiveLocale(backup.data.settings.locale)
 
   return {
     restoredAt: new Date().toISOString(),
@@ -247,7 +262,7 @@ export async function restoreBackup(requestValue: unknown): Promise<BackupRestor
 
 export async function chooseBackupFolder(): Promise<string | null> {
   const choice = await dialog.showOpenDialog({
-    title: 'Папка для автоматических бэкапов',
+    title: m().backup.service.dialogs.folderTitle,
     properties: ['openDirectory', 'createDirectory']
   })
 
@@ -256,7 +271,7 @@ export async function chooseBackupFolder(): Promise<string | null> {
 
   await fs.mkdir(folder, { recursive: true })
   const stat = await fs.stat(folder)
-  if (!stat.isDirectory()) throw new Error('Выбранный путь не является папкой')
+  if (!stat.isDirectory()) throw new Error(m().backup.service.errors.pathNotFolder)
   return folder
 }
 
@@ -266,7 +281,7 @@ export async function getBackupConfig(): Promise<BackupSettings> {
 
 export async function updateBackupConfig(value: unknown): Promise<BackupSettings> {
   if (!value || typeof value !== 'object') {
-    throw new Error('Некорректные настройки бэкапа')
+    throw new Error(m().backup.service.errors.invalidSettings)
   }
 
   const request = value as Record<string, unknown>
@@ -274,15 +289,17 @@ export async function updateBackupConfig(value: unknown): Promise<BackupSettings
 
   if (request.folderPath !== undefined) {
     const folderPath = String(request.folderPath).trim()
-    if (!folderPath) throw new Error('Укажите папку для бэкапов')
+    if (!folderPath) throw new Error(m().backup.service.errors.folderRequired)
     const stat = await fs.stat(folderPath)
-    if (!stat.isDirectory()) throw new Error('Выбранный путь не является папкой')
+    if (!stat.isDirectory()) {
+      throw new Error(m().backup.service.errors.pathNotFolder)
+    }
     patch.folderPath = folderPath
   }
 
   if (request.frequency !== undefined) {
     if (!isBackupFrequency(request.frequency)) {
-      throw new Error('Некорректная частота автоматического бэкапа')
+      throw new Error(m().backup.service.errors.invalidFrequency)
     }
     patch.frequency = request.frequency
   }

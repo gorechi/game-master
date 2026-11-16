@@ -17,6 +17,7 @@ import {
   type DataPack
 } from '@shared/dataPack'
 import { validatePlaceIcon } from '@shared/placeIcon'
+import { fill, m } from '@shared/i18n'
 import { addImportedGames, listGames } from './storage/gameStore'
 import { listGameMonsters, saveGameMonsters } from './storage/gameMonsterStore'
 import { addImportedMaps, listMaps } from './storage/mapStore'
@@ -28,20 +29,20 @@ const MAX_PACK_BYTES = 25 * 1024 * 1024
 
 function parseExportRequest(value: unknown): DataExportRequest {
   if (!value || typeof value !== 'object') {
-    throw new Error('Некорректный запрос экспорта')
+    throw new Error(m().dataPack.errors.invalidExportRequest)
   }
 
   const { kind, ids, mapLinks } = value as Record<string, unknown>
   const knownKind = DATA_EXPORT_KINDS.find((item) => item === kind)
-  if (!knownKind) throw new Error('Неизвестный тип экспорта')
-  if (!Array.isArray(ids)) throw new Error('Некорректный список для экспорта')
+  if (!knownKind) throw new Error(m().dataPack.errors.unknownExportKind)
+  if (!Array.isArray(ids)) throw new Error(m().dataPack.errors.invalidExportIds)
 
   if (
     mapLinks !== undefined &&
     mapLinks !== 'includeLinked' &&
     mapLinks !== 'selectedOnly'
   ) {
-    throw new Error('Некорректный режим экспорта карт')
+    throw new Error(m().dataPack.errors.invalidMapLinkMode)
   }
 
   return {
@@ -55,7 +56,7 @@ function parseExportRequest(value: unknown): DataExportRequest {
 
 function parseImportRequest(value: unknown): DataImportRequest {
   if (!value || typeof value !== 'object') {
-    throw new Error('Некорректный запрос импорта')
+    throw new Error(m().dataPack.errors.invalidImportRequest)
   }
 
   const request = value as Record<string, unknown>
@@ -89,7 +90,10 @@ function parsePack(value: unknown): DataPack {
   const first = parsed.error.issues[0]
   const where = first?.path.length ? ` (${first.path.join('.')})` : ''
   throw new Error(
-    `Файл не является корректным пакетом Game Master${where}: ${first?.message ?? 'неизвестная ошибка'}`
+    fill(m().dataPack.errors.invalidPack, {
+      where,
+      reason: first?.message ?? m().dataPack.errors.unknown
+    })
   )
 }
 
@@ -112,9 +116,9 @@ export async function exportDataPack(requestValue: unknown): Promise<DataExportR
   )
 
   const choice = await dialog.showSaveDialog({
-    title: 'Экспорт данных Game Master',
+    title: m().dataPack.dialogs.exportTitle,
     defaultPath: path.join(app.getPath('documents'), packFileName(request.kind)),
-    filters: [{ name: 'Пакет Game Master', extensions: [DATA_PACK_EXTENSION] }]
+    filters: [{ name: m().dataPack.dialogs.filterName, extensions: [DATA_PACK_EXTENSION] }]
   })
 
   if (choice.canceled || !choice.filePath) return null
@@ -133,9 +137,9 @@ export async function exportDataPack(requestValue: unknown): Promise<DataExportR
 
 export async function chooseDataImportFile(): Promise<DataImportFile | null> {
   const choice = await dialog.showOpenDialog({
-    title: 'Импорт данных Game Master',
+    title: m().dataPack.dialogs.importTitle,
     properties: ['openFile'],
-    filters: [{ name: 'Пакет Game Master', extensions: [DATA_PACK_EXTENSION, 'json'] }]
+    filters: [{ name: m().dataPack.dialogs.filterName, extensions: [DATA_PACK_EXTENSION, 'json'] }]
   })
 
   const filePath = choice.filePaths[0]
@@ -143,7 +147,7 @@ export async function chooseDataImportFile(): Promise<DataImportFile | null> {
 
   const stat = await fs.stat(filePath)
   if (stat.size > MAX_PACK_BYTES) {
-    throw new Error('Файл слишком большой для пакета Game Master')
+    throw new Error(m().dataPack.errors.tooLarge)
   }
 
   const raw = await fs.readFile(filePath, 'utf8')
@@ -152,7 +156,7 @@ export async function chooseDataImportFile(): Promise<DataImportFile | null> {
   try {
     json = JSON.parse(raw) as unknown
   } catch {
-    throw new Error('Файл повреждён: внутри не JSON')
+    throw new Error(m().dataPack.errors.notJson)
   }
 
   const pack = parsePack(json)
@@ -171,7 +175,9 @@ export async function importDataPack(requestValue: unknown): Promise<DataImportR
   for (const placeType of pack.data.placeTypes) {
     const check = validatePlaceIcon(placeType.iconSvg)
     if (!check.ok) {
-      throw new Error(`Иконка не соответствует требованиям: ${check.problems.join(' ')}`)
+      throw new Error(
+        fill(m().main.placeTypes.iconInvalid, { problems: check.problems.join(' ') })
+      )
     }
   }
 
@@ -179,7 +185,7 @@ export async function importDataPack(requestValue: unknown): Promise<DataImportR
 
   if (pack.kind === 'realm') {
     const name = (request.realmName ?? pack.data.realm?.name ?? '').trim()
-    if (!name) throw new Error('Укажите название нового сеттинга')
+    if (!name) throw new Error(m().dataPack.errors.realmNameRequired)
 
     const realm = await addRealm({
       name,
@@ -189,12 +195,12 @@ export async function importDataPack(requestValue: unknown): Promise<DataImportR
   } else {
     const targetRealmId = request.targetRealmId
     if (!targetRealmId) {
-      throw new Error('Выберите сеттинг, в который нужно импортировать данные')
+      throw new Error(m().dataPack.errors.targetRealmRequired)
     }
 
     const realms = await listRealms()
     if (!realms.some((realm) => realm.id === targetRealmId)) {
-      throw new Error('Сеттинг не найден — возможно, он был удалён')
+      throw new Error(m().dataPack.errors.realmNotFound)
     }
     realmId = targetRealmId
   }

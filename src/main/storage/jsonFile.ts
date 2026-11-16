@@ -1,4 +1,5 @@
 import { promises as fs } from 'node:fs'
+import { fill, m } from '@shared/i18n'
 
 /**
  * Общие примитивы работы с JSON-файлами на диске.
@@ -23,7 +24,9 @@ export async function readJsonFile(file: string): Promise<unknown> {
   } catch (error) {
     const code = (error as NodeJS.ErrnoException).code
     throw new JsonFileError(
-      code === 'ENOENT' ? 'Файл не найден' : `Не удалось прочитать файл: ${(error as Error).message}`,
+      code === 'ENOENT'
+        ? m().main.jsonFile.notFound
+        : fill(m().main.jsonFile.readFailed, { error: (error as Error).message }),
       code
     )
   }
@@ -31,7 +34,7 @@ export async function readJsonFile(file: string): Promise<unknown> {
   try {
     return JSON.parse(raw) as unknown
   } catch {
-    throw new JsonFileError('Файл повреждён: некорректный JSON')
+    throw new JsonFileError(m().main.jsonFile.invalidJson)
   }
 }
 

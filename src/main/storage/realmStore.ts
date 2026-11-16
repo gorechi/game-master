@@ -10,6 +10,7 @@ import {
   type RealmsFile
 } from '@shared/realm'
 import { JsonFileError, readJsonFile, withFileLock, writeJsonAtomic } from './jsonFile'
+import { fill, m } from '@shared/i18n'
 
 const LOCK_KEY = 'realms.json'
 
@@ -22,7 +23,7 @@ function seedRealm(): Realm {
   return {
     id: DEFAULT_REALM_ID,
     name: 'D&D',
-    description: 'Базовый фэнтези-сеттинг. Сюда попадают данные, созданные до появления сеттингов.',
+    description: m().main.realms.seedDescription,
     createdAt: now,
     updatedAt: now
   }
@@ -47,12 +48,12 @@ async function readRealmsFile(): Promise<RealmsFile> {
       await writeRealms(seeded)
       return seeded
     }
-    throw new Error(`Не удалось прочитать сеттинги: ${(error as Error).message}`)
+    throw new Error(fill(m().main.realms.readFailed, { error: (error as Error).message }))
   }
 
   const parsed = realmsFileSchema.safeParse(raw)
   if (!parsed.success) {
-    throw new Error('Файл сеттингов повреждён и не может быть прочитан')
+    throw new Error(m().main.realms.corrupted)
   }
 
   if (parsed.data.realms.length === 0) {
@@ -67,7 +68,7 @@ async function readRealmsFile(): Promise<RealmsFile> {
 function assertRealmInput(input: RealmInput): RealmInput {
   const normalized = normalizeRealmInput(input)
   if (!normalized.name) {
-    throw new Error('Название сеттинга не может быть пустым')
+    throw new Error(m().main.realms.nameRequired)
   }
   return normalized
 }
@@ -96,7 +97,7 @@ export async function updateRealm(realm: Realm): Promise<Realm> {
     const index = file.realms.findIndex((item) => item.id === realm.id)
 
     if (index === -1) {
-      throw new Error('Сеттинг не найден — возможно, запись уже удалена')
+      throw new Error(m().main.realms.recordNotFound)
     }
 
     const updated: Realm = {
@@ -119,7 +120,7 @@ export async function removeRealm(id: string): Promise<void> {
     const file = await readRealmsFile()
 
     if (file.realms.length <= 1) {
-      throw new Error('Нельзя удалить последний сеттинг')
+      throw new Error(m().main.realms.lastRemovalForbidden)
     }
 
     const realms = file.realms.filter((realm) => realm.id !== id)

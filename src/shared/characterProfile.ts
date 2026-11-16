@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { DEFAULT_REALM_ID } from './realm'
+import { m } from './i18n'
 
 /** Версия формата файла базы персонажей. */
 export const CHARACTERS_FILE_SCHEMA_VERSION = 1
@@ -17,7 +18,7 @@ const imageDataUrl = z
       value.startsWith('data:image/png;base64,') ||
       value.startsWith('data:image/jpeg;base64,') ||
       value.startsWith('data:image/webp;base64,'),
-    'Ожидается изображение в формате data URL (png, jpeg или webp)'
+    { error: () => m().people.schema.imageFormat }
   )
   .nullable()
 

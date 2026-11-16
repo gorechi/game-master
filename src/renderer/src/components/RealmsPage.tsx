@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { JSX } from 'react'
 import type { Realm, RealmInput } from '@shared/realm'
 import { api, errorMessage } from '@renderer/lib/api'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 import { ConfirmDialog } from './ui/ConfirmDialog'
 import { IconGlobe, IconPencil, IconPlus, IconTrash } from './ui/icons'
 import { RealmFormModal } from './realms/RealmFormModal'
@@ -20,6 +21,7 @@ export function RealmsPage({
   onOpenRealm,
   onChanged
 }: RealmsPageProps): JSX.Element {
+  const { messages: m, fill } = useI18n()
   const [form, setForm] = useState<RealmFormState | null>(null)
   const [deleting, setDeleting] = useState<Realm | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -54,15 +56,12 @@ export function RealmsPage({
       <div className="page__inner">
         <header className="page-head">
           <div>
-            <h1>Сеттинги</h1>
-            <p className="muted">
-              Миры, между которыми разделены игры, персонажи, монстры и карты.
-              Откройте сеттинг, чтобы настроить его набор иконок для мест.
-            </p>
+            <h1>{m.realms.page.title}</h1>
+            <p className="muted">{m.realms.page.description}</p>
           </div>
           <button className="button button--primary" onClick={() => setForm({ mode: 'create' })}>
             <IconPlus width={16} height={16} />
-            Создать сеттинг
+            {m.realms.page.create}
           </button>
         </header>
 
@@ -83,7 +82,7 @@ export function RealmsPage({
                     <h3 className="realm-card__name">{realm.name}</h3>
                   </div>
                   <p className="realm-card__description">
-                    {realm.description || 'Без описания'}
+                    {realm.description || m.realms.noDescription}
                   </p>
                 </div>
 
@@ -93,13 +92,13 @@ export function RealmsPage({
                     className="button button--tiny"
                     onClick={() => onOpenRealm(realm.id)}
                   >
-                    Открыть
+                    {m.realms.page.open}
                   </button>
                   <button
                     type="button"
                     className="icon-button"
-                    title="Редактировать"
-                    aria-label={`Редактировать сеттинг ${realm.name}`}
+                    title={m.realms.page.edit}
+                    aria-label={fill(m.realms.page.editAria, { name: realm.name })}
                     onClick={() => setForm({ mode: 'edit', realm })}
                   >
                     <IconPencil />
@@ -109,10 +108,10 @@ export function RealmsPage({
                     className="icon-button icon-button--danger"
                     title={
                       canDelete
-                        ? 'Удалить'
-                        : 'Нельзя удалить последний сеттинг'
+                        ? m.realms.page.delete
+                        : m.realms.page.deleteBlocked
                     }
-                    aria-label={`Удалить сеттинг ${realm.name}`}
+                    aria-label={fill(m.realms.page.deleteAria, { name: realm.name })}
                     disabled={!canDelete}
                     onClick={() => {
                       setError(null)
@@ -137,10 +136,10 @@ export function RealmsPage({
 
       <ConfirmDialog
         open={deleting !== null}
-        title="Удалить сеттинг?"
+        title={m.realms.page.deleteTitle}
         description={
           deleting
-            ? `«${deleting.name}» будет удалён. Удалить можно только пустой сеттинг — сначала удалите из него игры, персонажей, монстров, карты и иконки мест.`
+            ? fill(m.realms.page.deleteDescription, { name: deleting.name })
             : undefined
         }
         onCancel={() => setDeleting(null)}

@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import type { JSX } from 'react'
+import { useMessages } from '@renderer/i18n/LocaleProvider'
 import { Modal } from './Modal'
 
 interface ConfirmDialogProps {
@@ -17,11 +18,14 @@ export function ConfirmDialog({
   open,
   title,
   description,
-  confirmLabel = 'Удалить',
-  cancelLabel = 'Отмена',
+  confirmLabel,
+  cancelLabel,
   onConfirm,
   onCancel
 }: ConfirmDialogProps): JSX.Element {
+  const m = useMessages()
+  const cancelText = cancelLabel ?? m.ui.confirm.cancel
+  const confirmText = confirmLabel ?? m.ui.confirm.confirm
   const cancelRef = useRef<HTMLButtonElement>(null)
 
   return (
@@ -36,10 +40,10 @@ export function ConfirmDialog({
       footer={
         <>
           <button ref={cancelRef} type="button" className="button" onClick={onCancel}>
-            {cancelLabel}
+            {cancelText}
           </button>
           <button type="button" className="button button--danger-solid" onClick={onConfirm}>
-            {confirmLabel}
+            {confirmText}
           </button>
         </>
       }

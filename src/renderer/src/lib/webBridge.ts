@@ -69,6 +69,7 @@ import {
   type AppSettings,
   type SettingsPatch
 } from '@shared/settings'
+import { DEFAULT_LOCALE, fill, isLocaleCode, m, setActiveLocale } from '@shared/i18n'
 import {
   GITHUB_LATEST_RELEASE_API,
   isVersionNewer,
@@ -292,7 +293,7 @@ function seedRealm(): Realm {
   return {
     id: DEFAULT_REALM_ID,
     name: 'D&D',
-    description: 'Базовый фэнтези-сеттинг. Сюда попадают данные, созданные до появления сеттингов.',
+    description: m().main.realms.seedDescription,
     createdAt: now,
     updatedAt: now
   }
@@ -401,13 +402,15 @@ function ensurePreviewPresetIcons(): void {
 function assertPlaceTypeIcon(svg: string): void {
   const check = validatePlaceIcon(svg)
   if (!check.ok) {
-    throw new Error(`Иконка не соответствует требованиям: ${check.problems.join(' ')}`)
+    throw new Error(
+      fill(m().main.placeTypes.iconInvalid, { problems: check.problems.join(' ') })
+    )
   }
 }
 
 function assertRealm(realmId: string): void {
   if (!readRealms().some((realm) => realm.id === realmId)) {
-    throw new Error('Сеттинг не найден — возможно, он был удалён')
+    throw new Error(m().main.realms.notFound)
   }
 }
 
@@ -427,7 +430,8 @@ function readSettings(): AppSettings {
       if (isThemeName(parsed.theme)) {
         return {
           schemaVersion: SETTINGS_SCHEMA_VERSION,
-          theme: parsed.theme
+          theme: parsed.theme,
+          locale: isLocaleCode(parsed.locale) ? parsed.locale : DEFAULT_LOCALE
         }
       }
     }
@@ -449,7 +453,10 @@ function parsePreviewPack(value: unknown): DataPack {
   const first = parsed.error.issues[0]
   const where = first?.path.length ? ` (${first.path.join('.')})` : ''
   throw new Error(
-    `Файл не является корректным пакетом Game Master${where}: ${first?.message ?? 'неизвестная ошибка'}`
+    fill(m().dataPack.errors.invalidPack, {
+      where,
+      reason: first?.message ?? m().dataPack.errors.unknown
+    })
   )
 }
 
@@ -505,7 +512,7 @@ function choosePreviewImportFile(): Promise<DataImportFile | null> {
         }
 
         if (file.size > 25 * 1024 * 1024) {
-          reject(new Error('Файл слишком большой для пакета Game Master'))
+          reject(new Error(m().dataPack.errors.tooLarge))
           return
         }
 
@@ -516,7 +523,7 @@ function choosePreviewImportFile(): Promise<DataImportFile | null> {
             try {
               json = JSON.parse(text) as unknown
             } catch {
-              throw new Error('Файл повреждён: внутри не JSON')
+              throw new Error(m().dataPack.errors.notJson)
             }
 
             const pack = parsePreviewPack(json)
@@ -538,7 +545,10 @@ function parsePreviewBackup(value: unknown): BackupFile {
   const first = parsed.error.issues[0]
   const where = first?.path.length ? ` (${first.path.join('.')})` : ''
   throw new Error(
-    `Файл не является корректным бэкапом Game Master${where}: ${first?.message ?? 'неизвестная ошибка'}`
+    fill(m().backup.service.errors.invalidBackup, {
+      where,
+      reason: first?.message ?? m().backup.service.errors.unknown
+    })
   )
 }
 
@@ -561,7 +571,7 @@ function createPreviewBackup(): BackupFile {
       placeTypes: readPlaceTypes(),
       presetCatalogVersion: presetState.catalogVersion,
       seededPresetKeys: presetState.seededKeys,
-      settings: { theme: readSettings().theme }
+      settings: { theme: readSettings().theme, locale: readSettings().locale }
     }
   })
 }
@@ -603,7 +613,7 @@ function choosePreviewBackupFile(): Promise<BackupFileSelection | null> {
         }
 
         if (file.size > 512 * 1024 * 1024) {
-          reject(new Error('Файл бэкапа слишком большой'))
+          reject(new Error(m().backup.service.errors.tooLarge))
           return
         }
 
@@ -614,7 +624,7 @@ function choosePreviewBackupFile(): Promise<BackupFileSelection | null> {
             try {
               json = JSON.parse(text) as unknown
             } catch {
-              throw new Error('Файл повреждён: внутри не JSON')
+              throw new Error(m().backup.service.errors.notJson)
             }
 
             const backup = parsePreviewBackup(json)
@@ -639,7 +649,7 @@ function choosePreviewBackupFile(): Promise<BackupFileSelection | null> {
 function readPreviewBackupSettings(): BackupSettings {
   const base: BackupSettings = {
     schemaVersion: BACKUP_SCHEMA_VERSION,
-    folderPath: 'localStorage браузера',
+    folderPath: m().main.preview.storageLabel,
     frequency: 'off',
     lastBackupAt: null,
     lastError: null
@@ -684,7 +694,8 @@ function restorePreviewBackup(
   })
   writeSettings({
     schemaVersion: SETTINGS_SCHEMA_VERSION,
-    theme: backup.data.settings.theme
+    theme: backup.data.settings.theme,
+    locale: backup.data.settings.locale
   })
 
   return {
@@ -717,7 +728,7 @@ async function runWebUpdateCheck(): Promise<UpdateState> {
     })
 
     if (!response.ok) {
-      throw new Error(`GitHub ответил с кодом ${response.status}`)
+      throw new Error(fill(m().updates.errors.http, { status: response.status }))
     }
 
     const payload = (await response.json()) as { tag_name?: unknown; html_url?: unknown }
@@ -725,7 +736,7 @@ async function runWebUpdateCheck(): Promise<UpdateState> {
       typeof payload.tag_name === 'string' ? normalizeVersion(payload.tag_name) : ''
 
     if (!latestVersion || !parseVersion(latestVersion)) {
-      throw new Error('GitHub вернул релиз без понятного номера версии')
+      throw new Error(m().updates.errors.badVersion)
     }
 
     return {
@@ -740,9 +751,9 @@ async function runWebUpdateCheck(): Promise<UpdateState> {
     const message = error instanceof Error ? error.message : String(error)
     const friendly =
       error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')
-        ? 'Истекло время ожидания ответа GitHub'
+        ? m().updates.errors.timeout
         : /fetch|NetworkError|ERR_/i.test(message)
-          ? 'Не удалось связаться с GitHub'
+          ? m().updates.errors.network
           : message
 
     return {
@@ -767,7 +778,7 @@ export function createWebBridge(): GameMasterApi {
         electron: '—',
         chrome: navigator.userAgent,
         platform: 'other',
-        dataDir: 'localStorage браузера'
+        dataDir: m().main.preview.storageLabel
       }),
       openDataFolder: async (): Promise<void> => undefined
     },
@@ -791,10 +802,10 @@ export function createWebBridge(): GameMasterApi {
         const existing = games.find((item) => item.id === game.id)
 
         if (!existing) {
-          throw new Error('Игра не найдена — возможно, запись уже удалена')
+          throw new Error(m().main.games.notFound)
         }
         if (!isGameEditable(existing.status)) {
-          throw new Error('Завершённую игру нельзя редактировать')
+          throw new Error(m().main.games.editForbidden)
         }
 
         const updated: Game = {
@@ -819,14 +830,14 @@ export function createWebBridge(): GameMasterApi {
         const game = games.find((item) => item.id === id)
 
         if (!game) {
-          throw new Error('Игра не найдена — возможно, запись уже удалена')
+          throw new Error(m().main.games.notFound)
         }
         if (game.status === status) return game
         if (status === 'finished') {
-          throw new Error('Завершайте игру через экран завершения')
+          throw new Error(m().main.games.finishThroughScreen)
         }
         if (!canTransitionGame(game.status, status)) {
-          throw new Error('Такой переход статуса недопустим')
+          throw new Error(m().main.games.invalidStatusTransition)
         }
 
         const updated: Game = {
@@ -844,10 +855,10 @@ export function createWebBridge(): GameMasterApi {
         const game = games.find((item) => item.id === id)
 
         if (!game) {
-          throw new Error('Игра не найдена — возможно, запись уже удалена')
+          throw new Error(m().main.games.notFound)
         }
         if (!canTransitionGame(game.status, 'finished')) {
-          throw new Error('Завершить можно только идущую или приостановленную игру')
+          throw new Error(m().main.games.finishNotAllowed)
         }
 
         const existing = readGameMonsters()
@@ -888,7 +899,7 @@ export function createWebBridge(): GameMasterApi {
         if (!game) return
 
         if (!isGameDeletable(game.status)) {
-          throw new Error('Идущую игру нельзя удалить — сначала завершите её')
+          throw new Error(m().main.games.deleteRunningForbidden)
         }
 
         writeGames(games.filter((item) => item.id !== id))
@@ -908,7 +919,7 @@ export function createWebBridge(): GameMasterApi {
       update: async (entry: GameMonsterEntry): Promise<GameMonsterEntry> => {
         const existing = readGameMonsters().find((monster) => monster.id === entry.id)
         if (!existing) {
-          throw new Error('Сохранённый монстр не найден — возможно, запись уже удалена')
+          throw new Error(m().main.gameMonsters.notFound)
         }
 
         const updated: GameMonsterEntry = {
@@ -1041,7 +1052,7 @@ export function createWebBridge(): GameMasterApi {
       update: async (map: GameMap): Promise<GameMap> => {
         const existing = readMaps().find((item) => item.id === map.id)
         if (!existing) {
-          throw new Error('Карта не найдена — возможно, запись уже удалена')
+          throw new Error(m().main.maps.notFound)
         }
 
         assertRealm(map.realmId)
@@ -1163,7 +1174,7 @@ export function createWebBridge(): GameMasterApi {
         const realms = readRealms()
         const existing = realms.find((item) => item.id === realm.id)
         if (!existing) {
-          throw new Error('Сеттинг не найден — возможно, запись уже удалена')
+          throw new Error(m().main.realms.recordNotFound)
         }
 
         const updated: Realm = {
@@ -1180,7 +1191,7 @@ export function createWebBridge(): GameMasterApi {
       remove: async (id: string): Promise<void> => {
         const realms = readRealms()
         if (realms.length <= 1) {
-          throw new Error('Нельзя удалить последний сеттинг')
+          throw new Error(m().main.realms.lastRemovalForbidden)
         }
 
         const hasData =
@@ -1192,9 +1203,7 @@ export function createWebBridge(): GameMasterApi {
           readPlaceTypes().some((placeType) => placeType.realmId === id)
 
         if (hasData) {
-          throw new Error(
-            'В сеттинге есть игры, персонажи, монстры, карты или иконки мест — сначала удалите их'
-          )
+          throw new Error(m().main.realms.notEmpty)
         }
 
         writeRealms(realms.filter((realm) => realm.id !== id))
@@ -1216,7 +1225,7 @@ export function createWebBridge(): GameMasterApi {
       update: async (placeType: PlaceType): Promise<PlaceType> => {
         const existing = readPlaceTypes().find((item) => item.id === placeType.id)
         if (!existing) {
-          throw new Error('Иконка не найдена — возможно, запись уже удалена')
+          throw new Error(m().main.placeTypes.notFound)
         }
 
         assertPlaceTypeIcon(placeType.iconSvg)
@@ -1270,7 +1279,7 @@ export function createWebBridge(): GameMasterApi {
 
         if (pack.kind === 'realm') {
           const name = (request.realmName ?? pack.data.realm?.name ?? '').trim()
-          if (!name) throw new Error('Укажите название нового сеттинга')
+          if (!name) throw new Error(m().dataPack.errors.realmNameRequired)
 
           const realm = createRealm({
             name,
@@ -1281,7 +1290,7 @@ export function createWebBridge(): GameMasterApi {
         } else {
           const targetRealmId = request.targetRealmId
           if (!targetRealmId) {
-            throw new Error('Выберите сеттинг, в который нужно импортировать данные')
+            throw new Error(m().dataPack.errors.targetRealmRequired)
           }
           assertRealm(targetRealmId)
           realmId = targetRealmId
@@ -1341,10 +1350,12 @@ export function createWebBridge(): GameMasterApi {
       update: async (patch: SettingsPatch): Promise<AppSettings> => {
         const next: AppSettings = {
           ...readSettings(),
-          ...(patch.theme ? { theme: patch.theme } : {})
+          ...(patch.theme ? { theme: patch.theme } : {}),
+          ...(patch.locale ? { locale: patch.locale } : {})
         }
 
         writeSettings(next)
+        setActiveLocale(next.locale)
         return next
       }
     }

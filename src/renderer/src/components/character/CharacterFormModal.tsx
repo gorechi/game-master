@@ -6,6 +6,7 @@ import type { Realm } from '@shared/realm'
 import { clampCharacterLevel, playerFullName } from '@shared/domain'
 import { api, errorMessage } from '@renderer/lib/api'
 import { prepareCharacterImage } from '@renderer/lib/image'
+import { useMessages } from '@renderer/i18n/LocaleProvider'
 import { Modal } from '../ui/Modal'
 import { Select } from '../ui/Select'
 import { StatusField } from '../ui/StatusField'
@@ -35,6 +36,7 @@ export function CharacterFormModal({
   onClose,
   onSaved
 }: CharacterFormModalProps): JSX.Element {
+  const m = useMessages()
   const [name, setName] = useState('')
   const [realmId, setRealmId] = useState('')
   const [className, setClassName] = useState('')
@@ -89,16 +91,16 @@ export function CharacterFormModal({
 
     const trimmedName = name.trim()
     if (!trimmedName) {
-      setError('Укажите имя персонажа')
+      setError(m.people.characterForm.nameRequired)
       nameRef.current?.focus()
       return
     }
     if (!playerId || !players.some((player) => player.id === playerId)) {
-      setError('Выберите игрока — персонаж должен за кем-то числиться')
+      setError(m.people.characterForm.playerRequired)
       return
     }
     if (!profile && !realmId) {
-      setError('Выберите сеттинг персонажа')
+      setError(m.people.characterForm.realmRequired)
       return
     }
 
@@ -143,22 +145,18 @@ export function CharacterFormModal({
   return (
     <Modal
       open={open}
-      title={profile ? 'Редактировать персонажа' : 'Новый персонаж'}
-      description={
-        profile
-          ? undefined
-          : 'Портрет, класс, уровень, раса и статусы. Игрок уже должен быть в базе.'
-      }
+      title={profile ? m.people.characterForm.editTitle : m.people.characterForm.createTitle}
+      description={profile ? undefined : m.people.characterForm.createDescription}
       size="lg"
       onClose={onClose}
       initialFocusRef={nameRef}
       footer={
         <>
           <button type="button" className="button" onClick={onClose} disabled={saving}>
-            Отмена
+            {m.people.characterForm.cancel}
           </button>
           <button type="submit" form={formId} className="button button--primary" disabled={!canSave}>
-            {saving ? 'Сохраняем…' : 'Сохранить'}
+            {saving ? m.people.characterForm.saving : m.people.characterForm.save}
           </button>
         </>
       }
@@ -174,7 +172,7 @@ export function CharacterFormModal({
             className={`portrait-field${dragging ? ' portrait-field--drag' : ''}`}
             role="button"
             tabIndex={0}
-            aria-label="Загрузить портрет персонажа"
+            aria-label={m.people.characterForm.uploadPortraitAria}
             onClick={() => fileRef.current?.click()}
             onKeyDown={(event) => {
               if (event.target !== event.currentTarget) return
@@ -191,17 +189,19 @@ export function CharacterFormModal({
             onDrop={onDrop}
           >
             {image ? (
-              <img src={image} alt="Портрет персонажа" />
+              <img src={image} alt={m.people.characterForm.portraitAlt} />
             ) : (
               <HeroPlaceholder />
             )}
 
             {image ? null : (
-              <span className="portrait-field__hint">Перетащите файл или нажмите</span>
+              <span className="portrait-field__hint">{m.people.characterForm.dropHint}</span>
             )}
 
             {processingImage ? (
-              <span className="portrait-field__processing">Обрабатываем…</span>
+              <span className="portrait-field__processing">
+                {m.people.characterForm.processing}
+              </span>
             ) : null}
 
             {image ? (
@@ -213,7 +213,7 @@ export function CharacterFormModal({
                   setImage(null)
                 }}
               >
-                Убрать фото
+                {m.people.characterForm.removePhoto}
               </button>
             ) : null}
 
@@ -235,50 +235,50 @@ export function CharacterFormModal({
 
         <div className="character-form__fields">
           <label className="field">
-            <span className="field__label">Имя</span>
+            <span className="field__label">{m.people.characterForm.nameLabel}</span>
             <input
               ref={nameRef}
               className="input"
               value={name}
               maxLength={80}
-              placeholder="Ария Среброкрылая"
+              placeholder={m.people.characterForm.namePlaceholder}
               autoComplete="off"
               onChange={(event) => setName(event.target.value)}
             />
           </label>
 
           <div className="field">
-            <span className="field__label">Сеттинг *</span>
+            <span className="field__label">{m.people.characterForm.realmLabel}</span>
             <Select
-              ariaLabel="Сеттинг персонажа"
+              ariaLabel={m.people.characterForm.realmAria}
               value={realmId}
-              placeholder="Выберите сеттинг"
+              placeholder={m.people.characterForm.realmPlaceholder}
               disabled={Boolean(profile) || realms.length === 0}
               options={realms.map((realm) => ({ value: realm.id, label: realm.name }))}
               onChange={setRealmId}
             />
             <span className="game-editor__hint">
               {profile
-                ? 'Сеттинг задаётся при создании персонажа и не меняется.'
-                : 'Сеттинг определяет, в каких играх и с какими монстрами может участвовать персонаж.'}
+                ? m.people.characterForm.realmHintEdit
+                : m.people.characterForm.realmHintCreate}
             </span>
           </div>
 
           <div className="character-form__row">
             <label className="field">
-              <span className="field__label">Класс</span>
+              <span className="field__label">{m.people.characterForm.classNameLabel}</span>
               <input
                 className="input"
                 value={className}
                 maxLength={60}
-                placeholder="Плут"
+                placeholder={m.people.characterForm.classNamePlaceholder}
                 autoComplete="off"
                 onChange={(event) => setClassName(event.target.value)}
               />
             </label>
 
             <label className="field character-form__level">
-              <span className="field__label">Уровень</span>
+              <span className="field__label">{m.people.characterForm.levelLabel}</span>
               <input
                 className="input"
                 type="number"
@@ -294,12 +294,12 @@ export function CharacterFormModal({
             </label>
 
             <label className="field">
-              <span className="field__label">Раса</span>
+              <span className="field__label">{m.people.characterForm.raceLabel}</span>
               <input
                 className="input"
                 value={race}
                 maxLength={60}
-                placeholder="Полуэльф"
+                placeholder={m.people.characterForm.racePlaceholder}
                 autoComplete="off"
                 onChange={(event) => setRace(event.target.value)}
               />
@@ -307,14 +307,18 @@ export function CharacterFormModal({
           </div>
 
           <div className="field">
-            <span className="field__label">Игрок</span>
+            <span className="field__label">{m.people.characterForm.playerLabel}</span>
             {lockPlayer && lockedPlayer ? (
               <div className="locked-value">{playerFullName(lockedPlayer)}</div>
             ) : (
               <Select
-                ariaLabel="Игрок"
+                ariaLabel={m.people.characterForm.playerLabel}
                 value={playerId}
-                placeholder={players.length === 0 ? 'Сначала добавьте игрока' : 'Выберите игрока'}
+                placeholder={
+                  players.length === 0
+                    ? m.people.characterForm.playerPlaceholderEmpty
+                    : m.people.characterForm.playerPlaceholder
+                }
                 options={players.map((player) => ({
                   value: player.id,
                   label: playerFullName(player)
@@ -323,9 +327,7 @@ export function CharacterFormModal({
               />
             )}
             {orphanPlayer ? (
-              <p className="notice notice--error">
-                Игрок этого персонажа удалён из базы — выберите нового.
-              </p>
+              <p className="notice notice--error">{m.people.characterForm.orphanPlayer}</p>
             ) : null}
           </div>
 

@@ -3,7 +3,7 @@ import type { JSX } from 'react'
 import type { Monster } from '@shared/monster'
 import type { Realm } from '@shared/realm'
 import { api, errorMessage } from '@renderer/lib/api'
-import { pluralize } from '@renderer/lib/format'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 import { ConfirmDialog } from './ui/ConfirmDialog'
 import { IconPlus } from './ui/icons'
 import { MonsterCard } from './monsters/MonsterCard'
@@ -11,6 +11,7 @@ import { MonsterFormModal } from './monsters/MonsterFormModal'
 
 /** Бестиарий: монстры, которых можно использовать в игре. */
 export function MonstersPage({ realms }: { realms: readonly Realm[] }): JSX.Element {
+  const { messages: m, fill, plural } = useI18n()
   const [monsters, setMonsters] = useState<Monster[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState<Monster | 'new' | null>(null)
@@ -49,32 +50,30 @@ export function MonstersPage({ realms }: { realms: readonly Realm[] }): JSX.Elem
       <div className="page__inner">
         <header className="page-head">
           <div>
-            <h1>Бестиарий</h1>
-            <p className="muted">
-              Бестиарий: характеристики, классы и способности. Все записи можно использовать в игре.
-            </p>
+            <h1>{m.bestiary.page.title}</h1>
+            <p className="muted">{m.bestiary.page.description}</p>
           </div>
           <button className="button button--primary" onClick={() => setEditing('new')}>
             <IconPlus width={16} height={16} />
-            Добавить монстра
+            {m.bestiary.page.add}
           </button>
         </header>
 
         {error ? <p className="notice notice--error">{error}</p> : null}
 
         {monsters === null ? (
-          <p className="muted">Загружаем бестиарий…</p>
+          <p className="muted">{m.bestiary.page.loading}</p>
         ) : monsters.length === 0 ? (
           <div className="empty empty--action">
-            <p>Пока ни одного монстра. Добавьте первого — с характеристиками и способностями.</p>
+            <p>{m.bestiary.page.empty}</p>
             <button className="button" onClick={() => setEditing('new')}>
-              Добавить монстра
+              {m.bestiary.page.add}
             </button>
           </div>
         ) : (
           <>
             <p className="list-caption">
-              {monsters.length} {pluralize(monsters.length, 'монстр', 'монстра', 'монстров')}
+              {plural(monsters.length, m.bestiary.page.monstersCount)}
             </p>
 
             <ul className="monster-list">
@@ -82,7 +81,7 @@ export function MonstersPage({ realms }: { realms: readonly Realm[] }): JSX.Elem
                 <MonsterCard
                   key={monster.id}
                   monster={monster}
-                  realmName={realmNames.get(monster.realmId) ?? 'Без сеттинга'}
+                  realmName={realmNames.get(monster.realmId) ?? m.bestiary.page.noRealm}
                   onEdit={() => setEditing(monster)}
                   onDelete={() => setDeleting(monster)}
                 />
@@ -94,15 +93,15 @@ export function MonstersPage({ realms }: { realms: readonly Realm[] }): JSX.Elem
 
       <MonsterFormModal
         open={editing !== null}
-        title={editing === 'new' ? 'Новый монстр' : 'Редактировать монстра'}
-        description="Характеристики, классы и способности. Способности можно добавлять и удалять."
+        title={editing === 'new' ? m.bestiary.form.createTitle : m.bestiary.form.editTitle}
+        description={m.bestiary.form.description}
         initial={editing === 'new' ? null : editing}
         realms={realms}
         lockRealm={editing !== 'new'}
         onClose={() => setEditing(null)}
         onSubmit={async (input, realmId) => {
           if (editing === 'new') {
-            if (!realmId) throw new Error('Выберите сеттинг монстра')
+            if (!realmId) throw new Error(m.bestiary.page.realmRequired)
             await api.monsters.create(input, realmId)
           } else if (editing) {
             await api.monsters.update({ ...editing, ...input })
@@ -115,10 +114,10 @@ export function MonstersPage({ realms }: { realms: readonly Realm[] }): JSX.Elem
 
       <ConfirmDialog
         open={deleting !== null}
-        title="Удалить монстра?"
+        title={m.bestiary.page.deleteTitle}
         description={
           deleting
-            ? `«${deleting.name}» будет удалён из бестиария вместе со способностями. Это действие нельзя отменить.`
+            ? fill(m.bestiary.page.deleteDescription, { name: deleting.name })
             : undefined
         }
         onCancel={() => setDeleting(null)}

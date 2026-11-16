@@ -3,7 +3,7 @@ import type { FormEvent, JSX } from 'react'
 import type { Player } from '@shared/player'
 import { playerFullName, playerInitials } from '@shared/domain'
 import { api, errorMessage } from '@renderer/lib/api'
-import { formatDate, pluralize } from '@renderer/lib/format'
+import { useI18n, useMessages } from '@renderer/i18n/LocaleProvider'
 import { ConfirmDialog } from './ui/ConfirmDialog'
 import { Modal } from './ui/Modal'
 import { IconPencil, IconPlus, IconTrash } from './ui/icons'
@@ -16,6 +16,7 @@ interface PlayersPageProps {
 
 /** База игроков-людей: не персонажи, а люди, которых можно позвать за стол. */
 export function PlayersPage({ onOpenPlayer }: PlayersPageProps): JSX.Element {
+  const { messages: m, fill, plural, formatDate } = useI18n()
   const [players, setPlayers] = useState<Player[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState<EditingState>(null)
@@ -53,33 +54,29 @@ export function PlayersPage({ onOpenPlayer }: PlayersPageProps): JSX.Element {
       <div className="page__inner">
         <header className="page-head">
           <div>
-            <h1>Игроки</h1>
-            <p className="muted">
-              Люди, которые садятся за стол. Их герои — в разделе «Персонажи».
-            </p>
+            <h1>{m.people.playersPage.title}</h1>
+            <p className="muted">{m.people.playersPage.description}</p>
           </div>
           <button className="button button--primary" onClick={() => setEditing('new')}>
             <IconPlus width={16} height={16} />
-            Добавить игрока
+            {m.people.playersPage.create}
           </button>
         </header>
 
         {error ? <p className="notice notice--error">{error}</p> : null}
 
         {players === null ? (
-          <p className="muted">Загружаем базу игроков…</p>
+          <p className="muted">{m.people.playersPage.loading}</p>
         ) : players.length === 0 ? (
           <div className="empty empty--action">
-            <p>Пока ни одного игрока. Добавьте первого — это база людей, которых можно позвать за стол.</p>
+            <p>{m.people.playersPage.empty}</p>
             <button className="button" onClick={() => setEditing('new')}>
-              Добавить игрока
+              {m.people.playersPage.create}
             </button>
           </div>
         ) : (
           <>
-            <p className="list-caption">
-              {players.length} {pluralize(players.length, 'игрок', 'игрока', 'игроков')}
-            </p>
+            <p className="list-caption">{plural(players.length, m.people.playersCount)}</p>
             <ul className="player-list">
               {players.map((player) => {
                 const fullName = playerFullName(player)
@@ -94,7 +91,7 @@ export function PlayersPage({ onOpenPlayer }: PlayersPageProps): JSX.Element {
                       <button
                         type="button"
                         className="player-card__name-button"
-                        title={`Персонажи игрока ${fullName}`}
+                        title={fill(m.people.playersPage.charactersTitle, { name: fullName })}
                         onClick={() => onOpenPlayer(player.id)}
                       >
                         <span className="player-card__name">
@@ -104,15 +101,17 @@ export function PlayersPage({ onOpenPlayer }: PlayersPageProps): JSX.Element {
                           ) : null}
                         </span>
                       </button>
-                      <span className="player-card__meta">В базе с {formatDate(player.createdAt)}</span>
+                      <span className="player-card__meta">
+                        {fill(m.people.playersPage.since, { date: formatDate(player.createdAt) })}
+                      </span>
                     </div>
 
                     <div className="player-card__actions">
                       <button
                         type="button"
                         className="icon-button"
-                        title="Редактировать"
-                        aria-label={`Редактировать игрока ${fullName}`}
+                        title={m.people.playersPage.edit}
+                        aria-label={fill(m.people.playersPage.editAria, { name: fullName })}
                         onClick={() => setEditing(player)}
                       >
                         <IconPencil />
@@ -120,8 +119,8 @@ export function PlayersPage({ onOpenPlayer }: PlayersPageProps): JSX.Element {
                       <button
                         type="button"
                         className="icon-button icon-button--danger"
-                        title="Удалить"
-                        aria-label={`Удалить игрока ${fullName}`}
+                        title={m.people.playersPage.delete}
+                        aria-label={fill(m.people.playersPage.deleteAria, { name: fullName })}
                         onClick={() => {
                           setDeleteError(null)
                           setDeleting(player)
@@ -150,14 +149,16 @@ export function PlayersPage({ onOpenPlayer }: PlayersPageProps): JSX.Element {
 
       <ConfirmDialog
         open={deleting !== null}
-        title="Удалить игрока?"
+        title={m.people.playersPage.deleteTitle}
         description={
           deleteError ??
           (deleting
-            ? `Игрок «${playerFullName(deleting)}» будет удалён из базы. Персонажи останутся, но потеряют привязку к игроку.`
+            ? fill(m.people.playersPage.deleteDescription, {
+                name: playerFullName(deleting)
+              })
             : undefined)
         }
-        confirmLabel="Удалить"
+        confirmLabel={m.people.playersPage.deleteConfirm}
         onCancel={() => {
           setDeleting(null)
           setDeleteError(null)
@@ -176,6 +177,7 @@ interface PlayerFormModalProps {
 }
 
 function PlayerFormModal({ open, player, onClose, onSaved }: PlayerFormModalProps): JSX.Element {
+  const m = useMessages()
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -201,7 +203,7 @@ function PlayerFormModal({ open, player, onClose, onSaved }: PlayerFormModalProp
     const trimmedLastName = lastName.trim()
 
     if (!trimmedFirstName) {
-      setError('Укажите имя игрока')
+      setError(m.people.playerForm.nameRequired)
       firstFieldRef.current?.focus()
       return
     }
@@ -229,14 +231,14 @@ function PlayerFormModal({ open, player, onClose, onSaved }: PlayerFormModalProp
   return (
     <Modal
       open={open}
-      title={player ? 'Редактировать игрока' : 'Новый игрок'}
-      description={player ? undefined : 'Игрок — это человек, который садится за стол.'}
+      title={player ? m.people.playerForm.editTitle : m.people.playerForm.createTitle}
+      description={player ? undefined : m.people.playerForm.createDescription}
       onClose={onClose}
       initialFocusRef={firstFieldRef}
       footer={
         <>
           <button type="button" className="button" onClick={onClose} disabled={saving}>
-            Отмена
+            {m.people.playerForm.cancel}
           </button>
           <button
             type="submit"
@@ -244,32 +246,32 @@ function PlayerFormModal({ open, player, onClose, onSaved }: PlayerFormModalProp
             className="button button--primary"
             disabled={saving || !firstName.trim()}
           >
-            {saving ? 'Сохраняем…' : 'Сохранить'}
+            {saving ? m.people.playerForm.saving : m.people.playerForm.save}
           </button>
         </>
       }
     >
       <form id={formId} className="form-grid form-grid--two" onSubmit={(event) => void submit(event)}>
         <label className="field">
-          <span className="field__label">Имя</span>
+          <span className="field__label">{m.people.playerForm.firstNameLabel}</span>
           <input
             ref={firstFieldRef}
             className="input"
             value={firstName}
             maxLength={100}
-            placeholder="Анна"
+            placeholder={m.people.playerForm.firstNamePlaceholder}
             autoComplete="off"
             onChange={(event) => setFirstName(event.target.value)}
           />
         </label>
 
         <label className="field">
-          <span className="field__label">Фамилия</span>
+          <span className="field__label">{m.people.playerForm.lastNameLabel}</span>
           <input
             className="input"
             value={lastName}
             maxLength={100}
-            placeholder="Смирнова"
+            placeholder={m.people.playerForm.lastNamePlaceholder}
             autoComplete="off"
             onChange={(event) => setLastName(event.target.value)}
           />

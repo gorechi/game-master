@@ -9,6 +9,7 @@ import type { GameMap } from '@shared/map'
 import type { Realm } from '@shared/realm'
 import { createGameMonster, formatChallengeRating, gameMonsterFromEntry, playerFullName } from '@shared/domain'
 import { api, errorMessage } from '@renderer/lib/api'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 import { Modal } from '../ui/Modal'
 import { Select } from '../ui/Select'
 import { IconMapPin, IconPencil, IconTrash } from '../ui/icons'
@@ -119,6 +120,7 @@ export function GameFormModal({
   onClose,
   onSaved
 }: GameFormModalProps): JSX.Element {
+  const { messages: m, fill } = useI18n()
   const isEdit = game !== null
 
   const [name, setName] = useState('')
@@ -223,7 +225,7 @@ export function GameFormModal({
 
   function playerName(playerId: string | null): string {
     const player = playerId ? players.find((item) => item.id === playerId) : undefined
-    return player ? playerFullName(player) : 'без игрока'
+    return player ? playerFullName(player) : m.games.form.noPlayer
   }
 
   function toggleCharacter(characterId: string): void {
@@ -335,7 +337,7 @@ export function GameFormModal({
       ? realmCharacters
       : realmCharacters.filter((character) => character.playerId === playerFilter)
   const playerFilterOptions = [
-    { value: 'all', label: 'Все' },
+    { value: 'all', label: m.games.form.allPlayers },
     ...players.map((player) => ({ value: player.id, label: playerFullName(player) }))
   ]
 
@@ -364,8 +366,11 @@ export function GameFormModal({
     const placed = Boolean(placedMap && placedPlace)
     const placementTitle =
       placedMap && placedPlace
-        ? `Изменить место: ${placedMap.name} · ${placedPlace.name}`
-        : 'Разместить на карте'
+        ? fill(m.games.form.placementEdit, {
+            map: placedMap.name,
+            place: placedPlace.name
+          })
+        : m.games.form.placementAdd
 
     return (
       <li className="game-monster-row" key={monster.id}>
@@ -373,8 +378,11 @@ export function GameFormModal({
           <span className="game-monster-row__name">{monster.name}</span>
         </span>
         <span className="game-monster-row__meta">
-          КО {formatChallengeRating(monster.challengeRating)} · КЗ {monster.armorClass} · ХП{' '}
-          {monster.hitPoints}
+          {fill(m.games.monsterStats, {
+            cr: formatChallengeRating(monster.challengeRating),
+            ac: monster.armorClass,
+            hp: monster.hitPoints
+          })}
         </span>
 
         {!readOnly ? (
@@ -396,8 +404,8 @@ export function GameFormModal({
               <button
                 type="button"
                 className="icon-button"
-                title="Редактировать экземпляр"
-                aria-label={`Редактировать ${monster.name}`}
+                title={m.games.form.editInstance}
+                aria-label={fill(m.games.form.editInstanceAria, { name: monster.name })}
                 onClick={() => setEditingMonsterId(monster.id)}
               >
                 <IconPencil />
@@ -405,8 +413,8 @@ export function GameFormModal({
               <button
                 type="button"
                 className="icon-button icon-button--danger"
-                title="Убрать из игры"
-                aria-label={`Убрать ${monster.name} из игры`}
+                title={m.games.form.removeFromGame}
+                aria-label={fill(m.games.form.removeFromGameAria, { name: monster.name })}
                 onClick={() => removeInstance(monster.id)}
               >
                 <IconTrash />
@@ -423,11 +431,14 @@ export function GameFormModal({
       <li className="game-monster-row" key={monster.id}>
         <span className="game-monster-row__title">
           <span className="game-monster-row__name">{monster.name}</span>
-          <span className="game-monster-row__badge">Уникальный</span>
+          <span className="game-monster-row__badge">{m.games.form.uniqueBadge}</span>
         </span>
         <span className="game-monster-row__meta">
-          КО {formatChallengeRating(monster.challengeRating)} · КЗ {monster.armorClass} · ХП{' '}
-          {monster.hitPoints}
+          {fill(m.games.monsterStats, {
+            cr: formatChallengeRating(monster.challengeRating),
+            ac: monster.armorClass,
+            hp: monster.hitPoints
+          })}
         </span>
 
         <div className="game-monster-row__side">
@@ -435,8 +446,8 @@ export function GameFormModal({
             <button
               type="button"
               className="icon-button icon-button--danger"
-              title="Убрать из игры"
-              aria-label={`Убрать ${monster.name} из игры`}
+              title={m.games.form.removeFromGame}
+              aria-label={fill(m.games.form.removeFromGameAria, { name: monster.name })}
               onClick={() => removeSavedMonster(monster.id)}
             >
               <IconTrash />
@@ -454,8 +465,11 @@ export function GameFormModal({
           <span className="game-monster-row__name">{selection.name}</span>
         </span>
         <span className="game-monster-row__meta">
-          КО {formatChallengeRating(selection.challengeRating)} · КЗ {selection.armorClass} · ХП{' '}
-          {selection.hitPoints}
+          {fill(m.games.monsterStats, {
+            cr: formatChallengeRating(selection.challengeRating),
+            ac: selection.armorClass,
+            hp: selection.hitPoints
+          })}
         </span>
 
         <div className="game-monster-row__side">
@@ -463,7 +477,7 @@ export function GameFormModal({
             <button
               type="button"
               className="count-button"
-              aria-label={`Уменьшить количество: ${selection.name}`}
+              aria-label={fill(m.games.form.decreaseCountAria, { name: selection.name })}
               disabled={selection.count <= 1}
               onClick={() => setCount(selection.sourceId, selection.count - 1)}
             >
@@ -477,7 +491,7 @@ export function GameFormModal({
               min={1}
               max={99}
               value={selection.count}
-              aria-label={`Количество: ${selection.name}`}
+              aria-label={fill(m.games.form.countAria, { name: selection.name })}
               onChange={(event) =>
                 setCount(selection.sourceId, Number.parseInt(event.target.value, 10))
               }
@@ -486,7 +500,7 @@ export function GameFormModal({
             <button
               type="button"
               className="count-button"
-              aria-label={`Увеличить количество: ${selection.name}`}
+              aria-label={fill(m.games.form.increaseCountAria, { name: selection.name })}
               onClick={() => setCount(selection.sourceId, selection.count + 1)}
             >
               +
@@ -496,8 +510,8 @@ export function GameFormModal({
           <button
             type="button"
             className="icon-button icon-button--danger"
-            title="Убрать из игры"
-            aria-label={`Убрать ${selection.name} из игры`}
+            title={m.games.form.removeFromGame}
+            aria-label={fill(m.games.form.removeFromGameAria, { name: selection.name })}
             onClick={() => removeSelection(selection.sourceId)}
           >
             <IconTrash />
@@ -513,13 +527,13 @@ export function GameFormModal({
 
     const trimmedName = name.trim()
     if (!trimmedName) {
-      setError('Укажите название игры')
+      setError(m.games.form.nameRequired)
       nameRef.current?.focus()
       return
     }
 
     if (!realmId) {
-      setError('Выберите сеттинг игры')
+      setError(m.games.form.realmRequired)
       return
     }
 
@@ -528,7 +542,7 @@ export function GameFormModal({
     )
 
     if (validCharacterIds.length === 0) {
-      setError('Выберите хотя бы одного участника')
+      setError(m.games.form.participantRequired)
       setActiveTab('participants')
       return
     }
@@ -600,13 +614,19 @@ export function GameFormModal({
   return (
     <Modal
       open={open}
-      title={readOnly ? 'Просмотр игры' : isEdit ? 'Редактировать игру' : 'Новая игра'}
+      title={
+        readOnly
+          ? m.games.form.viewTitle
+          : isEdit
+            ? m.games.form.editTitle
+            : m.games.form.createTitle
+      }
       description={
         readOnly
-          ? 'Завершённая игра — только просмотр. Изменения недоступны.'
+          ? m.games.form.viewDescription
           : isEdit
-            ? 'Участники и уже созданные монстры. Экземпляры можно открывать и редактировать — бестиарий не меняется.'
-            : 'Название, участники и монстры. Копии монстров создаются при сохранении игры.'
+            ? m.games.form.editDescription
+            : m.games.form.createDescription
       }
       size="lg"
       panelClassName="modal--game"
@@ -615,12 +635,12 @@ export function GameFormModal({
       footer={
         readOnly ? (
           <button type="button" className="button" onClick={onClose}>
-            Закрыть
+            {m.games.form.close}
           </button>
         ) : (
           <>
             <button type="button" className="button" onClick={onClose} disabled={saving}>
-              Отмена
+              {m.games.form.cancel}
             </button>
             <button
               type="submit"
@@ -628,7 +648,7 @@ export function GameFormModal({
               className="button button--primary"
               disabled={saving || loadingData || Boolean(dataError) || !realmId}
             >
-              {saving ? 'Сохраняем…' : 'Сохранить'}
+              {saving ? m.games.form.saving : m.games.form.save}
             </button>
           </>
         )
@@ -637,13 +657,13 @@ export function GameFormModal({
       <form id={formId} className="game-editor" noValidate onSubmit={(event) => void submit(event)}>
         <div className="game-editor__top">
           <label className="field">
-            <span className="field__label">Название игры</span>
+            <span className="field__label">{m.games.form.nameLabel}</span>
             <input
               ref={nameRef}
               className={`input${readOnly ? ' input--readonly' : ''}`}
               value={name}
               maxLength={120}
-              placeholder="Проклятие Страда"
+              placeholder={m.games.form.namePlaceholder}
               autoComplete="off"
               readOnly={readOnly}
               onChange={(event) => setName(event.target.value)}
@@ -651,31 +671,29 @@ export function GameFormModal({
           </label>
 
           <div className="field">
-            <span className="field__label">Сеттинг *</span>
+            <span className="field__label">{m.games.form.realmLabel}</span>
             <Select
-              ariaLabel="Сеттинг игры"
+              ariaLabel={m.games.form.realmAria}
               value={realmId}
-              placeholder="Выберите сеттинг"
+              placeholder={m.games.form.realmPlaceholder}
               disabled={isEdit || readOnly || realms.length === 0}
               options={realms.map((realm) => ({ value: realm.id, label: realm.name }))}
               onChange={changeRealm}
             />
             <span className="game-editor__hint">
-              {isEdit
-                ? 'Сеттинг задаётся при создании игры и не меняется.'
-                : 'Участники, карта и монстры будут выбраны из этого сеттинга.'}
+              {isEdit ? m.games.form.realmHintEdit : m.games.form.realmHintCreate}
             </span>
           </div>
 
           <div className="field">
-            <span className="field__label">Карта</span>
+            <span className="field__label">{m.games.form.mapLabel}</span>
             <Select
-              ariaLabel="Карта игры"
+              ariaLabel={m.games.form.mapAria}
               value={mapId}
-              placeholder="Без карты"
+              placeholder={m.games.form.mapNone}
               disabled={readOnly || !realmId}
               options={[
-                { value: '', label: 'Без карты' },
+                { value: '', label: m.games.form.mapNone },
                 ...realmMaps.map((map) => ({ value: map.id, label: map.name }))
               ]}
               onChange={changeMap}
@@ -683,19 +701,15 @@ export function GameFormModal({
           </div>
         </div>
 
-        {!realmId ? (
-          <p className="notice">
-            Сначала выберите сеттинг игры — персонажи, карты и монстры берутся только из него.
-          </p>
-        ) : null}
+        {!realmId ? <p className="notice">{m.games.form.realmNotice}</p> : null}
 
         {dataError ? <p className="notice notice--error">{dataError}</p> : null}
 
         {loadingData ? (
-          <p className="muted">Загружаем персонажей, карты и бестиарий…</p>
+          <p className="muted">{m.games.form.loadingData}</p>
         ) : (
           <>
-            <div className="form-tabs" role="tablist" aria-label="Разделы формы игры">
+            <div className="form-tabs" role="tablist" aria-label={m.games.form.tabsAria}>
               <button
                 id={participantsTabId}
                 type="button"
@@ -707,7 +721,7 @@ export function GameFormModal({
                 onClick={() => setActiveTab('participants')}
                 onKeyDown={onTabKeyDown}
               >
-                Участники
+                {m.games.form.participantsTab}
                 <span className="form-tab__count">{characterIds.length}</span>
               </button>
 
@@ -722,7 +736,7 @@ export function GameFormModal({
                 onClick={() => setActiveTab('monsters')}
                 onKeyDown={onTabKeyDown}
               >
-                Монстры
+                {m.games.form.monstersTab}
                 <span className="form-tab__count">{totalMonsters}</span>
               </button>
             </div>
@@ -735,13 +749,15 @@ export function GameFormModal({
                 aria-labelledby={participantsTabId}
               >
                 <div className="editor-section__toolbar">
-                  <span className="editor-section__count">выбрано {characterIds.length}</span>
+                  <span className="editor-section__count">
+                    {fill(m.games.form.selectedCount, { count: characterIds.length })}
+                  </span>
                   <div className="participant-filter__select">
                     <Select
-                      ariaLabel="Фильтр участников по игроку"
+                      ariaLabel={m.games.form.playerFilterAria}
                       value={playerFilter}
                       options={playerFilterOptions}
-                      placeholder="Все"
+                      placeholder={m.games.form.allPlayers}
                       onChange={(value) => setPlayerFilter(value)}
                     />
                   </div>
@@ -749,13 +765,11 @@ export function GameFormModal({
 
                 {realmCharacters.length === 0 ? (
                   <div className="participant-list participant-list--empty">
-                    <p className="notice">
-                      В базе нет персонажей — сначала добавьте их в разделе «Персонажи».
-                    </p>
+                    <p className="notice">{m.games.form.noCharacters}</p>
                   </div>
                 ) : filteredCharacters.length === 0 ? (
                   <div className="participant-list participant-list--empty">
-                    <p className="notice">У этого игрока пока нет персонажей.</p>
+                    <p className="notice">{m.games.form.noPlayerCharacters}</p>
                   </div>
                 ) : (
                   <div className="participant-list">
@@ -789,8 +803,8 @@ export function GameFormModal({
                             <span className="participant-row__name">{character.name}</span>
                             <span className="participant-row__meta">
                               {[
-                                character.className || 'без класса',
-                                `ур. ${character.level}`,
+                                character.className || m.games.form.noClass,
+                                fill(m.games.form.level, { level: character.level }),
                                 playerName(character.playerId)
                               ].join(' · ')}
                             </span>
@@ -811,28 +825,31 @@ export function GameFormModal({
                 {!readOnly ? (
                   <div className={`monster-pickers${isEdit ? ' monster-pickers--single' : ''}`}>
                     <div className="field">
-                      <span className="field__label">Из бестиария</span>
+                      <span className="field__label">{m.games.form.bestiaryLabel}</span>
                       {realmBestiary.length === 0 ? (
-                        <p className="abilities-editor__empty">В бестиарии пока нет монстров.</p>
+                        <p className="abilities-editor__empty">
+                          {m.games.form.bestiaryEmpty}
+                        </p>
                       ) : !isEdit && availableBestiary.length === 0 ? (
                         <p className="abilities-editor__empty">
-                          Все монстры из бестиария уже добавлены.
+                          {m.games.form.bestiaryAllAdded}
                         </p>
                       ) : (
                         <Select
                           ariaLabel={
                             isEdit
-                              ? 'Добавить монстра из бестиария'
-                              : 'Выбрать монстра из бестиария'
+                              ? m.games.form.bestiaryAriaEdit
+                              : m.games.form.bestiaryAriaCreate
                           }
                           value=""
                           searchable
-                          placeholder="Найти монстра…"
+                          placeholder={m.games.form.searchMonster}
                           options={(isEdit ? realmBestiary : availableBestiary).map((monster) => ({
                             value: monster.id,
-                            label: `${monster.name} · КО ${formatChallengeRating(
-                              monster.challengeRating
-                            )}`
+                            label: fill(m.games.form.monsterOption, {
+                              name: monster.name,
+                              cr: formatChallengeRating(monster.challengeRating)
+                            })
                           }))}
                           onChange={addMonster}
                         />
@@ -841,26 +858,27 @@ export function GameFormModal({
 
                     {!isEdit ? (
                       <div className="field">
-                        <span className="field__label">Уникальные существа</span>
+                        <span className="field__label">{m.games.form.savedLabel}</span>
                         {realmSavedMonsters.length === 0 ? (
                           <p className="abilities-editor__empty">
-                            Появляются после завершения игры с сохранением монстров.
+                            {m.games.form.savedEmpty}
                           </p>
                         ) : availableSaved.length === 0 ? (
                           <p className="abilities-editor__empty">
-                            Все сохранённые монстры уже добавлены.
+                            {m.games.form.savedAllAdded}
                           </p>
                         ) : (
                           <Select
-                            ariaLabel="Добавить сохранённого монстра"
+                            ariaLabel={m.games.form.savedAria}
                             value=""
                             searchable
-                            placeholder="Найти сохранённого монстра…"
+                            placeholder={m.games.form.searchSaved}
                             options={availableSaved.map((monster) => ({
                               value: monster.id,
-                              label: `${monster.name} · КО ${formatChallengeRating(
-                                monster.challengeRating
-                              )}`
+                              label: fill(m.games.form.monsterOption, {
+                                name: monster.name,
+                                cr: formatChallengeRating(monster.challengeRating)
+                              })
                             }))}
                             onChange={addSavedMonster}
                           />
@@ -872,19 +890,19 @@ export function GameFormModal({
 
                 <ul
                   className="game-monster-list game-monster-list--scroll"
-                  aria-label="Монстры в игре"
+                  aria-label={m.games.form.monstersListAria}
                 >
                   {isEdit ? (
                     instances.length === 0 ? (
                       <li className="game-monster-list__empty">
-                        Пока ни одного монстра в игре.
+                        {m.games.form.monstersEmpty}
                       </li>
                     ) : (
                       instances.map(renderInstanceRow)
                     )
                   ) : readyMonsters.length === 0 && selections.length === 0 ? (
                     <li className="game-monster-list__empty">
-                      Добавьте монстров из списков выше.
+                      {m.games.form.addMonsters}
                     </li>
                   ) : (
                     <>
@@ -896,10 +914,10 @@ export function GameFormModal({
 
                 <p className="game-editor__hint">
                   {readOnly
-                    ? 'Только просмотр: завершённую игру нельзя редактировать.'
+                    ? m.games.form.hintReadOnly
                     : isEdit
-                      ? 'Экземпляры созданы вместе с игрой: бестиарий остаётся нетронутым.'
-                      : 'Копии из бестиария создаются при сохранении; уникальные добавляются как есть.'}
+                      ? m.games.form.hintEdit
+                      : m.games.form.hintCreate}
                 </p>
               </section>
             )}
@@ -911,8 +929,8 @@ export function GameFormModal({
 
       <MonsterFormModal
         open={editingMonster !== null}
-        title="Монстр в игре"
-        description="Экземпляр этой игры. Изменения не затрагивают запись в бестиарии."
+        title={m.games.form.monsterModalTitle}
+        description={m.games.form.monsterModalDescription}
         initial={editingMonster}
         allowZeroHitPoints
         showStatuses

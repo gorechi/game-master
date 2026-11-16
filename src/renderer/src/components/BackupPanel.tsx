@@ -4,15 +4,17 @@ import {
   AUTO_BACKUP_KEEP_COUNT,
   BACKUP_EXTENSION,
   BACKUP_FREQUENCIES,
-  BACKUP_FREQUENCY_LABELS,
   backupFileSchema,
   countBackup,
+  getBackupFrequencyLabels,
   type BackupFileSelection,
   type BackupFrequency,
   type BackupRestoreResult,
   type BackupSettings
 } from '@shared/backup'
+import { type Messages, type PluralForms, type LocaleCode } from '@shared/i18n'
 import { api, errorMessage, isWebPreview } from '@renderer/lib/api'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 import { ConfirmDialog } from './ui/ConfirmDialog'
 import { Select } from './ui/Select'
 
@@ -20,48 +22,46 @@ interface BackupPanelProps {
   onRestored: () => Promise<void> | void
 }
 
-function plural(count: number, one: string, few: string, many: string): string {
-  const mod10 = count % 10
-  const mod100 = count % 100
-  if (mod10 === 1 && mod100 !== 11) return `${count} ${one}`
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
-    return `${count} ${few}`
-  }
-  return `${count} ${many}`
-}
-
-function describeBackupCounts(counts: BackupFileSelection['counts']): string {
+function describeBackupCounts(
+  counts: BackupFileSelection['counts'],
+  messages: Messages['backup'],
+  pluralize: (count: number, forms: PluralForms) => string
+): string {
   const parts: string[] = []
 
-  if (counts.games > 0) parts.push(plural(counts.games, 'игра', 'игры', 'игр'))
-  if (counts.maps > 0) parts.push(plural(counts.maps, 'карта', 'карты', 'карт'))
-  if (counts.monsters > 0) parts.push(plural(counts.monsters, 'монстр', 'монстра', 'монстров'))
+  if (counts.games > 0) parts.push(pluralize(counts.games, messages.panel.plural.games))
+  if (counts.maps > 0) parts.push(pluralize(counts.maps, messages.panel.plural.maps))
+  if (counts.monsters > 0) {
+    parts.push(pluralize(counts.monsters, messages.panel.plural.monsters))
+  }
   if (counts.gameMonsters > 0) {
-    parts.push(plural(counts.gameMonsters, 'существо', 'существа', 'существ'))
+    parts.push(pluralize(counts.gameMonsters, messages.panel.plural.uniqueMonsters))
   }
   if (counts.characters > 0) {
-    parts.push(plural(counts.characters, 'персонаж', 'персонажа', 'персонажей'))
+    parts.push(pluralize(counts.characters, messages.panel.plural.characters))
   }
-  if (counts.players > 0) parts.push(plural(counts.players, 'игрок', 'игрока', 'игроков'))
-  if (counts.realms > 0) parts.push(plural(counts.realms, 'сеттинг', 'сеттинга', 'сеттингов'))
+  if (counts.players > 0) {
+    parts.push(pluralize(counts.players, messages.panel.plural.players))
+  }
+  if (counts.realms > 0) parts.push(pluralize(counts.realms, messages.panel.plural.realms))
   if (counts.placeTypes > 0) {
-    parts.push(plural(counts.placeTypes, 'иконка', 'иконки', 'иконок'))
+    parts.push(pluralize(counts.placeTypes, messages.panel.plural.placeTypes))
   }
 
-  return parts.length > 0 ? parts.join(' · ') : 'Нет пользовательских данных'
+  return parts.length > 0 ? parts.join(' · ') : messages.panel.noUserData
 }
 
-function formatDateTime(value: string | null): string {
-  if (!value) return 'Ещё не выполнялся'
+function formatDateTime(value: string, locale: LocaleCode): string {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
-  return new Intl.DateTimeFormat('ru-RU', {
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: 'short',
     timeStyle: 'short'
   }).format(date)
 }
 
 export function BackupPanel({ onRestored }: BackupPanelProps): JSX.Element {
+  const { messages: m, fill, plural, locale } = useI18n()
   const [settings, setSettings] = useState<BackupSettings | null>(null)
   const [settingsError, setSettingsError] = useState<string | null>(null)
   const [savingSettings, setSavingSettings] = useState(false)
@@ -101,9 +101,10 @@ export function BackupPanel({ onRestored }: BackupPanelProps): JSX.Element {
       const result = await api.backup.saveManual()
       if (result) {
         setManualNotice(
-          `Файл сохранён: ${result.fileName}. В бэкапе: ${describeBackupCounts(
-            result.counts
-          )}.`
+          fill(m.backup.panel.savedNotice, {
+            fileName: result.fileName,
+            counts: describeBackupCounts(result.counts, m.backup, plural)
+          })
         )
       }
     } catch (error) {
@@ -133,7 +134,7 @@ export function BackupPanel({ onRestored }: BackupPanelProps): JSX.Element {
 
   async function readDroppedFile(file: File): Promise<void> {
     if (file.size > 512 * 1024 * 1024) {
-      throw new Error('Файл бэкапа слишком большой')
+      throw new Error(m.backup.panel.errors.tooLarge)
     }
 
     const text = await file.text()
@@ -142,7 +143,7 @@ export function BackupPanel({ onRestored }: BackupPanelProps): JSX.Element {
     try {
       json = JSON.parse(text) as unknown
     } catch {
-      throw new Error('Файл повреждён: внутри не JSON')
+      throw new Error(m.backup.panel.errors.notJson)
     }
 
     const parsed = backupFileSchema.safeParse(json)
@@ -150,9 +151,10 @@ export function BackupPanel({ onRestored }: BackupPanelProps): JSX.Element {
       const first = parsed.error.issues[0]
       const where = first?.path.length ? ` (${first.path.join('.')})` : ''
       throw new Error(
-        `Файл не является корректным бэкапом Game Master${where}: ${
-          first?.message ?? 'неизвестная ошибка'
-        }`
+        fill(m.backup.panel.errors.invalidBackup, {
+          where,
+          reason: first?.message ?? m.backup.panel.errors.unknown
+        })
       )
     }
 
@@ -199,7 +201,7 @@ export function BackupPanel({ onRestored }: BackupPanelProps): JSX.Element {
         await onRestored()
       } catch (error) {
         setImportError(
-          `Данные восстановлены, но не удалось обновить интерфейс: ${errorMessage(error)}`
+          fill(m.backup.panel.refreshFailed, { error: errorMessage(error) })
         )
       }
     } catch (error) {
@@ -242,7 +244,7 @@ export function BackupPanel({ onRestored }: BackupPanelProps): JSX.Element {
 
   const frequencyOptions = BACKUP_FREQUENCIES.map((value) => ({
     value,
-    label: BACKUP_FREQUENCY_LABELS[value]
+    label: getBackupFrequencyLabels()[value]
   }))
 
   return (
@@ -251,11 +253,8 @@ export function BackupPanel({ onRestored }: BackupPanelProps): JSX.Element {
         <section className="data-panel" aria-labelledby="backup-manual-title">
           <div className="data-panel__head">
             <div>
-              <h2 id="backup-manual-title">Ручной бэкап</h2>
-              <p className="muted">
-                Полная копия пользовательских данных: игры, игроки, персонажи,
-                монстры, карты, сеттинги, иконки и тема.
-              </p>
+              <h2 id="backup-manual-title">{m.backup.panel.manualTitle}</h2>
+              <p className="muted">{m.backup.panel.manualDescription}</p>
             </div>
           </div>
 
@@ -266,7 +265,7 @@ export function BackupPanel({ onRestored }: BackupPanelProps): JSX.Element {
               onClick={() => void saveManual()}
               disabled={savingManual}
             >
-              {savingManual ? 'Создание бэкапа…' : 'Создать и скачать бэкап'}
+              {savingManual ? m.backup.panel.creating : m.backup.panel.create}
             </button>
           </div>
 
@@ -276,18 +275,17 @@ export function BackupPanel({ onRestored }: BackupPanelProps): JSX.Element {
 
           <div className="data-panel__head">
             <div>
-              <h3 className="data-panel__subtitle">Загрузить бэкап</h3>
-              <p className="muted">
-                Перед заменой текущие данные будут сохранены отдельным файлом.
-              </p>
+              <h3 className="data-panel__subtitle">{m.backup.panel.restoreTitle}</h3>
+              <p className="muted">{m.backup.panel.restoreDescription}</p>
             </div>
           </div>
 
           {importError ? <p className="notice notice--error">{importError}</p> : null}
           {restoreResult ? (
             <p className="notice notice--success">
-              Данные восстановлены. Резервная копия текущего состояния:{' '}
-              {restoreResult.safetyBackupFileName}
+              {fill(m.backup.panel.restoredNotice, {
+                fileName: restoreResult.safetyBackupFileName
+              })}
             </p>
           ) : null}
 
@@ -303,8 +301,10 @@ export function BackupPanel({ onRestored }: BackupPanelProps): JSX.Element {
               onDragLeave={() => setDragging(false)}
               onDrop={(event) => void handleDrop(event)}
             >
-              <strong className="data-drop__title">Выберите файл .{BACKUP_EXTENSION}</strong>
-              <span className="data-drop__hint">или перетащите его сюда</span>
+              <strong className="data-drop__title">
+                {fill(m.backup.panel.dropTitle, { extension: BACKUP_EXTENSION })}
+              </strong>
+              <span className="data-drop__hint">{m.backup.panel.dropHint}</span>
             </button>
           ) : (
             <div className="data-import">
@@ -312,10 +312,18 @@ export function BackupPanel({ onRestored }: BackupPanelProps): JSX.Element {
                 <div>
                   <strong>{backupDraft.fileName}</strong>
                   <p className="muted">
-                    Бэкап от {formatDateTime(backupDraft.createdAt)}
-                    {backupDraft.appVersion ? ` · версия ${backupDraft.appVersion}` : ''}
+                    {backupDraft.appVersion
+                      ? fill(m.backup.panel.backupFromWithVersion, {
+                          date: formatDateTime(backupDraft.createdAt, locale),
+                          version: backupDraft.appVersion
+                        })
+                      : fill(m.backup.panel.backupFrom, {
+                          date: formatDateTime(backupDraft.createdAt, locale)
+                        })}
                   </p>
-                  <p className="muted">{describeBackupCounts(backupDraft.counts)}</p>
+                  <p className="muted">
+                    {describeBackupCounts(backupDraft.counts, m.backup, plural)}
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -326,7 +334,7 @@ export function BackupPanel({ onRestored }: BackupPanelProps): JSX.Element {
                   }}
                   disabled={restoring}
                 >
-                  Убрать
+                  {m.backup.panel.remove}
                 </button>
               </div>
 
@@ -337,7 +345,7 @@ export function BackupPanel({ onRestored }: BackupPanelProps): JSX.Element {
                   onClick={() => setConfirmOpen(true)}
                   disabled={restoring}
                 >
-                  {restoring ? 'Восстановление…' : 'Восстановить бэкап'}
+                  {restoring ? m.backup.panel.restoring : m.backup.panel.restore}
                 </button>
               </div>
             </div>
@@ -347,10 +355,9 @@ export function BackupPanel({ onRestored }: BackupPanelProps): JSX.Element {
         <section className="data-panel" aria-labelledby="backup-auto-title">
           <div className="data-panel__head">
             <div>
-              <h2 id="backup-auto-title">Автоматический бэкап</h2>
+              <h2 id="backup-auto-title">{m.backup.panel.autoTitle}</h2>
               <p className="muted">
-                Приложение сохраняет копии в выбранную папку и хранит последние{' '}
-                {AUTO_BACKUP_KEEP_COUNT} автоматических бэкапов.
+                {fill(m.backup.panel.autoDescription, { count: AUTO_BACKUP_KEEP_COUNT })}
               </p>
             </div>
           </div>
@@ -358,7 +365,7 @@ export function BackupPanel({ onRestored }: BackupPanelProps): JSX.Element {
           {settingsError ? <p className="notice notice--error">{settingsError}</p> : null}
 
           <label className="field">
-            <span className="field__label">Папка для бэкапов</span>
+            <span className="field__label">{m.backup.panel.folderLabel}</span>
             <div className="data-folder">
               <input
                 className="input input--readonly"
@@ -371,36 +378,38 @@ export function BackupPanel({ onRestored }: BackupPanelProps): JSX.Element {
                 onClick={() => void chooseFolder()}
                 disabled={savingSettings || isWebPreview}
               >
-                Выбрать папку
+                {m.backup.panel.chooseFolder}
               </button>
             </div>
           </label>
 
           <label className="field">
-            <span className="field__label">Когда делать бэкап</span>
+            <span className="field__label">{m.backup.panel.frequencyLabel}</span>
             <Select<BackupFrequency>
               value={settings?.frequency ?? 'off'}
               options={frequencyOptions}
               onChange={(value) => void changeFrequency(value)}
-              ariaLabel="Частота автоматического бэкапа"
+              ariaLabel={m.backup.panel.frequencyAriaLabel}
               disabled={savingSettings || isWebPreview}
             />
           </label>
 
           {isWebPreview ? (
-            <p className="muted">
-              В веб-предпросмотре автоматический бэкап не записывает файлы на диск.
-            </p>
+            <p className="muted">{m.backup.panel.webPreviewNote}</p>
           ) : null}
 
           <dl className="backup-status">
             <div>
-              <dt>Последний автоматический бэкап</dt>
-              <dd>{formatDateTime(settings?.lastBackupAt ?? null)}</dd>
+              <dt>{m.backup.panel.lastBackupLabel}</dt>
+              <dd>
+                {settings?.lastBackupAt
+                  ? formatDateTime(settings.lastBackupAt, locale)
+                  : m.backup.panel.neverRun}
+              </dd>
             </div>
             {settings?.lastError ? (
               <div>
-                <dt>Ошибка</dt>
+                <dt>{m.backup.panel.errorLabel}</dt>
                 <dd className="backup-status__error">{settings.lastError}</dd>
               </div>
             ) : null}
@@ -410,10 +419,10 @@ export function BackupPanel({ onRestored }: BackupPanelProps): JSX.Element {
 
       <ConfirmDialog
         open={confirmOpen}
-        title="Заменить все данные?"
-        description="Текущие игры, игроков, персонажей, монстров, карты, сеттинги, иконки и тему заменят содержимым бэкапа. Перед заменой приложение сохранит текущее состояние отдельным файлом."
-        confirmLabel="Восстановить"
-        cancelLabel="Отмена"
+        title={m.backup.panel.confirmTitle}
+        description={m.backup.panel.confirmDescription}
+        confirmLabel={m.backup.panel.confirmRestore}
+        cancelLabel={m.backup.panel.confirmCancel}
         onConfirm={() => {
           setConfirmOpen(false)
           void restoreBackup()

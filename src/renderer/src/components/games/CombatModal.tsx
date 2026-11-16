@@ -5,6 +5,7 @@ import type { CharacterProfile } from '@shared/characterProfile'
 import type { Player } from '@shared/player'
 import { playerFullName } from '@shared/domain'
 import { api, errorMessage } from '@renderer/lib/api'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 import { Modal } from '../ui/Modal'
 import { Select } from '../ui/Select'
 import { IconTrash } from '../ui/icons'
@@ -78,6 +79,7 @@ export function CombatModal({
   onClose,
   onStart
 }: CombatModalProps): JSX.Element {
+  const { messages: m, fill } = useI18n()
   const [characters, setCharacters] = useState<CharacterProfile[]>([])
   const [players, setPlayers] = useState<Player[]>([])
   const [combatants, setCombatants] = useState<Combatant[]>([])
@@ -286,7 +288,10 @@ export function CombatModal({
     .map((character) => ({
       value: character.id,
       label: character.playerId
-        ? `${character.name} · ${playerNameOf(character.playerId) ?? 'без игрока'}`
+        ? fill(m.games.combatSetup.characterOption, {
+            name: character.name,
+            player: playerNameOf(character.playerId) ?? m.games.combatSetup.noPlayerInline
+          })
         : character.name
     }))
   const monsterOptions = availableMonsters
@@ -295,13 +300,13 @@ export function CombatModal({
 
   const hint =
     combatants.length === 0
-      ? 'Добавьте персонажей или монстров в схватку.'
+      ? m.games.combatSetup.hintEmpty
       : participants.length === 0
-        ? 'Отметьте хотя бы одного участника схватки.'
+        ? m.games.combatSetup.hintNoParticipants
         : !allInitiativesFilled
-          ? 'Заполните инициативу от 1 до 99 у всех добавленных персонажей и монстров.'
+          ? m.games.combatSetup.hintInitiative
           : !allCollisionsResolved
-            ? 'Участники с одинаковой инициативой должны получить разные значения дополнительной инициативы.'
+            ? m.games.combatSetup.hintTies
             : null
 
   function renderCard(combatant: Combatant): JSX.Element {
@@ -317,8 +322,8 @@ export function CombatModal({
           <span className="combat-card__name">{combatant.name}</span>
           <span className="combat-card__meta">
             {combatant.kind === 'character'
-              ? (combatant.playerName ?? 'Без игрока')
-              : 'Монстр'}
+              ? (combatant.playerName ?? m.games.combatSetup.noPlayer)
+              : m.games.combatSetup.monsterKind}
           </span>
         </span>
 
@@ -331,11 +336,11 @@ export function CombatModal({
               updateCombatant(combatant.key, { participating: event.target.checked })
             }
           />
-          <span>Участвует в схватке</span>
+          <span>{m.games.combatSetup.participating}</span>
         </label>
 
         <label className="combat-initiative">
-          <span>Инициатива</span>
+          <span>{m.games.combatSetup.initiative}</span>
           <input
             className="input combat-initiative__input"
             type="number"
@@ -343,7 +348,9 @@ export function CombatModal({
             max={INITIATIVE_MAX}
             inputMode="numeric"
             value={combatant.initiative}
-            aria-label={`Инициатива: ${combatant.name}`}
+            aria-label={fill(m.games.combatSetup.initiativeAria, {
+              name: combatant.name
+            })}
             onChange={(event) =>
               updateCombatant(combatant.key, { initiative: event.target.value })
             }
@@ -353,7 +360,7 @@ export function CombatModal({
 
         {group ? (
           <label className="combat-initiative combat-initiative--tie">
-            <span>Доп. инициатива</span>
+            <span>{m.games.combatSetup.tieInitiative}</span>
             <input
               className="input combat-initiative__input"
               type="number"
@@ -361,7 +368,9 @@ export function CombatModal({
               max={INITIATIVE_MAX}
               inputMode="numeric"
               value={combatant.tieBreaker}
-              aria-label={`Дополнительная инициатива: ${combatant.name}`}
+              aria-label={fill(m.games.combatSetup.tieInitiativeAria, {
+                name: combatant.name
+              })}
               onChange={(event) =>
                 updateCombatant(combatant.key, { tieBreaker: event.target.value })
               }
@@ -373,8 +382,8 @@ export function CombatModal({
         <button
           type="button"
           className="icon-button icon-button--danger combat-card__remove"
-          title="Убрать из списка"
-          aria-label={`Убрать ${combatant.name} из списка схватки`}
+          title={m.games.combatSetup.removeFromList}
+          aria-label={fill(m.games.combatSetup.removeAria, { name: combatant.name })}
           onClick={() => removeCombatant(combatant.key)}
         >
           <IconTrash />
@@ -382,7 +391,7 @@ export function CombatModal({
 
         {duplicateTie ? (
           <span className="combat-card__warning">
-            Дополнительные инициативы в этой группе должны различаться.
+            {m.games.combatSetup.duplicateTie}
           </span>
         ) : null}
       </li>
@@ -392,24 +401,24 @@ export function CombatModal({
   return (
     <Modal
       open={open}
-      title="Схватка"
-      description="Отметьте участников, внесите инициативу и разрешите совпадения дополнительными бросками."
+      title={m.games.combatSetup.title}
+      description={m.games.combatSetup.description}
       size="lg"
       panelClassName="modal--combat"
       onClose={onClose}
       footer={
         <>
           <button type="button" className="button" onClick={onClose}>
-            Отмена
+            {m.games.combatSetup.cancel}
           </button>
           <button
             type="submit"
             form={formId}
             className="button button--primary"
             disabled={!canFight}
-            title={hint ?? 'Начать схватку'}
+            title={hint ?? m.games.combatSetup.startTitle}
           >
-            Драться!
+            {m.games.combatSetup.fight}
           </button>
         </>
       }
@@ -419,32 +428,34 @@ export function CombatModal({
 
         <section className="combat-section" aria-labelledby="combat-characters">
           <header className="combat-section__head">
-            <h3 id="combat-characters">Персонажи</h3>
+            <h3 id="combat-characters">{m.games.combatSetup.charactersTitle}</h3>
             <span className="combat-section__count">
-              {characters.length} в игре
+              {fill(m.games.combatSetup.charactersCount, { count: characters.length })}
             </span>
           </header>
 
           {loading ? (
-            <p className="muted">Загружаем персонажей…</p>
+            <p className="muted">{m.games.combatSetup.charactersLoading}</p>
           ) : characters.length === 0 ? (
-            <p className="abilities-editor__empty">В игре нет персонажей.</p>
+            <p className="abilities-editor__empty">{m.games.combatSetup.charactersEmpty}</p>
           ) : characterOptions.length > 0 ? (
             <div className="combat-picker">
               <Select
-                ariaLabel="Добавить персонажа в схватку"
+                ariaLabel={m.games.combatSetup.addCharacterAria}
                 value=""
                 searchable
-                placeholder="Выберите персонажа"
+                placeholder={m.games.combatSetup.characterPlaceholder}
                 options={characterOptions}
                 onChange={addCharacter}
               />
             </div>
           ) : availableCharacters.length === 0 ? (
-            <p className="abilities-editor__empty">Все персонажи повержены.</p>
+            <p className="abilities-editor__empty">
+              {m.games.combatSetup.charactersAllDefeated}
+            </p>
           ) : (
             <p className="abilities-editor__empty">
-              Все доступные персонажи уже в списке.
+              {m.games.combatSetup.charactersAllAdded}
             </p>
           )}
 
@@ -459,21 +470,21 @@ export function CombatModal({
 
         <section className="combat-section" aria-labelledby="combat-monsters">
           <header className="combat-section__head">
-            <h3 id="combat-monsters">Монстры</h3>
+            <h3 id="combat-monsters">{m.games.combatSetup.monstersTitle}</h3>
             <span className="combat-section__count">
-              {game.monsters.length} в игре
+              {fill(m.games.combatSetup.monstersCount, { count: game.monsters.length })}
             </span>
           </header>
 
           {game.monsters.length === 0 ? (
-            <p className="abilities-editor__empty">В игре нет монстров.</p>
+            <p className="abilities-editor__empty">{m.games.combatSetup.monstersEmpty}</p>
           ) : monsterOptions.length > 0 ? (
             <div className="combat-picker">
               <Select
-                ariaLabel="Добавить монстра в схватку"
+                ariaLabel={m.games.combatSetup.addMonsterAria}
                 value=""
                 searchable
-                placeholder="Выберите монстра"
+                placeholder={m.games.combatSetup.monsterPlaceholder}
                 options={monsterOptions}
                 onChange={(monsterId) => {
                   const monster = game.monsters.find((item) => item.id === monsterId)
@@ -482,9 +493,13 @@ export function CombatModal({
               />
             </div>
           ) : availableMonsters.length === 0 ? (
-            <p className="abilities-editor__empty">Все монстры повержены.</p>
+            <p className="abilities-editor__empty">
+              {m.games.combatSetup.monstersAllDefeated}
+            </p>
           ) : (
-            <p className="abilities-editor__empty">Все доступные монстры уже в списке.</p>
+            <p className="abilities-editor__empty">
+              {m.games.combatSetup.monstersAllAdded}
+            </p>
           )}
 
           {combatants.some((combatant) => combatant.kind === 'monster') ? (

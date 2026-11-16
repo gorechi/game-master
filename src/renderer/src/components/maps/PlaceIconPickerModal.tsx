@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { JSX } from 'react'
 import type { PlaceType } from '@shared/placeType'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 import { Modal } from '../ui/Modal'
 import { PlaceTypeIcon } from '../placeTypes/PlaceTypeIcon'
 
@@ -30,6 +31,7 @@ export function PlaceIconPickerModal({
   onClose,
   onSelect
 }: PlaceIconPickerModalProps): JSX.Element {
+  const { messages: m, fill } = useI18n()
   const [draft, setDraft] = useState<string | null>(value)
   const gridRef = useRef<HTMLDivElement>(null)
 
@@ -50,7 +52,7 @@ export function PlaceIconPickerModal({
   return (
     <Modal
       open={open}
-      title="Иконка места"
+      title={m.maps.iconPicker.title}
       description={placeName}
       size="lg"
       panelClassName="modal--place-icon"
@@ -58,23 +60,28 @@ export function PlaceIconPickerModal({
       footer={
         <>
           <button type="button" className="button" onClick={onClose}>
-            Отмена
+            {m.maps.iconPicker.cancel}
           </button>
           <button type="button" className="button button--primary" onClick={confirm}>
-            {draft ? 'Выбрать иконку' : 'Оставить без иконки'}
+            {draft ? m.maps.iconPicker.confirm : m.maps.iconPicker.clear}
           </button>
         </>
       }
     >
       <div className="place-icon-picker">
-        <div ref={gridRef} className="place-icon-library" role="group" aria-label="Иконка места">
+        <div
+          ref={gridRef}
+          className="place-icon-library"
+          role="group"
+          aria-label={m.maps.iconPicker.groupLabel}
+        >
           <button
             type="button"
             className={`place-icon-library__item place-icon-library__item--none${
               draft ? '' : ' place-icon-library__item--active'
             }`}
-            title="Без иконки"
-            aria-label="Без иконки"
+            title={m.maps.iconPicker.none}
+            aria-label={m.maps.iconPicker.none}
             aria-pressed={!draft}
             onClick={() => setDraft(null)}
           >
@@ -91,8 +98,8 @@ export function PlaceIconPickerModal({
                 className={`place-icon-library__item${
                   selected ? ' place-icon-library__item--active' : ''
                 }`}
-                title={`Иконка ${index + 1}`}
-                aria-label={`Иконка ${index + 1}`}
+                title={fill(m.maps.iconPicker.iconLabel, { index: index + 1 })}
+                aria-label={fill(m.maps.iconPicker.iconLabel, { index: index + 1 })}
                 aria-pressed={selected}
                 onClick={() => setDraft(icon.id)}
               >

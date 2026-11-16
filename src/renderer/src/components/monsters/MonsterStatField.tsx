@@ -1,5 +1,6 @@
 import type { JSX } from 'react'
 import { clampMonsterScore, formatModifier, modifierFromScore } from '@shared/domain'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 
 interface MonsterStatFieldProps {
   label: string
@@ -20,6 +21,7 @@ export function MonsterStatField({
   onChange,
   onCommit
 }: MonsterStatFieldProps): JSX.Element {
+  const { messages: m, fill } = useI18n()
   const parsed = Number.parseInt(value, 10)
   const score = Number.isFinite(parsed) ? clampMonsterScore(parsed) : 10
   const modifier = modifierFromScore(score)
@@ -37,7 +39,7 @@ export function MonsterStatField({
           inputMode="numeric"
           autoComplete="off"
           maxLength={2}
-          aria-label={`${label}: значение от 1 до 30`}
+          aria-label={fill(m.bestiary.statField.ariaLabel, { label })}
           value={value}
           onChange={(event) =>
             onChange(event.target.value.replace(/\D/g, '').slice(0, 2))

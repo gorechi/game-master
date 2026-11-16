@@ -2,6 +2,7 @@ import type { JSX } from 'react'
 import type { Player } from '@shared/player'
 import type { CharacterProfile } from '@shared/characterProfile'
 import { playerFullName } from '@shared/domain'
+import { useI18n, useMessages } from '@renderer/i18n/LocaleProvider'
 import { IconPencil, IconTrash } from '../ui/icons'
 
 interface CharacterCardProps {
@@ -24,6 +25,8 @@ export function CharacterCard({
   onDelete,
   onOpenPlayer
 }: CharacterCardProps): JSX.Element {
+  const { messages: m, fill } = useI18n()
+
   return (
     <li className="hero-card">
       <div className="hero-card__inner">
@@ -31,17 +34,27 @@ export function CharacterCard({
           <h3 className="hero-card__name" title={profile.name}>
             {profile.name}
           </h3>
-          <span className="hero-card__class" title={profile.className || 'Класс не указан'}>
-            {profile.className || 'Без класса'}
+          <span
+            className="hero-card__class"
+            title={profile.className || m.people.characterCard.classMissingTitle}
+          >
+            {profile.className || m.people.characterCard.noClass}
           </span>
         </header>
 
         <div className="hero-card__art">
-          <span className="hero-card__level" aria-label={`Уровень ${profile.level}`}>
-            Ур. {profile.level}
+          <span
+            className="hero-card__level"
+            aria-label={fill(m.people.characterCard.levelAria, { level: profile.level })}
+          >
+            {fill(m.people.characterCard.level, { level: profile.level })}
           </span>
           {profile.image ? (
-            <img src={profile.image} alt={`Портрет: ${profile.name}`} loading="lazy" />
+            <img
+              src={profile.image}
+              alt={fill(m.people.characterCard.portraitAlt, { name: profile.name })}
+              loading="lazy"
+            />
           ) : (
             <HeroPlaceholder />
           )}
@@ -49,15 +62,15 @@ export function CharacterCard({
 
         <dl className="hero-card__facts">
           <div>
-            <dt>Сеттинг</dt>
+            <dt>{m.people.characterCard.realmLabel}</dt>
             <dd>{realmName || '—'}</dd>
           </div>
           <div>
-            <dt>Раса</dt>
+            <dt>{m.people.characterCard.raceLabel}</dt>
             <dd>{profile.race || '—'}</dd>
           </div>
           <div>
-            <dt>Игрок</dt>
+            <dt>{m.people.characterCard.playerLabel}</dt>
             <dd>
               {player ? (
                 onOpenPlayer ? (
@@ -65,7 +78,9 @@ export function CharacterCard({
                     type="button"
                     className="hero-card__player"
                     onClick={() => onOpenPlayer(player.id)}
-                    title={`Все персонажи игрока ${playerFullName(player)}`}
+                    title={fill(m.people.characterCard.playerTitle, {
+                      name: playerFullName(player)
+                    })}
                   >
                     {playerFullName(player)}
                   </button>
@@ -73,7 +88,7 @@ export function CharacterCard({
                   playerFullName(player)
                 )
               ) : (
-                <span className="hero-card__no-player">Без игрока</span>
+                <span className="hero-card__no-player">{m.people.characterCard.noPlayer}</span>
               )}
             </dd>
           </div>
@@ -87,7 +102,7 @@ export function CharacterCard({
               </span>
             ))
           ) : (
-            <span className="hero-card__no-status">Без статусов</span>
+            <span className="hero-card__no-status">{m.people.characterCard.noStatuses}</span>
           )}
         </div>
 
@@ -95,8 +110,8 @@ export function CharacterCard({
           <button
             type="button"
             className="icon-button"
-            title="Редактировать"
-            aria-label={`Редактировать персонажа ${profile.name}`}
+            title={m.people.characterCard.edit}
+            aria-label={fill(m.people.characterCard.editAria, { name: profile.name })}
             onClick={onEdit}
           >
             <IconPencil />
@@ -104,8 +119,8 @@ export function CharacterCard({
           <button
             type="button"
             className="icon-button icon-button--danger"
-            title="Удалить"
-            aria-label={`Удалить персонажа ${profile.name}`}
+            title={m.people.characterCard.delete}
+            aria-label={fill(m.people.characterCard.deleteAria, { name: profile.name })}
             onClick={onDelete}
           >
             <IconTrash />
@@ -117,6 +132,7 @@ export function CharacterCard({
 }
 
 export function HeroPlaceholder(): JSX.Element {
+  const m = useMessages()
   return (
     <span className="portrait-placeholder" aria-hidden="true">
       <svg
@@ -131,7 +147,7 @@ export function HeroPlaceholder(): JSX.Element {
         <path d="M60 12l36 15v32c0 26-18 44-36 51-18-7-36-25-36-51V27l36-15Z" opacity="0.9" />
         <path d="M60 42l19 32H41l19-32Z" opacity="0.7" />
       </svg>
-      <span className="portrait-placeholder__label">Нет портрета</span>
+      <span className="portrait-placeholder__label">{m.people.characterCard.noPortrait}</span>
     </span>
   )
 }

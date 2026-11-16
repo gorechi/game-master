@@ -18,6 +18,7 @@ import {
 } from '@shared/gameStatus'
 import { JsonFileError, readJsonFile, withFileLock, writeJsonAtomic } from './jsonFile'
 import { saveGameMonsters, listGameMonsters } from './gameMonsterStore'
+import { fill, m } from '@shared/i18n'
 
 const LOCK_KEY = 'games.json'
 
@@ -55,11 +56,11 @@ async function readGamesFile(): Promise<GamesFile> {
     if (error instanceof JsonFileError && error.code === 'ENOENT') {
       return emptyFile()
     }
-    throw new Error(`Не удалось прочитать список игр: ${(error as Error).message}`)
+    throw new Error(fill(m().main.games.readFailed, { error: (error as Error).message }))
   }
 
   if (!raw || typeof raw !== 'object') {
-    throw new Error('Файл игр повреждён и не может быть прочитан')
+    throw new Error(m().main.games.corrupted)
   }
 
   const file = raw as Record<string, unknown>
@@ -67,7 +68,7 @@ async function readGamesFile(): Promise<GamesFile> {
 
   const parsed = gamesFileSchema.safeParse({ ...file, games })
   if (!parsed.success) {
-    throw new Error('Файл игр повреждён и не может быть прочитан')
+    throw new Error(m().main.games.corrupted)
   }
 
   return parsed.data
@@ -76,7 +77,7 @@ async function readGamesFile(): Promise<GamesFile> {
 function assertGame(input: GameInput): GameInput {
   const name = input.name.trim()
   if (!name) {
-    throw new Error('Название игры не может быть пустым')
+    throw new Error(m().main.games.nameRequired)
   }
   return {
     name,
@@ -143,13 +144,13 @@ export async function updateGame(game: Game): Promise<Game> {
     const index = file.games.findIndex((item) => item.id === game.id)
 
     if (index === -1) {
-      throw new Error('Игра не найдена — возможно, запись уже удалена')
+      throw new Error(m().main.games.notFound)
     }
 
     const existing = file.games[index]!
 
     if (!isGameEditable(existing.status)) {
-      throw new Error('Завершённую игру нельзя редактировать')
+      throw new Error(m().main.games.editForbidden)
     }
 
     const updated: Game = {
@@ -179,7 +180,7 @@ export async function setGameStatus(id: string, status: GameStatus): Promise<Gam
     const index = file.games.findIndex((item) => item.id === id)
 
     if (index === -1) {
-      throw new Error('Игра не найдена — возможно, запись уже удалена')
+      throw new Error(m().main.games.notFound)
     }
 
     const current = file.games[index]!
@@ -187,11 +188,11 @@ export async function setGameStatus(id: string, status: GameStatus): Promise<Gam
     if (current.status === status) return current
 
     if (status === 'finished') {
-      throw new Error('Завершайте игру через экран завершения')
+      throw new Error(m().main.games.finishThroughScreen)
     }
 
     if (!canTransitionGame(current.status, status)) {
-      throw new Error('Такой переход статуса недопустим')
+      throw new Error(m().main.games.invalidStatusTransition)
     }
 
     const updated: Game = {
@@ -220,11 +221,11 @@ export async function finishGame(
   const game = games.games.find((item) => item.id === id)
 
   if (!game) {
-    throw new Error('Игра не найдена — возможно, запись уже удалена')
+    throw new Error(m().main.games.notFound)
   }
 
   if (!canTransitionGame(game.status, 'finished')) {
-    throw new Error('Завершить можно только идущую или приостановленную игру')
+    throw new Error(m().main.games.finishNotAllowed)
   }
 
   const saved = await listGameMonsters()
@@ -252,13 +253,13 @@ export async function finishGame(
     const index = file.games.findIndex((item) => item.id === id)
 
     if (index === -1) {
-      throw new Error('Игра не найдена — возможно, запись уже удалена')
+      throw new Error(m().main.games.notFound)
     }
 
     const current = file.games[index]!
 
     if (!canTransitionGame(current.status, 'finished')) {
-      throw new Error('Завершить можно только идущую или приостановленную игру')
+      throw new Error(m().main.games.finishNotAllowed)
     }
 
     const updated: Game = {
@@ -283,7 +284,7 @@ export async function removeGame(id: string): Promise<void> {
     if (!game) return
 
     if (!isGameDeletable(game.status)) {
-      throw new Error('Идущую игру нельзя удалить — сначала завершите её')
+      throw new Error(m().main.games.deleteRunningForbidden)
     }
 
     await writeJsonAtomic(gamesFile(), {

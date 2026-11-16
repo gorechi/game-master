@@ -4805,6 +4805,54 @@ input[type='number'] {
   border: 1px solid rgba(143, 58, 44, 0.4);
 }
 
+/* Выбор языка: карточки, как у тем, чтобы список языков рос без правок вёрстки. */
+.language-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.language-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.language-card:hover {
+  border-color: var(--border-strong);
+  background: var(--panel-soft);
+}
+
+.language-card--active {
+  border-color: var(--gold);
+  background: rgba(216, 178, 92, 0.08);
+  box-shadow: 0 0 0 3px rgba(216, 178, 92, 0.14);
+}
+
+.language-card__name {
+  font-family: var(--font-display);
+  font-size: 18px;
+}
+
+.language-card__mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--gold-strong);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 /* ------------------------------------------------------------------ */
 /* Проверка обновлений                                                */
 /* ------------------------------------------------------------------ */

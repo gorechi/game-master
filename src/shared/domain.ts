@@ -7,6 +7,7 @@ import type { Realm, RealmInput } from './realm'
 import { DEFAULT_REALM_ID } from './realm'
 import type { GameMap, GameMapInput, MapPlace, MapPath } from './map'
 import type { PlaceType, PlaceTypeInput } from './placeType'
+import { getActiveLocale, m } from './i18n'
 
 /**
  * Доменный слой без зависимостей: фабрики, подписи и сводки.
@@ -241,7 +242,7 @@ export function normalizeMonsterInput(input: MonsterInput): NormalizedMonsterInp
   const abilities = normalizeMonsterAbilities(input.abilities)
 
   if (abilities.some((ability) => !ability.name)) {
-    throw new Error('Укажите название для каждой способности')
+    throw new Error(m().validation.monster.abilityNameRequired)
   }
 
   return {
@@ -276,11 +277,18 @@ export function createMonster(
   }
 }
 
-const challengeRatingFormatter = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 3 })
+const challengeRatingFormatters = new Map<string, Intl.NumberFormat>()
 
-/** «КО 0,125» и «КО 3» без лишних нулей. */
+/** «КО 0,125» и «КО 3» без лишних нулей, с разделителем активного языка. */
 export function formatChallengeRating(value: number): string {
-  return challengeRatingFormatter.format(value)
+  const locale = getActiveLocale()
+  let formatter = challengeRatingFormatters.get(locale)
+  if (!formatter) {
+    formatter = new Intl.NumberFormat(locale, { maximumFractionDigits: 3 })
+    challengeRatingFormatters.set(locale, formatter)
+  }
+
+  return formatter.format(value)
 }
 
 /* ------------------------------------------------------------------ */
@@ -339,12 +347,12 @@ export function normalizeMapInput(input: GameMapInput): NormalizedMapInput {
   }))
 
   if (places.some((place) => !place.name)) {
-    throw new Error('У каждого места должно быть название')
+    throw new Error(m().validation.map.placeNameRequired)
   }
 
   const ids = new Set(places.map((place) => place.id))
   if (ids.size !== places.length) {
-    throw new Error('Места должны иметь уникальные идентификаторы')
+    throw new Error(m().validation.map.placeIdsUnique)
   }
 
   const seen = new Set<string>()
@@ -456,7 +464,7 @@ export function createGame(
 export function createGameMonster(
   source: Omit<Monster, 'createdAt' | 'updatedAt'>,
   existingNames: readonly string[] = []
-): GameMonster {  const base = source.name.trim().slice(0, 94) || 'Монстр'
+): GameMonster {  const base = source.name.trim().slice(0, 94) || m().validation.monster.defaultName
   let counter = 1
   let name = `${base} ${counter}`
 

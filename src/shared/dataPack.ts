@@ -11,6 +11,7 @@ import type { PlaceType } from './placeType'
 import { placeTypeSchema } from './placeType'
 import type { Realm } from './realm'
 import { realmInputSchema } from './realm'
+import { fill, m } from './i18n'
 
 /**
  * Переносимый пакет данных Game Master.
@@ -37,12 +38,9 @@ export type DataExportKind = (typeof DATA_EXPORT_KINDS)[number]
 export const DATA_MAP_LINK_MODES = ['includeLinked', 'selectedOnly'] as const
 export type DataMapLinkMode = (typeof DATA_MAP_LINK_MODES)[number]
 
-export const DATA_EXPORT_KIND_LABELS: Record<DataExportKind, string> = {
-  games: 'Игры',
-  maps: 'Карты',
-  monsters: 'Монстры',
-  uniqueMonsters: 'Уникальные существа',
-  realm: 'Сеттинг'
+/** Подписи видов пакета для интерфейса: берутся из активной локали. */
+export function dataExportKindLabels(): Record<DataExportKind, string> {
+  return m().dataPack.kindLabels
 }
 
 /** Внутренние id нужны только для связей внутри пакета. */
@@ -106,10 +104,10 @@ export const dataPackSchema = z
     }
 
     if (pack.kind === 'realm' && !pack.data.realm) {
-      issue('В пакете сеттинга нет сведений о сеттинге', ['data', 'realm'])
+      issue(m().dataPack.schema.realmMissing, ['data', 'realm'])
     }
     if (pack.kind !== 'realm' && pack.data.realm) {
-      issue('Сведения о сеттинге допустимы только в пакете сеттинга', ['data', 'realm'])
+      issue(m().dataPack.schema.realmOnlyInRealmPack, ['data', 'realm'])
     }
 
     const requiredList: Partial<Record<DataExportKind, keyof typeof pack.data>> = {
@@ -123,24 +121,24 @@ export const dataPackSchema = z
     if (listKey) {
       const items = pack.data[listKey]
       if (!Array.isArray(items) || items.length === 0) {
-        issue('В пакете нет ни одной записи выбранного типа', ['data', listKey])
+        issue(m().dataPack.schema.emptyKindList, ['data', listKey])
       }
     }
 
     if (!idsAreUnique(pack.data.placeTypes)) {
-      issue('Иконки в пакете имеют повторяющиеся идентификаторы', ['data', 'placeTypes'])
+      issue(m().dataPack.schema.duplicatePlaceTypeIds, ['data', 'placeTypes'])
     }
     if (!idsAreUnique(pack.data.monsters)) {
-      issue('Монстры в пакете имеют повторяющиеся идентификаторы', ['data', 'monsters'])
+      issue(m().dataPack.schema.duplicateMonsterIds, ['data', 'monsters'])
     }
     if (!idsAreUnique(pack.data.uniqueMonsters)) {
-      issue('Уникальные существа имеют повторяющиеся идентификаторы', ['data', 'uniqueMonsters'])
+      issue(m().dataPack.schema.duplicateUniqueMonsterIds, ['data', 'uniqueMonsters'])
     }
     if (!idsAreUnique(pack.data.maps)) {
-      issue('Карты в пакете имеют повторяющиеся идентификаторы', ['data', 'maps'])
+      issue(m().dataPack.schema.duplicateMapIds, ['data', 'maps'])
     }
     if (!idsAreUnique(pack.data.games)) {
-      issue('Игры в пакете имеют повторяющиеся идентификаторы', ['data', 'games'])
+      issue(m().dataPack.schema.duplicateGameIds, ['data', 'games'])
     }
 
     const iconIds = new Set(pack.data.placeTypes.map((item) => item.id))
@@ -151,7 +149,7 @@ export const dataPackSchema = z
 
     pack.data.maps.forEach((map, mapIndex) => {
       if (!idsAreUnique(map.places)) {
-        issue('На карте есть места с одинаковыми идентификаторами', [
+        issue(m().dataPack.schema.duplicatePlaceIds, [
           'data',
           'maps',
           mapIndex,
@@ -163,7 +161,7 @@ export const dataPackSchema = z
 
       map.places.forEach((place, placeIndex) => {
         if (place.placeTypeId && !iconIds.has(place.placeTypeId)) {
-          issue('Место ссылается на иконку, которой нет в пакете', [
+          issue(m().dataPack.schema.placeMissingIcon, [
             'data',
             'maps',
             mapIndex,
@@ -173,7 +171,7 @@ export const dataPackSchema = z
           ])
         }
         if (place.linkedMapId && !mapIds.has(place.linkedMapId)) {
-          issue('Место ссылается на карту, которой нет в пакете', [
+          issue(m().dataPack.schema.placeMissingMap, [
             'data',
             'maps',
             mapIndex,
@@ -186,7 +184,7 @@ export const dataPackSchema = z
 
       map.paths.forEach((path, pathIndex) => {
         if (!placeIds.has(path.a) || !placeIds.has(path.b) || path.a === path.b) {
-          issue('Путь карты ссылается на несуществующее место', [
+          issue(m().dataPack.schema.pathMissingPlace, [
             'data',
             'maps',
             mapIndex,
@@ -199,7 +197,7 @@ export const dataPackSchema = z
 
     pack.data.games.forEach((game, gameIndex) => {
       if (game.mapId && !mapIds.has(game.mapId)) {
-        issue('Игра ссылается на карту, которой нет в пакете', [
+        issue(m().dataPack.schema.gameMissingMap, [
           'data',
           'games',
           gameIndex,
@@ -209,7 +207,7 @@ export const dataPackSchema = z
 
       game.monsters.forEach((monster, monsterIndex) => {
         if (monster.sourceMonsterId && !monsterIds.has(monster.sourceMonsterId)) {
-          issue('Игровой монстр ссылается на монстра, которого нет в пакете', [
+          issue(m().dataPack.schema.gameMonsterMissingMonster, [
             'data',
             'games',
             gameIndex,
@@ -225,7 +223,7 @@ export const dataPackSchema = z
 
       game.monsterPlacements.forEach((placement, placementIndex) => {
         if (!gameMonsterIds.has(placement.monsterId)) {
-          issue('Размещение ссылается на монстра, которого нет в игре', [
+          issue(m().dataPack.schema.placementMissingMonster, [
             'data',
             'games',
             gameIndex,
@@ -235,7 +233,7 @@ export const dataPackSchema = z
           ])
         }
         if (placedMonsterIds.has(placement.monsterId)) {
-          issue('У монстра несколько размещений в одной игре', [
+          issue(m().dataPack.schema.duplicatePlacement, [
             'data',
             'games',
             gameIndex,
@@ -248,7 +246,7 @@ export const dataPackSchema = z
 
         const map = mapsById.get(placement.mapId)
         if (!map) {
-          issue('Размещение ссылается на недоступную карту', [
+          issue(m().dataPack.schema.placementMissingMap, [
             'data',
             'games',
             gameIndex,
@@ -257,7 +255,7 @@ export const dataPackSchema = z
             'mapId'
           ])
         } else if (!map.places.some((place) => place.id === placement.placeId)) {
-          issue('Размещение ссылается на место, которого нет на карте', [
+          issue(m().dataPack.schema.placementMissingPlace, [
             'data',
             'games',
             gameIndex,
@@ -271,7 +269,7 @@ export const dataPackSchema = z
       const defeatedMonsterIds = new Set<string>()
       game.defeatedMonsterIds.forEach((monsterId, monsterIndex) => {
         if (!gameMonsterIds.has(monsterId)) {
-          issue('Поверженный монстр отсутствует в игре', [
+          issue(m().dataPack.schema.defeatedMissingMonster, [
             'data',
             'games',
             gameIndex,
@@ -280,7 +278,7 @@ export const dataPackSchema = z
           ])
         }
         if (defeatedMonsterIds.has(monsterId)) {
-          issue('Поверженный монстр указан несколько раз', [
+          issue(m().dataPack.schema.duplicateDefeatedMonster, [
             'data',
             'games',
             gameIndex,
@@ -294,7 +292,7 @@ export const dataPackSchema = z
 
     pack.data.uniqueMonsters.forEach((monster, monsterIndex) => {
       if (monster.sourceMonsterId && !monsterIds.has(monster.sourceMonsterId)) {
-        issue('Уникальное существо ссылается на монстра, которого нет в пакете', [
+        issue(m().dataPack.schema.uniqueMonsterMissingMonster, [
           'data',
           'uniqueMonsters',
           monsterIndex,
@@ -302,7 +300,7 @@ export const dataPackSchema = z
         ])
       }
       if (monster.savedFromGameId && !gameIds.has(monster.savedFromGameId)) {
-        issue('Уникальное существо ссылается на игру, которой нет в пакете', [
+        issue(m().dataPack.schema.uniqueMonsterMissingGame, [
           'data',
           'uniqueMonsters',
           monsterIndex,
@@ -396,7 +394,7 @@ function findSelected<T extends { id: string }>(
   const byId = new Map(items.map((item) => [item.id, item]))
   return ids.map((id) => {
     const item = byId.get(id)
-    if (!item) throw new Error(`${title} не найден — возможно, запись уже удалена`)
+    if (!item) throw new Error(fill(m().dataPack.errors.selectedNotFound, { title }))
     return item
   })
 }
@@ -584,13 +582,13 @@ export function createDataPack(
 ): DataPack {
   const ids = [...new Set(request.ids.filter((id) => typeof id === 'string' && id.length > 0))]
   if (ids.length === 0) {
-    throw new Error('Ничего не выбрано для экспорта')
+    throw new Error(m().dataPack.errors.nothingSelected)
   }
 
   if (request.kind === 'realm') {
-    if (ids.length !== 1) throw new Error('Для экспорта выберите один сеттинг')
+    if (ids.length !== 1) throw new Error(m().dataPack.errors.singleRealmRequired)
     const realm = sources.realms.find((item) => item.id === ids[0])
-    if (!realm) throw new Error('Сеттинг не найден — возможно, он был удалён')
+    if (!realm) throw new Error(m().dataPack.errors.realmNotFound)
 
     const realmMaps = sources.maps.filter((map) => map.realmId === realm.id)
     const realmPlaceTypes = sources.placeTypes.filter(
@@ -630,7 +628,7 @@ export function createDataPack(
   }
 
   if (request.kind === 'games') {
-    const games = findSelected(sources.games, ids, 'Игра')
+    const games = findSelected(sources.games, ids, m().dataPack.entityTitles.game)
     const maps = expandLinkedMaps(
       games
         .map((game) => game.mapId)
@@ -663,7 +661,7 @@ export function createDataPack(
   }
 
   if (request.kind === 'maps') {
-    const selected = findSelected(sources.maps, ids, 'Карта')
+    const selected = findSelected(sources.maps, ids, m().dataPack.entityTitles.map)
     const selectedOnly = request.mapLinks === 'selectedOnly'
     const maps = selectedOnly
       ? selected
@@ -701,7 +699,7 @@ export function createDataPack(
   }
 
   if (request.kind === 'monsters') {
-    const monsters = findSelected(sources.monsters, ids, 'Монстр')
+    const monsters = findSelected(sources.monsters, ids, m().dataPack.entityTitles.monster)
     return finalizePack(
       'monsters',
       {
@@ -716,7 +714,11 @@ export function createDataPack(
     )
   }
 
-  const uniqueMonsters = findSelected(sources.uniqueMonsters, ids, 'Уникальное существо')
+  const uniqueMonsters = findSelected(
+    sources.uniqueMonsters,
+    ids,
+    m().dataPack.entityTitles.uniqueMonster
+  )
   return finalizePack(
     'uniqueMonsters',
     {

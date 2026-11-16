@@ -1,8 +1,9 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { ChangeEvent, DragEvent, FormEvent, JSX } from 'react'
-import { PLACE_ICON_REQUIREMENTS, repairPlaceIcon, validatePlaceIcon } from '@shared/placeIcon'
+import { repairPlaceIcon, validatePlaceIcon } from '@shared/placeIcon'
 import type { PlaceType, PlaceTypeInput } from '@shared/placeType'
 import { errorMessage } from '@renderer/lib/api'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 import { Modal } from '../ui/Modal'
 import { IconCheck } from '../ui/icons'
 import { PlaceTypeIcon } from '../placeTypes/PlaceTypeIcon'
@@ -16,9 +17,9 @@ interface RealmIconFormModalProps {
 
 type IconStatus =
   | { kind: 'idle' }
-  | { kind: 'ok'; title: string; text: string }
-  | { kind: 'fixed'; title: string; text: string; fixes: string[] }
-  | { kind: 'error'; title: string; text: string; problems: string[] }
+  | { kind: 'ok' }
+  | { kind: 'fixed'; fixes: string[] }
+  | { kind: 'error'; reason: 'empty' | 'tooLarge' | 'invalid'; problems: string[] }
 
 const MAX_FILE_SIZE = 64 * 1024
 
@@ -29,6 +30,7 @@ export function RealmIconFormModal({
   onClose,
   onSubmit
 }: RealmIconFormModalProps): JSX.Element {
+  const { messages: m, fill } = useI18n()
   const [iconSvg, setIconSvg] = useState('')
   const [source, setSource] = useState('')
   const [fileName, setFileName] = useState<string | null>(null)
@@ -57,12 +59,7 @@ export function RealmIconFormModal({
     const text = raw.trim()
 
     if (!text) {
-      setStatus({
-        kind: 'error',
-        title: 'Пустой SVG',
-        text: 'Вставьте код SVG или перетащите файл.',
-        problems: []
-      })
+      setStatus({ kind: 'error', reason: 'empty', problems: [] })
       return
     }
 
@@ -70,11 +67,7 @@ export function RealmIconFormModal({
     if (check.ok) {
       setIconSvg(text)
       setSource('')
-      setStatus({
-        kind: 'ok',
-        title: 'Иконка подходит',
-        text: 'Проверка пройдена без замечаний.'
-      })
+      setStatus({ kind: 'ok' })
       return
     }
 
@@ -83,31 +76,20 @@ export function RealmIconFormModal({
     if (repair.ok && repair.svg) {
       setIconSvg(repair.svg)
       setSource('')
-      setStatus({
-        kind: 'fixed',
-        title: 'Иконка исправлена автоматически',
-        text: 'Мы привели её к требованиям, не меняя рисунок. Проверьте превью.',
-        fixes: repair.fixes
-      })
+      setStatus({ kind: 'fixed', fixes: repair.fixes })
       return
     }
 
     setStatus({
       kind: 'error',
-      title: 'Иконка не подходит',
-      text: PLACE_ICON_REQUIREMENTS,
+      reason: 'invalid',
       problems: repair.problems.length > 0 ? repair.problems : check.problems
     })
   }
 
   async function readFile(file: File): Promise<void> {
     if (file.size > MAX_FILE_SIZE) {
-      setStatus({
-        kind: 'error',
-        title: 'Файл слишком большой',
-        text: 'Иконка должна быть не больше 64 КБ.',
-        problems: []
-      })
+      setStatus({ kind: 'error', reason: 'tooLarge', problems: [] })
       return
     }
 
@@ -138,13 +120,15 @@ export function RealmIconFormModal({
     event.preventDefault()
 
     if (!iconSvg) {
-      setError('Загрузите или выберите иконку')
+      setError(m.realms.iconForm.loadRequired)
       return
     }
 
     const check = validatePlaceIcon(iconSvg)
     if (!check.ok) {
-      setError(`Иконка не соответствует требованиям: ${check.problems.join(' ')}`)
+      setError(
+        fill(m.realms.iconForm.invalid, { problems: check.problems.join(' ') })
+      )
       return
     }
 
@@ -160,11 +144,39 @@ export function RealmIconFormModal({
     }
   }
 
+  function describeStatus(): { title: string; text: string } {
+    switch (status.kind) {
+      case 'ok':
+        return { title: m.realms.iconForm.okTitle, text: m.realms.iconForm.okText }
+      case 'fixed':
+        return { title: m.realms.iconForm.fixedTitle, text: m.realms.iconForm.fixedText }
+      case 'error': {
+        if (status.reason === 'empty') {
+          return { title: m.realms.iconForm.emptyTitle, text: m.realms.iconForm.emptyText }
+        }
+        if (status.reason === 'tooLarge') {
+          return {
+            title: m.realms.iconForm.tooLargeTitle,
+            text: m.realms.iconForm.tooLargeText
+          }
+        }
+        return {
+          title: m.realms.iconForm.errorTitle,
+          text: m.realms.placeIcon.requirements
+        }
+      }
+      default:
+        return { title: '', text: '' }
+    }
+  }
+
+  const report = describeStatus()
+
   return (
     <Modal
       open={open}
-      title={icon ? 'Иконка места' : 'Новая иконка'}
-      description="SVG 24×24, только контур currentColor, без заливок, текста и внешних ссылок."
+      title={icon ? m.realms.iconForm.editTitle : m.realms.iconForm.createTitle}
+      description={m.realms.iconForm.description}
       size="lg"
       panelClassName="modal--place-type"
       onClose={onClose}
@@ -172,7 +184,7 @@ export function RealmIconFormModal({
       footer={
         <>
           <button type="button" className="button" onClick={onClose} disabled={saving}>
-            Отмена
+            {m.realms.iconForm.cancel}
           </button>
           <button
             type="submit"
@@ -180,7 +192,11 @@ export function RealmIconFormModal({
             className="button button--primary"
             disabled={saving}
           >
-            {saving ? 'Сохраняем…' : icon ? 'Сохранить' : 'Добавить иконку'}
+            {saving
+              ? m.realms.iconForm.saving
+              : icon
+                ? m.realms.iconForm.save
+                : m.realms.iconForm.add}
           </button>
         </>
       }
@@ -197,14 +213,16 @@ export function RealmIconFormModal({
             )}
           </span>
           <span className="place-icon-preview__meta">
-            <strong>{iconSvg ? 'Иконка готова' : 'Иконка не выбрана'}</strong>
+            <strong>
+              {iconSvg ? m.realms.iconForm.ready : m.realms.iconForm.notChosen}
+            </strong>
             <span>{fileName ?? 'SVG 24×24 · currentColor'}</span>
           </span>
         </div>
 
         <section className="place-icon-source-block" aria-labelledby="realm-icon-upload">
           <h3 id="realm-icon-upload" className="editor-subtitle">
-            Загрузить иконку
+            {m.realms.iconForm.uploadTitle}
           </h3>
 
           <button
@@ -219,10 +237,8 @@ export function RealmIconFormModal({
             onDragLeave={() => setDragActive(false)}
             onDrop={onDrop}
           >
-            <span className="place-icon-drop__title">Перетащите SVG сюда</span>
-            <span className="place-icon-drop__hint">
-              или нажмите, чтобы выбрать файл на компьютере
-            </span>
+            <span className="place-icon-drop__title">{m.realms.iconForm.dropTitle}</span>
+            <span className="place-icon-drop__hint">{m.realms.iconForm.dropHint}</span>
           </button>
 
           <input
@@ -236,7 +252,7 @@ export function RealmIconFormModal({
 
           <div className="place-icon-paste">
             <label className="field">
-              <span className="field__label">Или вставьте SVG-код</span>
+              <span className="field__label">{m.realms.iconForm.pasteLabel}</span>
               <textarea
                 className="input place-icon-source"
                 value={source}
@@ -253,22 +269,22 @@ export function RealmIconFormModal({
               onClick={() => applySource(source)}
             >
               <IconCheck width={14} height={14} />
-              Проверить SVG
+              {m.realms.iconForm.checkSvg}
             </button>
           </div>
         </section>
 
         {status.kind === 'ok' ? (
           <div className="notice notice--success place-icon-report">
-            <strong>{status.title}</strong>
-            <span>{status.text}</span>
+            <strong>{report.title}</strong>
+            <span>{report.text}</span>
           </div>
         ) : null}
 
         {status.kind === 'fixed' ? (
           <div className="notice notice--success place-icon-report">
-            <strong>{status.title}</strong>
-            <span>{status.text}</span>
+            <strong>{report.title}</strong>
+            <span>{report.text}</span>
             {status.fixes.length > 0 ? (
               <ul className="place-icon-report__list">
                 {status.fixes.map((fix) => (
@@ -281,8 +297,8 @@ export function RealmIconFormModal({
 
         {status.kind === 'error' ? (
           <div className="notice notice--error place-icon-report">
-            <strong>{status.title}</strong>
-            <span>{status.text}</span>
+            <strong>{report.title}</strong>
+            <span>{report.text}</span>
             {status.problems.length > 0 ? (
               <ul className="place-icon-report__list">
                 {status.problems.map((problem) => (

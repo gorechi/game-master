@@ -10,6 +10,7 @@ import {
   type GameMonstersFile
 } from '@shared/gameMonster'
 import { JsonFileError, readJsonFile, withFileLock, writeJsonAtomic } from './jsonFile'
+import { fill, m } from '@shared/i18n'
 
 const LOCK_KEY = 'gameMonsters.json'
 
@@ -30,11 +31,13 @@ async function readGameMonstersFile(): Promise<GameMonstersFile> {
     if (error instanceof JsonFileError && error.code === 'ENOENT') {
       return emptyFile()
     }
-    throw new Error(`Не удалось прочитать список игровых монстров: ${(error as Error).message}`)
+    throw new Error(
+      fill(m().main.gameMonsters.readFailed, { error: (error as Error).message })
+    )
   }
 
   if (!raw || typeof raw !== 'object') {
-    throw new Error('Файл игровых монстров повреждён и не может быть прочитан')
+    throw new Error(m().main.gameMonsters.corrupted)
   }
 
   const file = raw as Record<string, unknown>
@@ -48,7 +51,7 @@ async function readGameMonstersFile(): Promise<GameMonstersFile> {
 
   const parsed = gameMonstersFileSchema.safeParse({ ...file, monsters })
   if (!parsed.success) {
-    throw new Error('Файл игровых монстров повреждён и не может быть прочитан')
+    throw new Error(m().main.gameMonsters.corrupted)
   }
 
   return parsed.data
@@ -103,7 +106,7 @@ export async function updateGameMonster(entry: GameMonsterEntry): Promise<GameMo
     const index = file.monsters.findIndex((monster) => monster.id === entry.id)
 
     if (index === -1) {
-      throw new Error('Сохранённый монстр не найден — возможно, запись уже удалена')
+      throw new Error(m().main.gameMonsters.notFound)
     }
 
     const updated: GameMonsterEntry = {
