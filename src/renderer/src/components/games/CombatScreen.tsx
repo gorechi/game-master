@@ -4,7 +4,7 @@ import { formatChallengeRating, formatModifier, modifierFromScore } from '@share
 import { errorMessage } from '@renderer/lib/api'
 import { MONSTER_STAT_FIELDS } from '@renderer/lib/monsterStats'
 import type { CombatResultEntry, CombatStart } from './CombatModal'
-import { IconSkull } from '../ui/icons'
+import { IconCoffin, IconSkull } from '../ui/icons'
 
 interface CombatScreenProps {
   initial: CombatStart
@@ -444,9 +444,21 @@ function CombatFocusCard({ entry }: { entry: CombatResultEntry }): JSX.Element {
   }
 
   const monster = entry.monster
+  const dead = monster?.hitPoints === 0
 
   return (
-    <article className="combat-focus-card">
+    <article className={`combat-focus-card${dead ? ' combat-focus-card--dead' : ''}`}>
+      {dead ? (
+        <span
+          className="combat-focus-card__dead"
+          role="img"
+          aria-label="HP 0 — монстр не атакует, нужен спасбросок"
+          title="HP 0 — монстр не атакует, нужен спасбросок"
+        >
+          <IconCoffin width={32} height={32} />
+        </span>
+      ) : null}
+
       <div className="combat-focus-card__art combat-focus-card__art--monster">
         <IconSkull width={72} height={72} />
       </div>
