@@ -4,7 +4,9 @@ import type { GameMap, MapPlace } from '@shared/map'
 import type { PlaceType } from '@shared/placeType'
 import { Modal } from '../ui/Modal'
 import { Select } from '../ui/Select'
+import { IconPencil } from '../ui/icons'
 import { PlaceTypeIcon } from '../placeTypes/PlaceTypeIcon'
+import { PlaceDescriptionModal } from './PlaceDescriptionModal'
 
 interface PlaceFormModalProps {
   open: boolean
@@ -20,6 +22,7 @@ interface PlaceFormModalProps {
   onClose: () => void
   onSave: (input: {
     name: string
+    description: string
     isExit: boolean
     linkedMapId: string | null
     placeTypeId: string | null
@@ -39,6 +42,8 @@ export function PlaceFormModal({
   onSave
 }: PlaceFormModalProps): JSX.Element {
   const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [descriptionOpen, setDescriptionOpen] = useState(false)
   const [placeTypeId, setPlaceTypeId] = useState<string | null>(null)
   const [isExit, setIsExit] = useState(false)
   const [linkedMapId, setLinkedMapId] = useState<string | null>(null)
@@ -51,6 +56,8 @@ export function PlaceFormModal({
     if (!open || !place) return
 
     setName(place.name)
+    setDescription(place.description ?? '')
+    setDescriptionOpen(false)
     setPlaceTypeId(place.placeTypeId ?? null)
     setIsExit(place.isExit)
     setLinkedMapId(place.linkedMapId)
@@ -77,6 +84,7 @@ export function PlaceFormModal({
 
     onSave({
       name: trimmed,
+      description,
       isExit,
       linkedMapId: isExit ? linkedMapId : null,
       placeTypeId,
@@ -84,10 +92,15 @@ export function PlaceFormModal({
     })
   }
 
+  const descriptionPreview = description.trim()
+    ? description.trim().replace(/\s+/g, ' ').slice(0, 180)
+    : 'Добавьте описание, заметки и важные детали этого места.'
+
   return (
-    <Modal
-      open={open}
-      title={place ? 'Место' : 'Новое место'}
+    <>
+      <Modal
+        open={open}
+        title={place ? 'Место' : 'Новое место'}
       description="Название, иконка, выход на другую карту и пути к другим местам. Путь всегда двусторонний."
       size="md"
       onClose={onClose}
@@ -104,6 +117,24 @@ export function PlaceFormModal({
       }
     >
       <form id={formId} className="map-place-editor" onSubmit={submit} noValidate>
+        <div className="place-description-bar">
+          <div className="place-description-bar__text">
+            <span className="field__label">Описание места</span>
+            <p className={`place-description-bar__preview${description.trim() ? '' : ' muted'}`}>
+              {descriptionPreview}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="place-description-bar__edit"
+            title="Редактировать описание"
+            aria-label="Редактировать описание места"
+            onClick={() => setDescriptionOpen(true)}
+          >
+            <IconPencil width={22} height={22} />
+          </button>
+        </div>
+
         <label className="field">
           <span className="field__label">Название места</span>
           <input
@@ -233,6 +264,18 @@ export function PlaceFormModal({
 
         {error ? <p className="notice notice--error">{error}</p> : null}
       </form>
-    </Modal>
+      </Modal>
+
+      <PlaceDescriptionModal
+        open={descriptionOpen}
+        placeName={name.trim() || 'Место'}
+        value={description}
+        onClose={() => setDescriptionOpen(false)}
+        onSave={(value) => {
+          setDescription(value)
+          setDescriptionOpen(false)
+        }}
+      />
+    </>
   )
 }

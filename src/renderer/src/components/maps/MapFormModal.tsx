@@ -123,6 +123,7 @@ export function MapFormModal({
 
   function savePlace(input: {
     name: string
+    description: string
     isExit: boolean
     linkedMapId: string | null
     placeTypeId: string | null
@@ -141,6 +142,7 @@ export function MapFormModal({
           ? {
               ...place,
               name: input.name,
+              description: input.description,
               isExit: input.isExit,
               linkedMapId: input.linkedMapId,
               placeTypeId

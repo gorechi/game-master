@@ -11,6 +11,8 @@ export const MAPS_FILE_SCHEMA_VERSION = 1
 const mapPlaceSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1).max(100),
+  /** Заметки мастера об этом месте. */
+  description: z.string().max(20000).default(''),
   isExit: z.boolean(),
   /** Карта, на которую ведёт выход. Заполняется только при isExit. */
   linkedMapId: z.string().min(1).nullable().default(null),

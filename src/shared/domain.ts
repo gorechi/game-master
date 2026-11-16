@@ -295,6 +295,7 @@ export function createMapPlace(
   return {
     id: crypto.randomUUID(),
     name: name.trim().slice(0, 100),
+    description: '',
     isExit,
     linkedMapId: isExit ? linkedMapId : null,
     placeTypeId: null,
@@ -329,6 +330,7 @@ export function normalizeMapInput(input: GameMapInput): NormalizedMapInput {
   const places = input.places.map((place) => ({
     id: place.id,
     name: place.name.trim().slice(0, 100),
+    description: (place.description ?? '').slice(0, 20000),
     isExit: place.isExit,
     linkedMapId: place.isExit ? (place.linkedMapId ?? null) : null,
     placeTypeId: place.placeTypeId ?? null,
