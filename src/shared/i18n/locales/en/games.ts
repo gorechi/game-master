@@ -78,7 +78,6 @@ export const enGamesMessages = {
     realmAria: 'Game realm',
     realmPlaceholder: 'Select a realm',
     realmHintEdit: "The realm is set when the game is created and can't be changed.",
-    realmHintCreate: 'Participants, the map and monsters will be chosen from this realm.',
     mapLabel: 'Map',
     mapAria: 'Game map',
     mapNone: 'No map',

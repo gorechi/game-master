@@ -81,7 +81,6 @@ export const gamesMessages = {
     realmAria: 'Сеттинг игры',
     realmPlaceholder: 'Выберите сеттинг',
     realmHintEdit: 'Сеттинг задаётся при создании игры и не меняется.',
-    realmHintCreate: 'Участники, карта и монстры будут выбраны из этого сеттинга.',
     mapLabel: 'Карта',
     mapAria: 'Карта игры',
     mapNone: 'Без карты',

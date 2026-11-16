@@ -680,9 +680,9 @@ export function GameFormModal({
               options={realms.map((realm) => ({ value: realm.id, label: realm.name }))}
               onChange={changeRealm}
             />
-            <span className="game-editor__hint">
-              {isEdit ? m.games.form.realmHintEdit : m.games.form.realmHintCreate}
-            </span>
+            {isEdit ? (
+              <span className="game-editor__hint">{m.games.form.realmHintEdit}</span>
+            ) : null}
           </div>
 
           <div className="field">
