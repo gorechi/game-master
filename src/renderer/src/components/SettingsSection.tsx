@@ -2,9 +2,12 @@ import type { JSX } from 'react'
 import { LOCALE_CODES, LOCALE_LABELS, type LocaleCode } from '@shared/i18n'
 import type { AppSettings, ThemeName } from '@shared/settings'
 import type { UpdateState } from '@shared/update'
-import { useMessages } from '@renderer/i18n/LocaleProvider'
+import { useI18n, useMessages } from '@renderer/i18n/LocaleProvider'
 import { UpdateSection } from './UpdateSection'
 import { IconCheck } from './ui/icons'
+
+/** Английская подсказка, по которой настройку языка можно найти при любом интерфейсе. */
+const LANGUAGE_HINT = 'Language'
 
 interface SettingsSectionProps {
   settings: AppSettings
@@ -24,7 +27,7 @@ export function SettingsSection({
   onLocaleChange,
   onCheckUpdates
 }: SettingsSectionProps): JSX.Element {
-  const m = useMessages()
+  const { messages: m, locale } = useI18n()
 
   return (
     <div className="settings">
@@ -48,7 +51,10 @@ export function SettingsSection({
 
       <section className="settings-block" aria-labelledby="settings-language">
         <div className="settings-block__head">
-          <h2 id="settings-language">{m.settings.language.title}</h2>
+          <h2 id="settings-language">
+            {m.settings.language.title}
+            {locale === 'en' ? null : ` (${LANGUAGE_HINT})`}
+          </h2>
           <p className="muted">{m.settings.language.description}</p>
         </div>
 
