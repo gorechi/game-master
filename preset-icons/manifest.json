@@ -1,4 +1,239 @@
 {
-  "catalogVersion": 2,
-  "icons": []
+  "catalogVersion": 3,
+  "icons": [
+    {
+      "key": "barrel",
+      "title": "Бочка",
+      "revision": 1,
+      "file": "barrel.svg"
+    },
+    {
+      "key": "boat",
+      "title": "Лодка",
+      "revision": 1,
+      "file": "boat.svg"
+    },
+    {
+      "key": "book",
+      "title": "Книга",
+      "revision": 1,
+      "file": "book.svg"
+    },
+    {
+      "key": "bow",
+      "title": "Лук",
+      "revision": 1,
+      "file": "bow.svg"
+    },
+    {
+      "key": "box",
+      "title": "Ящик",
+      "revision": 1,
+      "file": "box.svg"
+    },
+    {
+      "key": "bridge",
+      "title": "Мост",
+      "revision": 1,
+      "file": "bridge.svg"
+    },
+    {
+      "key": "cave",
+      "title": "Пещера",
+      "revision": 1,
+      "file": "cave.svg"
+    },
+    {
+      "key": "cemetery",
+      "title": "Кладбище",
+      "revision": 1,
+      "file": "cemetery.svg"
+    },
+    {
+      "key": "chest",
+      "title": "Сундук",
+      "revision": 1,
+      "file": "chest.svg"
+    },
+    {
+      "key": "coins",
+      "title": "Монеты",
+      "revision": 1,
+      "file": "coins.svg"
+    },
+    {
+      "key": "crown",
+      "title": "Корона",
+      "revision": 1,
+      "file": "crown.svg"
+    },
+    {
+      "key": "desert",
+      "title": "Пустыня",
+      "revision": 1,
+      "file": "desert.svg"
+    },
+    {
+      "key": "door",
+      "title": "Дверь",
+      "revision": 1,
+      "file": "door.svg"
+    },
+    {
+      "key": "exclamation-mark",
+      "title": "Восклицательный знак",
+      "revision": 1,
+      "file": "exclamation-mark.svg"
+    },
+    {
+      "key": "fireplace",
+      "title": "Камин",
+      "revision": 1,
+      "file": "fireplace.svg"
+    },
+    {
+      "key": "fountain",
+      "title": "Фонтан",
+      "revision": 1,
+      "file": "fountain.svg"
+    },
+    {
+      "key": "hill",
+      "title": "Холм",
+      "revision": 1,
+      "file": "hill.svg"
+    },
+    {
+      "key": "horseshoe",
+      "title": "Подкова",
+      "revision": 1,
+      "file": "horseshoe.svg"
+    },
+    {
+      "key": "hut",
+      "title": "Хижина",
+      "revision": 1,
+      "file": "hut.svg"
+    },
+    {
+      "key": "island",
+      "title": "Остров",
+      "revision": 1,
+      "file": "island.svg"
+    },
+    {
+      "key": "ladder",
+      "title": "Лестница",
+      "revision": 1,
+      "file": "ladder.svg"
+    },
+    {
+      "key": "magic-wand",
+      "title": "Волшебная палочка",
+      "revision": 1,
+      "file": "magic-wand.svg"
+    },
+    {
+      "key": "monument",
+      "title": "Монумент",
+      "revision": 1,
+      "file": "monument.svg"
+    },
+    {
+      "key": "pan",
+      "title": "Сковорода",
+      "revision": 1,
+      "file": "pan.svg"
+    },
+    {
+      "key": "portal",
+      "title": "Портал",
+      "revision": 1,
+      "file": "portal.svg"
+    },
+    {
+      "key": "potion",
+      "title": "Зелье",
+      "revision": 1,
+      "file": "potion.svg"
+    },
+    {
+      "key": "prison",
+      "title": "Тюрьма",
+      "revision": 1,
+      "file": "prison.svg"
+    },
+    {
+      "key": "puzzle",
+      "title": "Головоломка",
+      "revision": 1,
+      "file": "puzzle.svg"
+    },
+    {
+      "key": "quest",
+      "title": "Задание",
+      "revision": 1,
+      "file": "quest.svg"
+    },
+    {
+      "key": "scroll",
+      "title": "Свиток",
+      "revision": 1,
+      "file": "scroll.svg"
+    },
+    {
+      "key": "shield",
+      "title": "Щит",
+      "revision": 1,
+      "file": "shield.svg"
+    },
+    {
+      "key": "stairs",
+      "title": "Ступени",
+      "revision": 1,
+      "file": "stairs.svg"
+    },
+    {
+      "key": "stone",
+      "title": "Камень",
+      "revision": 1,
+      "file": "stone.svg"
+    },
+    {
+      "key": "street",
+      "title": "Улица",
+      "revision": 1,
+      "file": "street.svg"
+    },
+    {
+      "key": "sword",
+      "title": "Меч",
+      "revision": 1,
+      "file": "sword.svg"
+    },
+    {
+      "key": "table",
+      "title": "Стол",
+      "revision": 1,
+      "file": "table.svg"
+    },
+    {
+      "key": "theatre",
+      "title": "Театр",
+      "revision": 1,
+      "file": "theatre.svg"
+    },
+    {
+      "key": "trap",
+      "title": "Ловушка",
+      "revision": 1,
+      "file": "trap.svg"
+    },
+    {
+      "key": "well",
+      "title": "Колодец",
+      "revision": 1,
+      "file": "well.svg"
+    }
+  ]
 }

@@ -41,5 +41,15 @@ npm run presets:check
 
 ## Текущий набор
 
-Сейчас встроенный набор пуст. Механизм выдачи и обновления готов; иконки нужно
-добавить в `manifest.json` и папку `preset-icons/`, затем выполнить сборку набора.
+Сейчас в наборе 39 стандартных иконок. Они добавлены в `manifest.json` с версией
+каталога 3 и при обновлении приложения выдаются в сеттинг D&D.
+
+Список ключей:
+
+```text
+barrel, boat, book, bow, box, bridge, cave, cemetery, chest, coins,
+crown, desert, door, exclamation-mark, fireplace, fountain, hill,
+horseshoe, hut, island, ladder, magic-wand, monument, pan, portal,
+potion, prison, puzzle, quest, scroll, shield, stairs, stone, street,
+sword, table, theatre, trap, well
+```
