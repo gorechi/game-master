@@ -10,6 +10,7 @@ import {
 } from '@shared/map'
 import { JsonFileError, readJsonFile, withFileLock, writeJsonAtomic } from './jsonFile'
 import { listPlaceTypes } from './placeTypeStore'
+import { clearPlaceReferences } from './gameStore'
 
 const LOCK_KEY = 'maps.json'
 
@@ -199,9 +200,10 @@ export async function updateMap(map: GameMap): Promise<GameMap> {
       throw new Error('Карта не найдена — возможно, запись уже удалена')
     }
 
+    const existing = file.maps[index]!
     const updated = sanitizeMap(
       {
-        ...file.maps[index]!,
+        ...existing,
         realmId: normalized.realmId,
         name: normalized.name,
         places: normalized.places,
@@ -216,10 +218,20 @@ export async function updateMap(map: GameMap): Promise<GameMap> {
       await placeTypeIdsOf(normalized.realmId)
     )
 
+    const nextPlaceIds = new Set(normalized.places.map((place) => place.id))
+    const removedPlaceIds = new Set(
+      existing.places
+        .filter((place) => !nextPlaceIds.has(place.id))
+        .map((place) => place.id)
+    )
+
     const maps = [...file.maps]
     maps[index] = updated
 
     await writeJsonAtomic(mapsFile(), { ...file, maps })
+    if (removedPlaceIds.size > 0) {
+      await clearPlaceReferences(map.id, removedPlaceIds)
+    }
     return updated
   })
 }

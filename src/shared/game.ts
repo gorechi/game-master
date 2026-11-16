@@ -35,6 +35,18 @@ export const gameMonsterSchema = z.object({
 
 export type GameMonster = z.infer<typeof gameMonsterSchema>
 
+/**
+ * Временное размещение монстра на карте в рамках конкретной игры.
+ * Хранится отдельно от монстра: сам бестиарий и экземпляр не меняются.
+ */
+export const gameMonsterPlacementSchema = z.object({
+  monsterId: z.string().min(1),
+  mapId: z.string().min(1),
+  placeId: z.string().min(1)
+})
+
+export type GameMonsterPlacement = z.infer<typeof gameMonsterPlacementSchema>
+
 const gameFields = {
   name: z.string().min(1).max(120),
   /** Карта, на которой проходит игра; null — карта не выбрана. */
@@ -42,7 +54,8 @@ const gameFields = {
   /** Заметки мастера по ходу игры. */
   notes: z.string().max(20000).default(''),
   characterIds: z.array(z.string().min(1)).max(200).default([]),
-  monsters: z.array(gameMonsterSchema).max(200).default([])
+  monsters: z.array(gameMonsterSchema).max(200).default([]),
+  monsterPlacements: z.array(gameMonsterPlacementSchema).max(200).default([])
 }
 
 export const gameInputSchema = z.object(gameFields)
@@ -64,6 +77,8 @@ export interface GameInput {
   notes?: string
   characterIds: string[]
   monsters: GameMonster[]
+  /** Необязательно: старые импорты и тесты могут не передавать размещения. */
+  monsterPlacements?: GameMonsterPlacement[]
 }
 
 export const gamesFileSchema = z.object({

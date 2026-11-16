@@ -159,7 +159,14 @@ export function GameFormModal({
     setInstances(game?.monsters ?? [])
     setReadyIds([])
     setEditingMonsterId(null)
-    setPlacements({})
+    setPlacements(
+      Object.fromEntries(
+        (game?.monsterPlacements ?? []).map((placement) => [
+          placement.monsterId,
+          { mapId: placement.mapId, placeId: placement.placeId }
+        ])
+      )
+    )
     setPlacementMonsterId(null)
     setError(null)
     setSaving(false)
@@ -532,6 +539,28 @@ export function GameFormModal({
     try {
       const readyInstances = isEdit ? [] : readyMonsters.map(gameMonsterFromEntry)
       const validMapId = mapId && realmMaps.some((map) => map.id === mapId) ? mapId : null
+      const validPlacements = isEdit
+        ? Object.entries(placements).flatMap(([monsterId, placement]) => {
+            const placementMap = placementMaps.find(
+              (map) => map.id === placement.mapId
+            )
+
+            if (
+              !instances.some((monster) => monster.id === monsterId) ||
+              !placementMap?.places.some((place) => place.id === placement.placeId)
+            ) {
+              return []
+            }
+
+            return [
+              {
+                monsterId,
+                mapId: placement.mapId,
+                placeId: placement.placeId
+              }
+            ]
+          })
+        : []
 
       const input = {
         name: trimmedName,
@@ -546,7 +575,8 @@ export function GameFormModal({
                 realmBestiary,
                 readyInstances.map((monster) => monster.name)
               )
-            ]
+            ],
+        monsterPlacements: validPlacements
       }
 
       const saved = game

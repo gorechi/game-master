@@ -83,7 +83,15 @@ function assertGame(input: GameInput): GameInput {
     mapId: input.mapId ?? null,
     notes: input.notes ?? '',
     characterIds: [...new Set(input.characterIds)],
-    monsters: input.monsters
+    monsters: input.monsters,
+    monsterPlacements: [
+      ...new Map(
+        (input.monsterPlacements ?? []).map((placement) => [
+          placement.monsterId,
+          placement
+        ])
+      ).values()
+    ]
   }
 }
 
@@ -149,6 +157,7 @@ export async function updateGame(game: Game): Promise<Game> {
       notes: normalized.notes ?? '',
       characterIds: normalized.characterIds,
       monsters: normalized.monsters,
+      monsterPlacements: normalized.monsterPlacements ?? [],
       updatedAt: new Date().toISOString()
     }
 
@@ -280,6 +289,39 @@ export async function removeGame(id: string): Promise<void> {
   })
 }
 
+/** Убирает размещения монстров на удалённых местах карты. */
+export async function clearPlaceReferences(
+  mapId: string,
+  placeIds: ReadonlySet<string>
+): Promise<void> {
+  if (placeIds.size === 0) return
+
+  await withFileLock(LOCK_KEY, async () => {
+    const file = await readGamesFile()
+    let changed = false
+
+    const games = file.games.map((game) => {
+      const monsterPlacements = game.monsterPlacements.filter(
+        (placement) =>
+          placement.mapId !== mapId || !placeIds.has(placement.placeId)
+      )
+
+      if (monsterPlacements.length === game.monsterPlacements.length) return game
+
+      changed = true
+      return {
+        ...game,
+        monsterPlacements,
+        updatedAt: new Date().toISOString()
+      }
+    })
+
+    if (!changed) return
+
+    await writeJsonAtomic(gamesFile(), { ...file, games })
+  })
+}
+
 /** Убирает ссылку на удалённую карту у всех игр. */
 export async function clearMapReferences(mapId: string): Promise<void> {
   await withFileLock(LOCK_KEY, async () => {
@@ -287,12 +329,19 @@ export async function clearMapReferences(mapId: string): Promise<void> {
     let changed = false
 
     const games = file.games.map((game) => {
-      if (game.mapId !== mapId) return game
+      const monsterPlacements = game.monsterPlacements.filter(
+        (placement) => placement.mapId !== mapId
+      )
+      const mapChanged = game.mapId === mapId
+      const placementsChanged = monsterPlacements.length !== game.monsterPlacements.length
+
+      if (!mapChanged && !placementsChanged) return game
 
       changed = true
       return {
         ...game,
-        mapId: null,
+        mapId: mapChanged ? null : game.mapId,
+        monsterPlacements,
         updatedAt: new Date().toISOString()
       }
     })

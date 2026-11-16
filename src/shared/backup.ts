@@ -118,6 +118,54 @@ export const backupFileSchema = z
           ])
         }
       }
+
+      const gameMonsterIds = new Set(game.monsters.map((monster) => monster.id))
+      const placedMonsterIds = new Set<string>()
+
+      game.monsterPlacements.forEach((placement, placementIndex) => {
+        if (!gameMonsterIds.has(placement.monsterId)) {
+          issue('Размещение ссылается на монстра, которого нет в игре', [
+            'data',
+            'games',
+            index,
+            'monsterPlacements',
+            placementIndex,
+            'monsterId'
+          ])
+        }
+        if (placedMonsterIds.has(placement.monsterId)) {
+          issue('У монстра несколько размещений в одной игре', [
+            'data',
+            'games',
+            index,
+            'monsterPlacements',
+            placementIndex,
+            'monsterId'
+          ])
+        }
+        placedMonsterIds.add(placement.monsterId)
+
+        const map = mapsById.get(placement.mapId)
+        if (!map || map.realmId !== game.realmId) {
+          issue('Размещение ссылается на недоступную карту', [
+            'data',
+            'games',
+            index,
+            'monsterPlacements',
+            placementIndex,
+            'mapId'
+          ])
+        } else if (!map.places.some((place) => place.id === placement.placeId)) {
+          issue('Размещение ссылается на место, которого нет на карте', [
+            'data',
+            'games',
+            index,
+            'monsterPlacements',
+            placementIndex,
+            'placeId'
+          ])
+        }
+      })
     })
 
     data.characters.forEach((character, index) => {

@@ -231,6 +231,9 @@ function readGames(): Game[] {
             }
           })
         : [],
+      monsterPlacements: Array.isArray(game.monsterPlacements)
+        ? game.monsterPlacements
+        : [],
       status: isGameStatus(game.status) ? game.status : 'new'
     }))
   } catch {
@@ -719,6 +722,7 @@ export function createWebBridge(): GameMasterApi {
           notes: game.notes ?? existing.notes ?? '',
           characterIds: game.characterIds,
           monsters: game.monsters,
+          monsterPlacements: game.monsterPlacements ?? [],
           updatedAt: new Date().toISOString()
         }
 
@@ -986,6 +990,38 @@ export function createWebBridge(): GameMasterApi {
         }
 
         writeMaps(readMaps().map((item) => (item.id === map.id ? updated : item)))
+
+        const nextPlaceIds = new Set(normalized.places.map((place) => place.id))
+        const removedPlaceIds = new Set(
+          existing.places
+            .filter((place) => !nextPlaceIds.has(place.id))
+            .map((place) => place.id)
+        )
+
+        if (removedPlaceIds.size > 0) {
+          const games = readGames()
+          const nextGames = games.map((game) => {
+            const monsterPlacements = game.monsterPlacements.filter(
+              (placement) =>
+                placement.mapId !== map.id || !removedPlaceIds.has(placement.placeId)
+            )
+
+            if (monsterPlacements.length === game.monsterPlacements.length) {
+              return game
+            }
+
+            return {
+              ...game,
+              monsterPlacements,
+              updatedAt: new Date().toISOString()
+            }
+          })
+
+          if (nextGames.some((game, index) => game !== games[index])) {
+            writeGames(nextGames)
+          }
+        }
+
         return updated
       },
 
@@ -1007,14 +1043,26 @@ export function createWebBridge(): GameMasterApi {
         writeMaps(maps)
 
         const games = readGames()
-        if (games.some((game) => game.mapId === id)) {
-          writeGames(
-            games.map((game) =>
-              game.mapId === id
-                ? { ...game, mapId: null, updatedAt: new Date().toISOString() }
-                : game
-            )
+        const nextGames = games.map((game) => {
+          const monsterPlacements = game.monsterPlacements.filter(
+            (placement) => placement.mapId !== id
           )
+          const mapChanged = game.mapId === id
+
+          if (!mapChanged && monsterPlacements.length === game.monsterPlacements.length) {
+            return game
+          }
+
+          return {
+            ...game,
+            mapId: mapChanged ? null : game.mapId,
+            monsterPlacements,
+            updatedAt: new Date().toISOString()
+          }
+        })
+
+        if (nextGames.some((game, index) => game !== games[index])) {
+          writeGames(nextGames)
         }
       }
     },

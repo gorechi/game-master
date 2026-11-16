@@ -146,6 +146,7 @@ export const dataPackSchema = z
     const monsterIds = new Set(pack.data.monsters.map((item) => item.id))
     const gameIds = new Set(pack.data.games.map((item) => item.id))
     const mapIds = new Set(pack.data.maps.map((item) => item.id))
+    const mapsById = new Map(pack.data.maps.map((item) => [item.id, item]))
 
     pack.data.maps.forEach((map, mapIndex) => {
       if (!idsAreUnique(map.places)) {
@@ -214,6 +215,54 @@ export const dataPackSchema = z
             'monsters',
             monsterIndex,
             'sourceMonsterId'
+          ])
+        }
+      })
+
+      const gameMonsterIds = new Set(game.monsters.map((monster) => monster.id))
+      const placedMonsterIds = new Set<string>()
+
+      game.monsterPlacements.forEach((placement, placementIndex) => {
+        if (!gameMonsterIds.has(placement.monsterId)) {
+          issue('Размещение ссылается на монстра, которого нет в игре', [
+            'data',
+            'games',
+            gameIndex,
+            'monsterPlacements',
+            placementIndex,
+            'monsterId'
+          ])
+        }
+        if (placedMonsterIds.has(placement.monsterId)) {
+          issue('У монстра несколько размещений в одной игре', [
+            'data',
+            'games',
+            gameIndex,
+            'monsterPlacements',
+            placementIndex,
+            'monsterId'
+          ])
+        }
+        placedMonsterIds.add(placement.monsterId)
+
+        const map = mapsById.get(placement.mapId)
+        if (!map) {
+          issue('Размещение ссылается на недоступную карту', [
+            'data',
+            'games',
+            gameIndex,
+            'monsterPlacements',
+            placementIndex,
+            'mapId'
+          ])
+        } else if (!map.places.some((place) => place.id === placement.placeId)) {
+          issue('Размещение ссылается на место, которого нет на карте', [
+            'data',
+            'games',
+            gameIndex,
+            'monsterPlacements',
+            placementIndex,
+            'placeId'
           ])
         }
       })
@@ -400,22 +449,35 @@ function packGamesForMaps(
   monsters: readonly PackMonster[]
 ): PackGame[] {
   const mapIds = new Set(maps.map((map) => map.id))
+  const mapsById = new Map(maps.map((map) => [map.id, map]))
   const monsterIds = new Set(monsters.map((monster) => monster.id))
 
-  return games.map((game) => ({
-    id: game.id,
-    name: game.name,
-    mapId: game.mapId && mapIds.has(game.mapId) ? game.mapId : null,
-    notes: game.notes,
-    monsters: game.monsters.map((monster) => ({
-      ...monster,
-      sourceMonsterId:
-        monster.sourceMonsterId && monsterIds.has(monster.sourceMonsterId)
-          ? monster.sourceMonsterId
-          : null,
-      abilities: monster.abilities.map((ability) => ({ ...ability }))
-    }))
-  }))
+  return games.map((game) => {
+    const gameMonsterIds = new Set(game.monsters.map((monster) => monster.id))
+    const monsterPlacements = (game.monsterPlacements ?? []).filter((placement) => {
+      const map = mapsById.get(placement.mapId)
+      return (
+        gameMonsterIds.has(placement.monsterId) &&
+        Boolean(map?.places.some((place) => place.id === placement.placeId))
+      )
+    })
+
+    return {
+      id: game.id,
+      name: game.name,
+      mapId: game.mapId && mapIds.has(game.mapId) ? game.mapId : null,
+      notes: game.notes,
+      monsters: game.monsters.map((monster) => ({
+        ...monster,
+        sourceMonsterId:
+          monster.sourceMonsterId && monsterIds.has(monster.sourceMonsterId)
+            ? monster.sourceMonsterId
+            : null,
+        abilities: monster.abilities.map((ability) => ({ ...ability }))
+      })),
+      monsterPlacements: monsterPlacements.map((placement) => ({ ...placement }))
+    }
+  })
 }
 
 function packMonsters(monsters: readonly Monster[]): PackMonster[] {
@@ -681,8 +743,16 @@ export function remapDataPack(
     updatedAt: now
   }))
 
+  const placeIdMaps = new Map<string, Map<string, string>>()
+  for (const map of pack.data.maps) {
+    placeIdMaps.set(
+      map.id,
+      new Map(map.places.map((place) => [place.id, crypto.randomUUID()]))
+    )
+  }
+
   const maps: GameMap[] = pack.data.maps.map((map) => {
-    const placeIdMap = new Map(map.places.map((place) => [place.id, crypto.randomUUID()]))
+    const placeIdMap = placeIdMaps.get(map.id)!
 
     return {
       id: mapIdMap.get(map.id)!,
@@ -707,26 +777,40 @@ export function remapDataPack(
     }
   })
 
-  const remapGameMonster = (monster: GameMonster): GameMonster => ({
-    ...monster,
-    id: crypto.randomUUID(),
-    sourceMonsterId: monster.sourceMonsterId
-      ? (monsterIdMap.get(monster.sourceMonsterId) ?? null)
-      : null,
-    abilities: remapAbilities(monster.abilities)
-  })
+  const games: Game[] = pack.data.games.map((game) => {
+    const gameMonsterIdMap = new Map(
+      game.monsters.map((monster) => [monster.id, crypto.randomUUID()])
+    )
+    const remapGameMonster = (monster: GameMonster): GameMonster => ({
+      ...monster,
+      id: gameMonsterIdMap.get(monster.id)!,
+      sourceMonsterId: monster.sourceMonsterId
+        ? (monsterIdMap.get(monster.sourceMonsterId) ?? null)
+        : null,
+      abilities: remapAbilities(monster.abilities)
+    })
+    const monsterPlacements = game.monsterPlacements.flatMap((placement) => {
+      const monsterId = gameMonsterIdMap.get(placement.monsterId)
+      const mapId = mapIdMap.get(placement.mapId)
+      const placeId = placeIdMaps.get(placement.mapId)?.get(placement.placeId)
 
-  const games: Game[] = pack.data.games.map((game) => ({
-    ...game,
-    id: gameIdMap.get(game.id)!,
-    realmId,
-    mapId: game.mapId ? (mapIdMap.get(game.mapId) ?? null) : null,
-    characterIds: [],
-    monsters: game.monsters.map(remapGameMonster),
-    status: 'new',
-    createdAt: now,
-    updatedAt: now
-  }))
+      if (!monsterId || !mapId || !placeId) return []
+      return [{ monsterId, mapId, placeId }]
+    })
+
+    return {
+      ...game,
+      id: gameIdMap.get(game.id)!,
+      realmId,
+      mapId: game.mapId ? (mapIdMap.get(game.mapId) ?? null) : null,
+      characterIds: [],
+      monsters: game.monsters.map(remapGameMonster),
+      monsterPlacements,
+      status: 'new',
+      createdAt: now,
+      updatedAt: now
+    }
+  })
 
   const uniqueMonsters: GameMonsterEntry[] = pack.data.uniqueMonsters.map((monster) => ({
     ...monster,

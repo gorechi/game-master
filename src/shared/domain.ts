@@ -438,6 +438,7 @@ export function createGame(
     notes: input.notes ?? '',
     characterIds: [...new Set(input.characterIds)],
     monsters: input.monsters,
+    monsterPlacements: input.monsterPlacements ?? [],
     status: 'new',
     createdAt: now,
     updatedAt: now
