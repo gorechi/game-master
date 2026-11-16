@@ -1,6 +1,6 @@
 {
   "name": "game-master",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Настольный помощник мастера для ведения партий D&D",
   "private": true,
   "license": "MIT",

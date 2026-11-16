@@ -8,6 +8,7 @@ import type { GameMap, GameMapInput } from './map'
 import type { Realm, RealmInput } from './realm'
 import type { PlaceType, PlaceTypeInput } from './placeType'
 import type { AppSettings, SettingsPatch } from './settings'
+import type { UpdateState } from './update'
 import type {
   DataExportRequest,
   DataExportResult,
@@ -31,6 +32,7 @@ import type {
 export const IPC = {
   appInfo: 'app:info',
   appOpenDataFolder: 'app:open-data-folder',
+  updatesCheck: 'updates:check',
   gamesList: 'games:list',
   gameCreate: 'game:create',
   gameUpdate: 'game:update',
@@ -91,6 +93,10 @@ export interface GameMasterApi {
   app: {
     info(): Promise<AppInfo>
     openDataFolder(): Promise<void>
+  }
+  /** Проверка новых версий на GitHub. Ничего не скачивает и не устанавливает. */
+  updates: {
+    check(): Promise<UpdateState>
   }
   /** Игры — основная сущность приложения. */
   games: {

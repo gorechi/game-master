@@ -700,6 +700,15 @@
   color: #f4e9d3;
 }
 
+:root[data-theme='light'] .sidebar__collapse {
+  color: rgba(244, 233, 211, 0.6);
+}
+
+:root[data-theme='light'] .sidebar__collapse:hover {
+  color: #fbf3e2;
+  background: rgba(255, 255, 255, 0.07);
+}
+
 :root[data-theme='light'] .sidebar__die {
   color: #e8c77e;
   background: linear-gradient(160deg, rgba(232, 199, 126, 0.18), rgba(143, 58, 44, 0.14));
@@ -792,8 +801,12 @@
 }
 
 :root[data-theme='light'] .place-icon-library__item--active {
-  border-color: var(--gold);
-  box-shadow: 0 0 0 3px rgba(154, 106, 36, 0.16);
+  border-color: #7a4f12;
+  background: linear-gradient(180deg, #fffdf6, #f1e2c6);
+  box-shadow:
+    0 0 0 3px rgba(154, 106, 36, 0.24),
+    0 10px 20px rgba(74, 52, 26, 0.24),
+    inset 0 1px 0 #fff;
 }
 
 :root[data-theme='light'] .map-node__token {

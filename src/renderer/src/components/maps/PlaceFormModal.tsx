@@ -7,6 +7,7 @@ import { Select } from '../ui/Select'
 import { IconPencil } from '../ui/icons'
 import { PlaceTypeIcon } from '../placeTypes/PlaceTypeIcon'
 import { PlaceDescriptionModal } from './PlaceDescriptionModal'
+import { PlaceIconPickerModal } from './PlaceIconPickerModal'
 
 interface PlaceFormModalProps {
   open: boolean
@@ -45,6 +46,7 @@ export function PlaceFormModal({
   const [description, setDescription] = useState('')
   const [descriptionOpen, setDescriptionOpen] = useState(false)
   const [placeTypeId, setPlaceTypeId] = useState<string | null>(null)
+  const [iconPickerOpen, setIconPickerOpen] = useState(false)
   const [isExit, setIsExit] = useState(false)
   const [linkedMapId, setLinkedMapId] = useState<string | null>(null)
   const [connections, setConnections] = useState<string[]>([])
@@ -59,6 +61,7 @@ export function PlaceFormModal({
     setDescription(place.description ?? '')
     setDescriptionOpen(false)
     setPlaceTypeId(place.placeTypeId ?? null)
+    setIconPickerOpen(false)
     setIsExit(place.isExit)
     setLinkedMapId(place.linkedMapId)
     setConnections([...connectedIds])
@@ -95,6 +98,8 @@ export function PlaceFormModal({
   const descriptionPreview = description.trim()
     ? description.trim().replace(/\s+/g, ' ').slice(0, 180)
     : 'Добавьте описание, заметки и важные детали этого места.'
+
+  const selectedIcon = placeTypes.find((icon) => icon.id === placeTypeId) ?? null
 
   return (
     <>
@@ -151,40 +156,18 @@ export function PlaceFormModal({
         <div className="field">
           <span className="field__label">Иконка</span>
           {placeTypes.length > 0 ? (
-            <div className="place-icon-library" role="group" aria-label="Иконка места">
-              <button
-                type="button"
-                className={`place-icon-library__item place-icon-library__item--none${
-                  placeTypeId ? '' : ' place-icon-library__item--active'
-                }`}
-                title="Без иконки"
-                aria-label="Без иконки"
-                aria-pressed={!placeTypeId}
-                onClick={() => setPlaceTypeId(null)}
-              >
-                —
-              </button>
-
-              {placeTypes.map((icon, index) => {
-                const selected = placeTypeId === icon.id
-
-                return (
-                  <button
-                    key={icon.id}
-                    type="button"
-                    className={`place-icon-library__item${
-                      selected ? ' place-icon-library__item--active' : ''
-                    }`}
-                    title={`Иконка ${index + 1}`}
-                    aria-label={`Иконка ${index + 1}`}
-                    aria-pressed={selected}
-                    onClick={() => setPlaceTypeId(icon.id)}
-                  >
-                    <PlaceTypeIcon svg={icon.iconSvg} size={26} />
-                  </button>
-                )
-              })}
-            </div>
+            <button
+              type="button"
+              className={`place-icon-select${selectedIcon ? '' : ' place-icon-select--empty'}`}
+              title={selectedIcon ? 'Изменить иконку' : 'Выбрать иконку'}
+              aria-label={selectedIcon ? 'Изменить иконку' : 'Выбрать иконку'}
+              aria-haspopup="dialog"
+              onClick={() => setIconPickerOpen(true)}
+            >
+              <span className="place-icon-select__circle">
+                {selectedIcon ? <PlaceTypeIcon svg={selectedIcon.iconSvg} size={29} /> : '—'}
+              </span>
+            </button>
           ) : (
             <span className="game-editor__hint">
               В сеттинге пока нет иконок. Добавьте их на экране сеттинга.
@@ -274,6 +257,18 @@ export function PlaceFormModal({
         onSave={(value) => {
           setDescription(value)
           setDescriptionOpen(false)
+        }}
+      />
+
+      <PlaceIconPickerModal
+        open={iconPickerOpen}
+        placeName={name.trim() || 'Место'}
+        value={placeTypeId}
+        placeTypes={placeTypes}
+        onClose={() => setIconPickerOpen(false)}
+        onSelect={(value) => {
+          setPlaceTypeId(value)
+          setIconPickerOpen(false)
         }}
       />
     </>

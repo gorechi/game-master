@@ -402,6 +402,11 @@ input[type='number'] {
   grid-template-columns: 236px minmax(0, 1fr);
   flex: 1 1 auto;
   min-height: 0;
+  transition: grid-template-columns 0.22s ease;
+}
+
+.app--sidebar-collapsed {
+  grid-template-columns: 70px minmax(0, 1fr);
 }
 
 .app__content {
@@ -418,6 +423,7 @@ input[type='number'] {
   padding: 20px 14px;
   border-right: 1px solid var(--border);
   background: linear-gradient(180deg, #171320, #121016 70%);
+  overflow: hidden;
 }
 
 .sidebar__brand {
@@ -425,6 +431,32 @@ input[type='number'] {
   align-items: center;
   gap: 11px;
   padding: 2px 6px 0;
+}
+
+.sidebar__collapse {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  margin-left: auto;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.sidebar__collapse:hover {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.sidebar__collapse:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
 }
 
 .sidebar__die {
@@ -465,7 +497,13 @@ input[type='number'] {
   font-size: 14.5px;
   text-align: left;
   cursor: pointer;
+  overflow: hidden;
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.nav-item > span {
+  white-space: nowrap;
+  transition: opacity 0.15s ease;
 }
 
 .nav-item svg {
@@ -490,6 +528,8 @@ input[type='number'] {
 
 .sidebar__note {
   margin-top: auto;
+  height: 55px;
+  overflow: hidden;
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px dashed var(--border-strong);
@@ -501,6 +541,38 @@ input[type='number'] {
 .sidebar__note span {
   display: block;
   color: var(--ink-faint);
+}
+
+/* Свёрнутое меню: узкая полоса, в которой остаются только иконки. */
+.sidebar--collapsed .sidebar__brand {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 2px 0 0;
+}
+
+.sidebar--collapsed .sidebar__title {
+  display: none;
+}
+
+.sidebar--collapsed .sidebar__die {
+  display: none;
+}
+
+.sidebar--collapsed .sidebar__collapse {
+  margin-left: 0;
+}
+
+/* Подпись не участвует в раскладке заново: гасим прозрачностью,
+   чтобы иконка не сдвигалась ни по горизонтали, ни по вертикали. */
+.sidebar--collapsed .nav-item > span {
+  opacity: 0;
+}
+
+.sidebar--collapsed .sidebar__note {
+  visibility: hidden;
 }
 
 /* ------------------------------------------------------------------ */
@@ -3662,6 +3734,14 @@ input[type='number'] {
   stroke-dasharray: 2 9;
 }
 
+/* Широкая невидимая полоса поверх пути: по ней удобно попасть двойным кликом. */
+.map-edge--hit {
+  stroke: transparent;
+  stroke-width: 18;
+  pointer-events: stroke;
+  cursor: pointer;
+}
+
 .map-node {
   position: absolute;
   display: flex;
@@ -4423,7 +4503,11 @@ input[type='number'] {
   background: var(--panel-soft);
   color: var(--gold-strong);
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
 }
 
 .place-icon-library__item:hover {
@@ -4432,14 +4516,85 @@ input[type='number'] {
 }
 
 .place-icon-library__item--active {
-  border-color: var(--gold);
-  box-shadow: 0 0 0 3px rgba(216, 178, 92, 0.18);
+  border: 2px solid var(--gold-strong);
+  background: linear-gradient(180deg, var(--panel-raised), var(--panel-soft));
+  box-shadow:
+    0 0 0 3px rgba(216, 178, 92, 0.28),
+    0 10px 22px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
 }
 
 .place-icon-library__item--none {
   border-style: dashed;
   color: var(--ink-faint);
   font-size: 18px;
+}
+
+/* Компактный квадрат с иконкой: сама сетка живёт в отдельной модалке. */
+.place-icon-select {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 90% 20%, rgba(216, 178, 92, 0.12), transparent 45%),
+    rgba(255, 255, 255, 0.025);
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.place-icon-select:hover {
+  border-color: var(--gold);
+  background:
+    radial-gradient(circle at 90% 20%, rgba(216, 178, 92, 0.18), transparent 45%),
+    rgba(255, 255, 255, 0.04);
+}
+
+.place-icon-select:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.place-icon-select__circle {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--panel-soft);
+  color: var(--gold-strong);
+  font-size: 18px;
+}
+
+.place-icon-select--empty .place-icon-select__circle {
+  border-style: dashed;
+  color: var(--ink-faint);
+}
+
+.modal.modal--place-icon {
+  max-width: 640px;
+}
+
+.modal--place-icon .modal__body {
+  padding-bottom: 18px;
+}
+
+/* Крупные иконки: сетка растёт, а при переполнении прокручивается модалка. */
+.place-icon-picker .place-icon-library {
+  align-content: flex-start;
+  gap: 10px;
+  padding: 2px;
+}
+
+.place-icon-picker .place-icon-library__item {
+  width: 64px;
+  height: 64px;
 }
 
 .place-icon-report {
@@ -4648,6 +4803,139 @@ input[type='number'] {
 .theme-preview--light .theme-preview__chip {
   background: rgba(143, 58, 44, 0.1);
   border: 1px solid rgba(143, 58, 44, 0.4);
+}
+
+/* ------------------------------------------------------------------ */
+/* Проверка обновлений                                                */
+/* ------------------------------------------------------------------ */
+
+.update-status {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel-soft);
+}
+
+.update-status--available {
+  border-color: rgba(216, 178, 92, 0.48);
+  background: linear-gradient(160deg, rgba(216, 178, 92, 0.14), rgba(216, 178, 92, 0.04));
+}
+
+.update-status--error {
+  border-color: rgba(209, 88, 79, 0.42);
+  background: var(--danger-soft);
+}
+
+.update-status__icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--panel-raised);
+  color: var(--gold-strong);
+}
+
+.update-status--latest .update-status__icon {
+  color: var(--ok);
+}
+
+.update-status--error .update-status__icon {
+  color: var(--danger);
+}
+
+.update-status__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.update-status__text strong {
+  font-size: 14.5px;
+}
+
+.update-status__text span {
+  color: var(--ink-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.update-status__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  font-size: 13px;
+}
+
+.update-notice {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 95;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: min(600px, calc(100vw - 48px));
+  padding: 14px 14px 14px 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 16px;
+  background: linear-gradient(180deg, var(--panel-raised), var(--panel));
+  box-shadow: var(--shadow);
+  animation: update-notice-in 0.2s ease;
+}
+
+.update-notice__icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border: 1px solid rgba(216, 178, 92, 0.5);
+  border-radius: 12px;
+  background: rgba(216, 178, 92, 0.14);
+  color: var(--gold-strong);
+}
+
+.update-notice__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.update-notice__text strong {
+  font-size: 14px;
+}
+
+.update-notice__text span {
+  color: var(--ink-muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.update-notice__link,
+.update-notice__close {
+  flex: none;
+}
+
+@keyframes update-notice-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -5059,43 +5347,13 @@ input[type='number'] {
 
 .sidebar__bottom-row {
   display: flex;
-  align-items: stretch;
-  gap: 7px;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .sidebar__bottom-row .nav-item {
-  flex: 1;
-  min-width: 0;
-}
-
-.nav-icon-button {
-  display: grid;
-  place-items: center;
-  width: 38px;
   flex: none;
-  padding: 0;
-  border-radius: 10px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--ink-muted);
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-}
-
-.nav-icon-button:hover {
-  color: var(--ink);
-  background: rgba(255, 255, 255, 0.045);
-}
-
-.nav-icon-button--active {
-  color: var(--gold-strong);
-  background: rgba(216, 178, 92, 0.12);
-  border-color: rgba(216, 178, 92, 0.32);
-}
-
-.nav-icon-button:focus-visible {
-  outline: 2px solid var(--gold);
-  outline-offset: 2px;
+  width: 100%;
 }
 
 .sidebar__bottom .sidebar__note {

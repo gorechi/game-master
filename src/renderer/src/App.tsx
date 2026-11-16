@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { JSX } from 'react'
 import type { Realm } from '@shared/realm'
 import { DEFAULT_SETTINGS, type AppSettings, type ThemeName } from '@shared/settings'
+import type { UpdateState } from '@shared/update'
 import { Sidebar } from './components/Sidebar'
 import { GamesPage } from './components/GamesPage'
 import { GameRunPage } from './components/GameRunPage'
@@ -17,6 +18,7 @@ import { RealmDetailPage } from './components/RealmDetailPage'
 import { DataPage } from './components/DataPage'
 import { SettingsPage } from './components/SettingsPage'
 import { WindowTitleBar } from './components/WindowTitleBar'
+import { UpdateNotice } from './components/UpdateNotice'
 import { api, isWebPreview } from './lib/api'
 import { applyTheme } from './lib/theme'
 import type { Route } from './lib/routes'
@@ -28,10 +30,24 @@ const IS_LINUX = /Linux/.test(USER_AGENT) && !/Android/.test(USER_AGENT)
 // На Linux остаётся системная рамка, поэтому своя полоса не нужна.
 const SHOW_WINDOW_TITLEBAR = !isWebPreview && !IS_LINUX
 
+const SIDEBAR_COLLAPSED_KEY = 'game-master.sidebar.collapsed'
+
+function readSidebarCollapsed(): boolean {
+  try {
+    return window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
 export default function App(): JSX.Element {
   const [route, setRoute] = useState<Route>({ name: 'games' })
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS)
   const [realms, setRealms] = useState<Realm[]>([])
+  const [updateState, setUpdateState] = useState<UpdateState | null>(null)
+  const [checkingUpdates, setCheckingUpdates] = useState(false)
+  const [dismissedUpdateVersion, setDismissedUpdateVersion] = useState<string | null>(null)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(readSidebarCollapsed)
 
   useEffect(() => {
     let cancelled = false
@@ -60,6 +76,35 @@ export default function App(): JSX.Element {
     void api.settings.update({ theme }).catch(() => undefined)
   }, [])
 
+  const checkUpdates = useCallback(async (): Promise<void> => {
+    setCheckingUpdates(true)
+
+    try {
+      setUpdateState(await api.updates.check())
+    } catch {
+      // Сбой самого канала: оставляем прежнее состояние, в настройках можно повторить.
+    } finally {
+      setCheckingUpdates(false)
+    }
+  }, [])
+
+  // Проверка версии при запуске приложения. Установку пользователь делает сам.
+  useEffect(() => {
+    void checkUpdates()
+  }, [checkUpdates])
+
+  const toggleSidebar = useCallback((): void => {
+    setSidebarCollapsed((current) => !current)
+  }, [])
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, sidebarCollapsed ? '1' : '0')
+    } catch {
+      // Приватный режим или запрет хранилища: состояние просто не запомнится.
+    }
+  }, [sidebarCollapsed])
+
   const refreshRealms = useCallback(async (): Promise<void> => {
     try {
       setRealms(await api.realms.list())
@@ -86,8 +131,27 @@ export default function App(): JSX.Element {
     >
       {SHOW_WINDOW_TITLEBAR ? <WindowTitleBar /> : null}
 
-      <div className={`app${route.name === 'game' ? ' app--full' : ''}`}>
-        {route.name !== 'game' ? <Sidebar route={route} onNavigate={setRoute} /> : null}
+      {updateState?.status === 'available' &&
+      updateState.latestVersion !== dismissedUpdateVersion ? (
+        <UpdateNotice
+          update={updateState}
+          onDismiss={() => setDismissedUpdateVersion(updateState.latestVersion)}
+        />
+      ) : null}
+
+      <div
+        className={`app${route.name === 'game' ? ' app--full' : ''}${
+          route.name !== 'game' && sidebarCollapsed ? ' app--sidebar-collapsed' : ''
+        }`}
+      >
+        {route.name !== 'game' ? (
+          <Sidebar
+            route={route}
+            collapsed={sidebarCollapsed}
+            onToggle={toggleSidebar}
+            onNavigate={setRoute}
+          />
+        ) : null}
 
       <div className="app__content">
         {route.name === 'games' ? (
@@ -173,7 +237,13 @@ export default function App(): JSX.Element {
         ) : null}
 
         {route.name === 'settings' ? (
-          <SettingsPage settings={settings} onThemeChange={changeTheme} />
+          <SettingsPage
+            settings={settings}
+            update={updateState}
+            checkingUpdates={checkingUpdates}
+            onThemeChange={changeTheme}
+            onCheckUpdates={() => void checkUpdates()}
+          />
         ) : null}
       </div>
       </div>

@@ -235,6 +235,21 @@ export function MapGraphPage({
     setChangeError(null)
   }
 
+  function disconnectNodes(fromId: string, toId: string): void {
+    if (!map) return
+
+    const current = draftPaths ?? map.paths
+    const next = current.filter(
+      (path) =>
+        !((path.a === fromId && path.b === toId) || (path.a === toId && path.b === fromId))
+    )
+
+    if (next.length === current.length) return
+
+    setDraftPaths(next)
+    setChangeError(null)
+  }
+
   async function saveChanges(): Promise<void> {
     if (!map || (!positions && !draftPaths)) return
 
@@ -294,6 +309,9 @@ export function MapGraphPage({
 
     const target = event.target
     if (target instanceof Element && target.closest('.map-node')) return
+    // Путь обрабатывает двойной клик сам: захват указателя для панорамирования
+    // съедал бы клики и не давал событию дойти до линии.
+    if (target instanceof Element && target.closest('.map-edge--hit')) return
 
     const viewport = event.currentTarget
     event.preventDefault()
@@ -395,7 +413,7 @@ export function MapGraphPage({
           <section className="map-graph-card">
             <div className="map-graph-card__bar">
               <div className="map-graph-card__legend">
-                <span>
+                <span title="Двойной клик по пути удаляет его">
                   <i className="map-legend__line" aria-hidden="true" />
                   Путь между местами
                 </span>
@@ -481,6 +499,7 @@ export function MapGraphPage({
                       onOpenMap={onOpenMap}
                       onMoveNode={moveNode}
                       onConnect={connectNodes}
+                      onDisconnect={disconnectNodes}
                       scale={zoom}
                       showCanvas
                     />

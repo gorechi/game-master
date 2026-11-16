@@ -106,6 +106,8 @@ interface MapGraphProps {
   onOpenMap: (mapId: string) => void
   onMoveNode: (placeId: string, x: number, y: number) => void
   onConnect: (fromId: string, toId: string) => void
+  /** Двойной клик по пути в режиме редактирования удаляет его. */
+  onDisconnect?: (fromId: string, toId: string) => void
   /** В режиме проведения карта только для чтения. */
   interactive?: boolean
   /** Масштаб отображения: координаты указателя переводятся обратно в координаты раскладки. */
@@ -128,6 +130,7 @@ export function MapGraph({
   onOpenMap,
   onMoveNode,
   onConnect,
+  onDisconnect,
   interactive = true,
   scale = 1,
   showCanvas = false
@@ -377,6 +380,16 @@ export function MapGraph({
             <g key={edge.key}>
               <path className="map-edge map-edge--bed" d={d} />
               <path className="map-edge map-edge--trail" d={d} />
+              {interactive && onDisconnect ? (
+                <path
+                  className="map-edge map-edge--hit"
+                  d={d}
+                  vectorEffect="non-scaling-stroke"
+                  onDoubleClick={() => onDisconnect(edge.from.id, edge.to.id)}
+                >
+                  <title>Двойной клик — удалить путь</title>
+                </path>
+              ) : null}
             </g>
           )
         })}

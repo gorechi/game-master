@@ -1,16 +1,24 @@
 import type { JSX } from 'react'
 import { themeLabels, type AppSettings, type ThemeName } from '@shared/settings'
+import type { UpdateState } from '@shared/update'
+import { UpdateSection } from './UpdateSection'
 import { IconCheck } from './ui/icons'
 
 interface SettingsSectionProps {
   settings: AppSettings
+  update: UpdateState | null
+  checkingUpdates: boolean
   onThemeChange: (theme: ThemeName) => void
+  onCheckUpdates: () => void
 }
 
 /** Содержимое страницы настроек. */
 export function SettingsSection({
   settings,
-  onThemeChange
+  update,
+  checkingUpdates,
+  onThemeChange,
+  onCheckUpdates
 }: SettingsSectionProps): JSX.Element {
   return (
     <div className="settings">
@@ -31,6 +39,8 @@ export function SettingsSection({
           ))}
         </div>
       </section>
+
+      <UpdateSection update={update} checking={checkingUpdates} onCheck={onCheckUpdates} />
     </div>
   )
 }

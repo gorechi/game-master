@@ -7,6 +7,9 @@ const api: GameMasterApi = {
     info: () => ipcRenderer.invoke(IPC.appInfo),
     openDataFolder: () => ipcRenderer.invoke(IPC.appOpenDataFolder)
   },
+  updates: {
+    check: () => ipcRenderer.invoke(IPC.updatesCheck)
+  },
   games: {
     list: () => ipcRenderer.invoke(IPC.gamesList),
     create: (input, realmId) => ipcRenderer.invoke(IPC.gameCreate, input, realmId),

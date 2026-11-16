@@ -69,10 +69,36 @@ export function IconClose(props: IconProps): JSX.Element {
   )
 }
 
+export function IconDownload(props: IconProps): JSX.Element {
+  return (
+    <Svg {...props}>
+      <path d="M12 4v10" />
+      <path d="M7.6 10.4L12 14.8l4.4-4.4" />
+      <path d="M5 19h14" />
+    </Svg>
+  )
+}
+
 export function IconChevronDown(props: IconProps): JSX.Element {
   return (
     <Svg {...props}>
       <path d="M6 9.5l6 6 6-6" />
+    </Svg>
+  )
+}
+
+export function IconChevronLeft(props: IconProps): JSX.Element {
+  return (
+    <Svg {...props}>
+      <path d="M14.5 5.5L8 12l6.5 6.5" />
+    </Svg>
+  )
+}
+
+export function IconChevronRight(props: IconProps): JSX.Element {
+  return (
+    <Svg {...props}>
+      <path d="M9.5 5.5L16 12l-6.5 6.5" />
     </Svg>
   )
 }

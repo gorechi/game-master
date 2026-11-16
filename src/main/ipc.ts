@@ -48,6 +48,7 @@ import {
   updatePlaceType
 } from './storage/placeTypeStore'
 import { getSettings, updateSettings } from './storage/settingsStore'
+import { checkForUpdates } from './updateService'
 import { chooseDataImportFile, exportDataPack, importDataPack } from './dataExchange'
 import {
   chooseBackupFile,
@@ -130,6 +131,8 @@ export function registerIpcHandlers(): void {
     const error = await shell.openPath(app.getPath('userData'))
     if (error) throw new Error(`Не удалось открыть папку: ${error}`)
   })
+
+  ipcMain.handle(IPC.updatesCheck, () => checkForUpdates())
 
   ipcMain.handle(IPC.gamesList, () => listGames())
 
