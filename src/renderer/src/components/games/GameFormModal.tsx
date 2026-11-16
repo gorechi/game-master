@@ -11,8 +11,9 @@ import { createGameMonster, formatChallengeRating, gameMonsterFromEntry, playerF
 import { api, errorMessage } from '@renderer/lib/api'
 import { Modal } from '../ui/Modal'
 import { Select } from '../ui/Select'
-import { IconPencil, IconTrash } from '../ui/icons'
+import { IconMapPin, IconPencil, IconTrash } from '../ui/icons'
 import { MonsterFormModal } from '../monsters/MonsterFormModal'
+import { MonsterPlacementModal } from './MonsterPlacementModal'
 
 interface GameFormModalProps {
   open: boolean
@@ -41,8 +42,44 @@ interface MonsterSelection {
   count: number
 }
 
+interface MonsterPlacement {
+  mapId: string
+  placeId: string
+}
+
 function characterInitial(character: CharacterProfile): string {
   return character.name.trim().charAt(0).toUpperCase() || '?'
+}
+
+/**
+ * Карта игры и все карты, до которых можно добраться по выходам.
+ * Порядок: сначала карта игры, затем остальные по порядку из списка карт.
+ */
+function reachableMaps(maps: readonly GameMap[], rootMapId: string): GameMap[] {
+  const byId = new Map(maps.map((map) => [map.id, map]))
+  if (!byId.has(rootMapId)) return []
+
+  const included = new Set<string>()
+  const queue = [rootMapId]
+
+  while (queue.length > 0) {
+    const mapId = queue.pop()!
+    if (included.has(mapId)) continue
+
+    const map = byId.get(mapId)
+    if (!map) continue
+
+    included.add(mapId)
+    for (const place of map.places) {
+      if (place.linkedMapId && !included.has(place.linkedMapId)) {
+        queue.push(place.linkedMapId)
+      }
+    }
+  }
+
+  const ordered = maps.filter((map) => included.has(map.id))
+  const root = ordered.find((map) => map.id === rootMapId)
+  return root ? [root, ...ordered.filter((map) => map.id !== rootMapId)] : ordered
 }
 
 /**
@@ -95,6 +132,8 @@ export function GameFormModal({
   const [savedMonsters, setSavedMonsters] = useState<GameMonsterEntry[]>([])
   const [readyIds, setReadyIds] = useState<string[]>([])
   const [editingMonsterId, setEditingMonsterId] = useState<string | null>(null)
+  const [placements, setPlacements] = useState<Record<string, MonsterPlacement>>({})
+  const [placementMonsterId, setPlacementMonsterId] = useState<string | null>(null)
   const [characters, setCharacters] = useState<CharacterProfile[]>([])
   const [players, setPlayers] = useState<Player[]>([])
   const [bestiary, setBestiary] = useState<Monster[]>([])
@@ -120,6 +159,8 @@ export function GameFormModal({
     setInstances(game?.monsters ?? [])
     setReadyIds([])
     setEditingMonsterId(null)
+    setPlacements({})
+    setPlacementMonsterId(null)
     setError(null)
     setSaving(false)
     setDataError(null)
@@ -162,7 +203,15 @@ export function GameFormModal({
     setInstances([])
     setReadyIds([])
     setEditingMonsterId(null)
+    setPlacements({})
+    setPlacementMonsterId(null)
     setError(null)
+  }
+
+  function changeMap(nextMapId: string): void {
+    setMapId(nextMapId)
+    setPlacements({})
+    setPlacementMonsterId(null)
   }
 
   function playerName(playerId: string | null): string {
@@ -242,6 +291,13 @@ export function GameFormModal({
   function removeInstance(instanceId: string): void {
     setInstances((current) => current.filter((monster) => monster.id !== instanceId))
     setEditingMonsterId((current) => (current === instanceId ? null : current))
+    setPlacements((current) => {
+      if (!current[instanceId]) return current
+      const next = { ...current }
+      delete next[instanceId]
+      return next
+    })
+    setPlacementMonsterId((current) => (current === instanceId ? null : current))
   }
 
   const editingMonster = editingMonsterId
@@ -253,6 +309,12 @@ export function GameFormModal({
   const realmBestiary = bestiary.filter((monster) => monster.realmId === realmId)
   const realmSavedMonsters = savedMonsters.filter((monster) => monster.realmId === realmId)
   const realmMaps = maps.filter((map) => map.realmId === realmId)
+  const placementMaps = mapId ? reachableMaps(realmMaps, mapId) : []
+  const canPlaceMonsters = isEdit && !readOnly && placementMaps.length > 0
+  const placementMonster = placementMonsterId
+    ? (instances.find((monster) => monster.id === placementMonsterId) ?? null)
+    : null
+  const placementDraft = placementMonster ? placements[placementMonster.id] : undefined
   const availableBestiary = realmBestiary.filter(
     (monster) => !selections.some((selection) => selection.sourceId === monster.id)
   )
@@ -285,6 +347,19 @@ export function GameFormModal({
   }
 
   function renderInstanceRow(monster: GameMonster): JSX.Element {
+    const placement = placements[monster.id]
+    const placedMap = placement
+      ? placementMaps.find((map) => map.id === placement.mapId)
+      : undefined
+    const placedPlace = placedMap?.places.find(
+      (place) => place.id === placement?.placeId
+    )
+    const placed = Boolean(placedMap && placedPlace)
+    const placementTitle =
+      placedMap && placedPlace
+        ? `Изменить место: ${placedMap.name} · ${placedPlace.name}`
+        : 'Разместить на карте'
+
     return (
       <li className="game-monster-row" key={monster.id}>
         <span className="game-monster-row__title">
@@ -298,6 +373,19 @@ export function GameFormModal({
         {!readOnly ? (
           <div className="game-monster-row__side">
             <div className="game-monster-row__actions">
+              {canPlaceMonsters ? (
+                <button
+                  type="button"
+                  className={`icon-button game-monster-row__place${
+                    placed ? ' game-monster-row__place--active' : ''
+                  }`}
+                  title={placementTitle}
+                  aria-label={placementTitle}
+                  onClick={() => setPlacementMonsterId(monster.id)}
+                >
+                  <IconMapPin />
+                </button>
+              ) : null}
               <button
                 type="button"
                 className="icon-button"
@@ -554,7 +642,7 @@ export function GameFormModal({
                 { value: '', label: 'Без карты' },
                 ...realmMaps.map((map) => ({ value: map.id, label: map.name }))
               ]}
-              onChange={(value) => setMapId(value)}
+              onChange={changeMap}
             />
           </div>
         </div>
@@ -800,6 +888,23 @@ export function GameFormModal({
             )
           )
           setEditingMonsterId(null)
+        }}
+      />
+
+      <MonsterPlacementModal
+        open={placementMonster !== null}
+        monsterName={placementMonster?.name ?? ''}
+        maps={placementMaps}
+        initialMapId={placementDraft?.mapId ?? mapId}
+        initialPlaceId={placementDraft?.placeId ?? ''}
+        onClose={() => setPlacementMonsterId(null)}
+        onSave={(nextMapId, nextPlaceId) => {
+          if (!placementMonster) return
+          setPlacements((current) => ({
+            ...current,
+            [placementMonster.id]: { mapId: nextMapId, placeId: nextPlaceId }
+          }))
+          setPlacementMonsterId(null)
         }}
       />
     </Modal>

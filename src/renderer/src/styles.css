@@ -1882,6 +1882,24 @@ input[type='number'] {
   height: 28px;
 }
 
+.game-monster-row__place--active {
+  color: var(--ok);
+  border-color: rgba(116, 196, 147, 0.5);
+  background: rgba(116, 196, 147, 0.12);
+}
+
+.game-monster-row__place--active:hover {
+  color: #a5e0bb;
+  border-color: rgba(116, 196, 147, 0.7);
+  background: rgba(116, 196, 147, 0.18);
+}
+
+.monster-placement {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
 .count-button {
   display: inline-flex;
   align-items: center;

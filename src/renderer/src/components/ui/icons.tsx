@@ -209,6 +209,15 @@ export function IconCollapse(props: IconProps): JSX.Element {
   )
 }
 
+export function IconMapPin(props: IconProps): JSX.Element {
+  return (
+    <Svg {...props}>
+      <path d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11Z" />
+      <circle cx="12" cy="10" r="2.2" />
+    </Svg>
+  )
+}
+
 export function IconDatabase(props: IconProps): JSX.Element {
   return (
     <Svg {...props}>
