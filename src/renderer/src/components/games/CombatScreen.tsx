@@ -369,15 +369,17 @@ function QueueCard({
         </button>
       ) : null}
 
-      <button
-        type="button"
-        className="combat-defeat-button"
-        title="Повержен"
-        aria-label={`Повержен: ${entry.name}`}
-        onClick={onDefeat}
-      >
-        <IconSkull width={22} height={22} />
-      </button>
+      {!current ? (
+        <button
+          type="button"
+          className="combat-defeat-button"
+          title="Повержен"
+          aria-label={`Повержен: ${entry.name}`}
+          onClick={onDefeat}
+        >
+          <IconSkull width={22} height={22} />
+        </button>
+      ) : null}
     </article>
   )
 }

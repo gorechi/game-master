@@ -2866,15 +2866,15 @@ input[type='number'] {
 .combat-escape-button {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   flex: none;
   padding: 0;
   border-radius: 8px;
-  border: 1px solid transparent;
-  background: transparent;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.035);
   color: var(--ink-faint);
-  opacity: 0.68;
+  opacity: 0.82;
   cursor: pointer;
   transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
 }
@@ -2893,6 +2893,8 @@ input[type='number'] {
 
 .combat-queue-card--current .combat-escape-button {
   color: rgba(36, 29, 11, 0.5);
+  border-color: rgba(36, 29, 11, 0.22);
+  background: rgba(36, 29, 11, 0.06);
 }
 
 .combat-queue-card--current .combat-escape-button:hover {
