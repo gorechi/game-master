@@ -12,6 +12,8 @@ interface RunMapProps {
   /** Имена живых монстров по id места — индикаторы только на экране проведения. */
   monsterNamesByPlace: Record<string, readonly string[]>
   onOpenPlaceMonsters: (placeId: string) => void
+  descriptionPlaceIds: ReadonlySet<string>
+  onOpenPlaceDescription: (placeId: string) => void
   onOpenMap: (mapId: string) => void
 }
 
@@ -34,6 +36,8 @@ export function RunMap({
   linkedMapNames,
   monsterNamesByPlace,
   onOpenPlaceMonsters,
+  descriptionPlaceIds,
+  onOpenPlaceDescription,
   onOpenMap
 }: RunMapProps): JSX.Element {
   const viewportRef = useRef<HTMLDivElement>(null)
@@ -122,6 +126,8 @@ export function RunMap({
           linkedMapNames={linkedMapNames}
           monsterNamesByPlace={monsterNamesByPlace}
           onOpenPlaceMonsters={onOpenPlaceMonsters}
+          descriptionPlaceIds={descriptionPlaceIds}
+          onOpenPlaceDescription={onOpenPlaceDescription}
           onOpenMap={onOpenMap}
           onMoveNode={() => undefined}
           onConnect={() => undefined}
@@ -160,6 +166,8 @@ export function RunMap({
             linkedMapNames={linkedMapNames}
             monsterNamesByPlace={monsterNamesByPlace}
             onOpenPlaceMonsters={onOpenPlaceMonsters}
+            descriptionPlaceIds={descriptionPlaceIds}
+            onOpenPlaceDescription={onOpenPlaceDescription}
             onOpenMap={onOpenMap}
             onMoveNode={() => undefined}
             onConnect={() => undefined}

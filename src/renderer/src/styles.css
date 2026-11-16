@@ -3828,6 +3828,36 @@ input[type='number'] {
   box-shadow: 0 16px 28px rgba(0, 0, 0, 0.4);
 }
 
+.map-node__description {
+  position: absolute;
+  z-index: 3;
+  top: -16px;
+  left: -16px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(216, 178, 92, 0.6);
+  background: linear-gradient(180deg, #3b314d, #211b2d);
+  color: var(--gold-strong);
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.map-node__description:hover {
+  transform: scale(1.08);
+  background: linear-gradient(180deg, #504168, #2c243b);
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.45);
+}
+
+.map-node__description:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
 .map-node__monsters {
   position: absolute;
   z-index: 3;

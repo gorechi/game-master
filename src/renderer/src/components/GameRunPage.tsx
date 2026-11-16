@@ -12,6 +12,7 @@ import {
 } from './games/CombatModal'
 import { CombatScreen } from './games/CombatScreen'
 import { RunMap } from './maps/RunMap'
+import { PlaceDescriptionModal } from './maps/PlaceDescriptionModal'
 import { PlaceMonstersModal } from './maps/PlaceMonstersModal'
 import { IconArrowLeft, IconCollapse, IconExpand, IconFlag, IconSwords } from './ui/icons'
 
@@ -31,6 +32,7 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
   const [combatOpen, setCombatOpen] = useState(false)
   const [combat, setCombat] = useState<CombatStart | null>(null)
   const [monstersPlaceId, setMonstersPlaceId] = useState<string | null>(null)
+  const [descriptionPlaceId, setDescriptionPlaceId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [confirmFinish, setConfirmFinish] = useState(false)
   const notesRef = useRef(notes)
@@ -235,12 +237,36 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
       monsters.map((monster) => monster.name)
     ])
   )
+  const descriptionPlaceIds = new Set(
+    map?.places
+      .filter((place) => place.description.trim().length > 0)
+      .map((place) => place.id) ?? []
+  )
+  const descriptionPlace = descriptionPlaceId
+    ? (map?.places.find((place) => place.id === descriptionPlaceId) ?? null)
+    : null
   const selectedPlace = monstersPlaceId
     ? (map?.places.find((place) => place.id === monstersPlaceId) ?? null)
     : null
   const selectedPlaceMonsters = monstersPlaceId
     ? (livingMonstersByPlace[monstersPlaceId] ?? [])
     : []
+
+  async function savePlaceDescription(value: string): Promise<void> {
+    if (!map || !descriptionPlace) return
+
+    const updated = await api.maps.update({
+      ...map,
+      places: map.places.map((place) =>
+        place.id === descriptionPlace.id ? { ...place, description: value } : place
+      )
+    })
+
+    setMaps((current) =>
+      current.map((item) => (item.id === updated.id ? updated : item))
+    )
+    setDescriptionPlaceId(null)
+  }
 
   if (combat) {
     return (
@@ -301,9 +327,12 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
                 linkedMapNames={linkedMapNames}
                 monsterNamesByPlace={monsterNamesByPlace}
                 onOpenPlaceMonsters={setMonstersPlaceId}
+                descriptionPlaceIds={descriptionPlaceIds}
+                onOpenPlaceDescription={setDescriptionPlaceId}
                 onOpenMap={(mapId) => {
                   setActiveMapId(mapId)
                   setMonstersPlaceId(null)
+                  setDescriptionPlaceId(null)
                 }}
               />
             ) : (
@@ -421,6 +450,14 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
         placeName={selectedPlace?.name ?? ''}
         monsters={selectedPlaceMonsters}
         onClose={() => setMonstersPlaceId(null)}
+      />
+
+      <PlaceDescriptionModal
+        open={descriptionPlace !== null}
+        placeName={descriptionPlace?.name ?? ''}
+        value={descriptionPlace?.description ?? ''}
+        onClose={() => setDescriptionPlaceId(null)}
+        onSave={savePlaceDescription}
       />
     </main>
   )

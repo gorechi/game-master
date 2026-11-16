@@ -209,6 +209,16 @@ export function IconCollapse(props: IconProps): JSX.Element {
   )
 }
 
+export function IconNote(props: IconProps): JSX.Element {
+  return (
+    <Svg {...props}>
+      <path d="M6 3.5h9l3 3v14H6V3.5Z" />
+      <path d="M15 3.5v3h3" />
+      <path d="M9 10h6M9 13.5h6M9 17h4" />
+    </Svg>
+  )
+}
+
 export function IconRun(props: IconProps): JSX.Element {
   return (
     <Svg {...props}>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { JSX } from 'react'
+import { errorMessage } from '@renderer/lib/api'
 import { Modal } from '../ui/Modal'
 
 interface PlaceDescriptionModalProps {
@@ -7,7 +8,7 @@ interface PlaceDescriptionModalProps {
   placeName: string
   value: string
   onClose: () => void
-  onSave: (value: string) => void
+  onSave: (value: string) => void | Promise<void>
 }
 
 /** Большой редактор заметок и описания места. */
@@ -19,12 +20,31 @@ export function PlaceDescriptionModal({
   onSave
 }: PlaceDescriptionModalProps): JSX.Element {
   const [draft, setDraft] = useState(value)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     if (!open) return
     setDraft(value)
+    setSaving(false)
+    setError(null)
   }, [open, value])
+
+  async function save(): Promise<void> {
+    if (saving) return
+
+    setSaving(true)
+    setError(null)
+
+    try {
+      await onSave(draft)
+    } catch (caught) {
+      setError(errorMessage(caught))
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
     <Modal
@@ -36,19 +56,22 @@ export function PlaceDescriptionModal({
       initialFocusRef={textareaRef}
       footer={
         <>
-          <button type="button" className="button" onClick={onClose}>
+          <button type="button" className="button" onClick={onClose} disabled={saving}>
             Отмена
           </button>
           <button
             type="button"
             className="button button--primary"
-            onClick={() => onSave(draft)}
+            onClick={() => void save()}
+            disabled={saving}
           >
-            Сохранить описание
+            {saving ? 'Сохраняем…' : 'Сохранить описание'}
           </button>
         </>
       }
     >
+      {error ? <p className="notice notice--error">{error}</p> : null}
+
       <label className="field">
         <span className="field__label">Заметки мастера</span>
         <textarea

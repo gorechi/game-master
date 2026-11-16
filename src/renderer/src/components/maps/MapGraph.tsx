@@ -11,7 +11,7 @@ import {
   type MapNodePosition
 } from '@renderer/lib/mapLayout'
 import { PlaceTypeIcon } from '../placeTypes/PlaceTypeIcon'
-import { IconMonsterFace } from '../ui/icons'
+import { IconMonsterFace, IconNote } from '../ui/icons'
 import { MapExitFrame } from './MapExitFrame'
 
 const DRAG_THRESHOLD = 4
@@ -100,6 +100,9 @@ interface MapGraphProps {
   /** Имена живых монстров по id места — только на экране проведения. */
   monsterNamesByPlace?: Record<string, readonly string[]>
   onOpenPlaceMonsters?: (placeId: string) => void
+  /** Места, у которых есть описание. */
+  descriptionPlaceIds?: ReadonlySet<string>
+  onOpenPlaceDescription?: (placeId: string) => void
   onOpenMap: (mapId: string) => void
   onMoveNode: (placeId: string, x: number, y: number) => void
   onConnect: (fromId: string, toId: string) => void
@@ -120,6 +123,8 @@ export function MapGraph({
   linkedMapNames,
   monsterNamesByPlace,
   onOpenPlaceMonsters,
+  descriptionPlaceIds,
+  onOpenPlaceDescription,
   onOpenMap,
   onMoveNode,
   onConnect,
@@ -390,6 +395,7 @@ export function MapGraph({
           ? placeTypeById.get(node.placeTypeId)
           : undefined
         const placeMonsters = monsterNamesByPlace?.[node.id] ?? []
+        const hasDescription = descriptionPlaceIds?.has(node.id) ?? false
         const className = [
           'map-node',
           'map-node--token',
@@ -455,6 +461,24 @@ export function MapGraph({
               )}
               {node.isExit ? <MapExitFrame className="map-node__exit-frame" /> : null}
             </span>
+
+            {hasDescription && onOpenPlaceDescription ? (
+              <button
+                type="button"
+                className="map-node__description"
+                title="Описание места"
+                aria-label={`Описание локации «${node.name}»`}
+                onPointerDown={(event) => event.stopPropagation()}
+                onPointerUp={(event) => event.stopPropagation()}
+                onKeyDown={(event) => event.stopPropagation()}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onOpenPlaceDescription(node.id)
+                }}
+              >
+                <IconNote width={13} height={13} />
+              </button>
+            ) : null}
 
             {placeMonsters.length > 0 && onOpenPlaceMonsters ? (
               <button
