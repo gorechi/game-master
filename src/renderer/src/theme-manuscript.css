@@ -800,6 +800,21 @@
   box-shadow: 0 9px 20px rgba(74, 52, 26, 0.16);
 }
 
+:root[data-theme='light'] .map-node__description,
+:root[data-theme='light'] .map-node__monsters {
+  border-color: rgba(122, 86, 44, 0.42);
+  background: linear-gradient(180deg, #fff9ea, #e8d7b7);
+  color: #7a4f12;
+  box-shadow: 0 3px 9px rgba(74, 52, 26, 0.22);
+}
+
+:root[data-theme='light'] .map-node__description:hover,
+:root[data-theme='light'] .map-node__monsters:hover {
+  background: linear-gradient(180deg, #fffdf6, #f0e3ca);
+  color: #5d3a0d;
+  box-shadow: 0 5px 12px rgba(74, 52, 26, 0.28);
+}
+
 :root[data-theme='light'] .map-node--token:hover .map-node__token {
   box-shadow: 0 12px 24px rgba(74, 52, 26, 0.2);
 }
