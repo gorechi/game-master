@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, JSX } from 'react'
-import type { Game } from '@shared/game'
+import type { Game, GameMonster } from '@shared/game'
 import type { GameMap } from '@shared/map'
 import type { PlaceType } from '@shared/placeType'
 import { api, errorMessage } from '@renderer/lib/api'
@@ -8,6 +8,7 @@ import { GameFinishModal } from './games/GameFinishModal'
 import { CombatModal, type CombatStart } from './games/CombatModal'
 import { CombatScreen } from './games/CombatScreen'
 import { RunMap } from './maps/RunMap'
+import { PlaceMonstersModal } from './maps/PlaceMonstersModal'
 import { IconArrowLeft, IconCollapse, IconExpand, IconFlag, IconSwords } from './ui/icons'
 
 interface GameRunPageProps {
@@ -25,6 +26,7 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
   const [notesExpanded, setNotesExpanded] = useState(false)
   const [combatOpen, setCombatOpen] = useState(false)
   const [combat, setCombat] = useState<CombatStart | null>(null)
+  const [monstersPlaceId, setMonstersPlaceId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [confirmFinish, setConfirmFinish] = useState(false)
   const notesRef = useRef(notes)
@@ -129,6 +131,37 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
     ? (maps.find((item) => item.id === activeMapId) ?? null)
     : null
   const linkedMapNames = Object.fromEntries(maps.map((item) => [item.id, item.name]))
+  const livingMonstersByPlace: Record<string, GameMonster[]> = {}
+
+  if (game && map) {
+    const monstersById = new Map(
+      game.monsters.filter((monster) => monster.hitPoints > 0).map((monster) => [monster.id, monster])
+    )
+
+    for (const placement of game.monsterPlacements) {
+      if (placement.mapId !== map.id) continue
+
+      const monster = monstersById.get(placement.monsterId)
+      if (!monster) continue
+
+      const placeMonsters = livingMonstersByPlace[placement.placeId] ?? []
+      placeMonsters.push(monster)
+      livingMonstersByPlace[placement.placeId] = placeMonsters
+    }
+  }
+
+  const monsterNamesByPlace = Object.fromEntries(
+    Object.entries(livingMonstersByPlace).map(([placeId, monsters]) => [
+      placeId,
+      monsters.map((monster) => monster.name)
+    ])
+  )
+  const selectedPlace = monstersPlaceId
+    ? (map?.places.find((place) => place.id === monstersPlaceId) ?? null)
+    : null
+  const selectedPlaceMonsters = monstersPlaceId
+    ? (livingMonstersByPlace[monstersPlaceId] ?? [])
+    : []
 
   if (combat) {
     return (
@@ -185,7 +218,12 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
                 map={map}
                 placeTypes={placeTypes}
                 linkedMapNames={linkedMapNames}
-                onOpenMap={(mapId) => setActiveMapId(mapId)}
+                monsterNamesByPlace={monsterNamesByPlace}
+                onOpenPlaceMonsters={setMonstersPlaceId}
+                onOpenMap={(mapId) => {
+                  setActiveMapId(mapId)
+                  setMonstersPlaceId(null)
+                }}
               />
             ) : (
               <div className="run-map-empty">
@@ -296,6 +334,13 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
           }}
         />
       ) : null}
+
+      <PlaceMonstersModal
+        open={selectedPlace !== null}
+        placeName={selectedPlace?.name ?? ''}
+        monsters={selectedPlaceMonsters}
+        onClose={() => setMonstersPlaceId(null)}
+      />
     </main>
   )
 }

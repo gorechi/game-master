@@ -11,6 +11,7 @@ import {
   type MapNodePosition
 } from '@renderer/lib/mapLayout'
 import { PlaceTypeIcon } from '../placeTypes/PlaceTypeIcon'
+import { IconMonsterFace } from '../ui/icons'
 import { MapExitFrame } from './MapExitFrame'
 
 const DRAG_THRESHOLD = 4
@@ -96,6 +97,9 @@ interface MapGraphProps {
   placeTypes: readonly PlaceType[]
   /** Названия других карт по id — для подписи выхода. */
   linkedMapNames: Record<string, string>
+  /** Имена живых монстров по id места — только на экране проведения. */
+  monsterNamesByPlace?: Record<string, readonly string[]>
+  onOpenPlaceMonsters?: (placeId: string) => void
   onOpenMap: (mapId: string) => void
   onMoveNode: (placeId: string, x: number, y: number) => void
   onConnect: (fromId: string, toId: string) => void
@@ -114,6 +118,8 @@ export function MapGraph({
   layout,
   placeTypes,
   linkedMapNames,
+  monsterNamesByPlace,
+  onOpenPlaceMonsters,
   onOpenMap,
   onMoveNode,
   onConnect,
@@ -383,6 +389,7 @@ export function MapGraph({
         const placeType = node.placeTypeId
           ? placeTypeById.get(node.placeTypeId)
           : undefined
+        const placeMonsters = monsterNamesByPlace?.[node.id] ?? []
         const className = [
           'map-node',
           'map-node--token',
@@ -447,6 +454,22 @@ export function MapGraph({
                 <span className="map-node__token-initial">{nodeInitial(node.name)}</span>
               )}
               {node.isExit ? <MapExitFrame className="map-node__exit-frame" /> : null}
+              {placeMonsters.length > 0 && onOpenPlaceMonsters ? (
+                <button
+                  type="button"
+                  className="map-node__monsters"
+                  title={`Монстры здесь: ${placeMonsters.join(', ')}`}
+                  aria-label={`Монстры в локации «${node.name}»`}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onKeyDown={(event) => event.stopPropagation()}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    onOpenPlaceMonsters(node.id)
+                  }}
+                >
+                  <IconMonsterFace width={13} height={13} />
+                </button>
+              ) : null}
             </span>
             <span className="map-node__token-label">{node.name}</span>
 
