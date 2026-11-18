@@ -1,5 +1,5 @@
-import { useEffect, useId, useRef, useState } from 'react'
-import type { CSSProperties, JSX, KeyboardEvent } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import type { CSSProperties, JSX, KeyboardEvent, Ref } from 'react'
 import { createPortal } from 'react-dom'
 import { useMessages } from '@renderer/i18n/LocaleProvider'
 import { IconChevronDown } from './icons'
@@ -19,6 +19,8 @@ interface SelectProps<T extends string> {
   disabled?: boolean
   /** Разрешает вводить текст в поле и фильтрует варианты по подстроке. */
   searchable?: boolean
+  /** Ref на интерактивный элемент (кнопку или поле поиска) — для управления фокусом. */
+  controlRef?: Ref<HTMLButtonElement | HTMLInputElement>
 }
 
 /**
@@ -33,7 +35,8 @@ export function Select<T extends string>({
   placeholder,
   variant = 'field',
   disabled = false,
-  searchable = false
+  searchable = false,
+  controlRef
 }: SelectProps<T>): JSX.Element {
   const m = useMessages()
   const placeholderText = placeholder ?? m.ui.select.placeholder
@@ -44,8 +47,25 @@ export function Select<T extends string>({
   const [menuStyle, setMenuStyle] = useState<CSSProperties>({})
   const rootRef = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLUListElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
   const listId = useId()
+
+  /** Отдаёт наружу фактический интерактивный элемент списка. */
+  const setControlRef = useCallback(
+    (node: HTMLButtonElement | HTMLInputElement | null): void => {
+      if (typeof controlRef === 'function') {
+        controlRef(node)
+        return
+      }
+
+      if (controlRef) {
+        const target = controlRef as {
+          current: HTMLButtonElement | HTMLInputElement | null
+        }
+        target.current = node
+      }
+    },
+    [controlRef]
+  )
 
   useEffect(() => {
     if (!open) return
@@ -240,7 +260,7 @@ export function Select<T extends string>({
       {searchable ? (
         <>
           <input
-            ref={inputRef}
+            ref={setControlRef}
             type="text"
             className="picker__trigger picker__input"
             role="combobox"
@@ -274,6 +294,7 @@ export function Select<T extends string>({
         </>
       ) : (
         <button
+          ref={setControlRef}
           type="button"
           className="picker__trigger"
           aria-haspopup="listbox"

@@ -110,6 +110,7 @@ export function MonsterFormModal({
 
   const formId = useId()
   const nameRef = useRef<HTMLInputElement>(null)
+  const realmRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     if (!open) return
@@ -185,6 +186,8 @@ export function MonsterFormModal({
   }
 
   const showBasePicker = Boolean(baseMonsters && baseMonsters.length > 0)
+  /** Новое уникальное существо начинается с выбора сеттинга. */
+  const focusRealm = Boolean(baseMonsters) && !initial && !lockRealm
   const baseOptions = realmId
     ? (baseMonsters ?? []).filter((monster) => monster.realmId === realmId)
     : []
@@ -259,7 +262,7 @@ export function MonsterFormModal({
       description={description}
       size="lg"
       onClose={onClose}
-      initialFocusRef={nameRef}
+      initialFocusRef={focusRealm ? realmRef : nameRef}
       footer={
         <>
           <button type="button" className="button" onClick={onClose} disabled={saving}>
@@ -295,6 +298,7 @@ export function MonsterFormModal({
                 value={realmId}
                 placeholder={m.bestiary.form.realmPlaceholder}
                 disabled={lockRealm}
+                controlRef={realmRef}
                 options={realms.map((realm) => ({ value: realm.id, label: realm.name }))}
                 onChange={changeRealm}
               />
