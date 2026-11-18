@@ -186,8 +186,8 @@ export function MonsterFormModal({
   }
 
   const showBasePicker = Boolean(baseMonsters && baseMonsters.length > 0)
-  /** Новое уникальное существо начинается с выбора сеттинга. */
-  const focusRealm = Boolean(baseMonsters) && !initial && !lockRealm
+  /** Сеттинг ещё не задан — форма начинается с его выбора. */
+  const focusRealm = Boolean(realms && realms.length > 0) && !lockRealm && !initial
   const baseOptions = realmId
     ? (baseMonsters ?? []).filter((monster) => monster.realmId === realmId)
     : []
