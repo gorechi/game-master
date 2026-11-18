@@ -375,6 +375,50 @@ code {
   color: var(--gold-strong);
 }
 
+.site-head__tools {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.lang-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(10, 8, 14, 0.45);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.lang-switch a,
+.lang-switch__current {
+  display: grid;
+  place-items: center;
+  min-width: 31px;
+  height: 24px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+}
+
+.lang-switch a {
+  color: var(--ink-muted);
+  transition: color 0.18s ease, background 0.18s ease;
+}
+
+.lang-switch a:hover {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.lang-switch__current {
+  color: var(--gold-strong);
+  background: rgba(216, 178, 92, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(216, 178, 92, 0.26);
+}
+
 /* --------------------------------------------------------------------------
    Общие элементы
    -------------------------------------------------------------------------- */
@@ -1927,6 +1971,10 @@ code {
 
   .site-nav {
     gap: 14px;
+  }
+
+  .site-head__tools {
+    gap: 12px;
   }
 
   .site-nav a:not(.site-nav__accent) {

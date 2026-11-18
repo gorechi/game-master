@@ -10,12 +10,17 @@
     />
     <meta name="theme-color" content="#121016" />
     <meta property="og:type" content="website" />
+    <meta property="og:locale" content="ru_RU" />
     <meta property="og:title" content="Game Master — помощник мастера настольных игр" />
     <meta
       property="og:description"
       content="Игры, карты, схватки и бестиарий в одном приложении. Локальные данные, русский и английский интерфейс."
     />
     <meta property="og:image" content="https://gorechi.github.io/game-master/assets/icon.png" />
+    <link rel="canonical" href="https://gorechi.github.io/game-master/" />
+    <link rel="alternate" hreflang="ru" href="https://gorechi.github.io/game-master/" />
+    <link rel="alternate" hreflang="en" href="https://gorechi.github.io/game-master/en/" />
+    <link rel="alternate" hreflang="x-default" href="https://gorechi.github.io/game-master/" />
     <link rel="icon" href="assets/icon.png" />
     <link rel="preload" href="assets/fonts/underdog-400-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="assets/fonts/manrope-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
@@ -40,12 +45,19 @@
           <span class="brand__name">Game Master</span>
         </a>
 
-        <nav class="site-nav" aria-label="Разделы страницы">
-          <a href="#features">Возможности</a>
-          <a href="#screens">Экраны</a>
-          <a href="#data">Данные</a>
-          <a class="site-nav__accent" href="https://github.com/gorechi/game-master/releases">Релизы</a>
-        </nav>
+        <div class="site-head__tools">
+          <nav class="site-nav" aria-label="Разделы страницы">
+            <a href="#features">Возможности</a>
+            <a href="#screens">Экраны</a>
+            <a href="#data">Данные</a>
+            <a class="site-nav__accent" href="https://github.com/gorechi/game-master/releases">Релизы</a>
+          </nav>
+
+          <div class="lang-switch" role="group" aria-label="Язык страницы">
+            <span class="lang-switch__current" aria-current="true">RU</span>
+            <a href="en/" hreflang="en" lang="en" title="English version">EN</a>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -506,7 +518,7 @@
           </div>
           <div class="data-orbit">
             <span>.gmpack</span>
-            <span>reserve copy</span>
+            <span>бэкап</span>
           </div>
         </div>
       </section>

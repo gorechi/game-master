@@ -3,6 +3,7 @@
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const finePointer = window.matchMedia('(pointer: fine)').matches
+  const english = document.documentElement.lang.toLowerCase().startsWith('en')
 
   /* ------------------------------------------------------------------------
      Шапка и полоса прокрутки
@@ -286,33 +287,81 @@
      Демонстрация карты
      ------------------------------------------------------------------------ */
 
-  const places = {
-    camp: {
-      title: 'Лагерь у тракта',
-      note: 'Палатки, костёр и повозка с припасами. Утром отсюда выходят к переправе.',
-      exits: ['Тракт', 'Переправа']
+  const copy = {
+    ru: {
+      places: {
+        camp: {
+          title: 'Лагерь у тракта',
+          note: 'Палатки, костёр и повозка с припасами. Утром отсюда выходят к переправе.',
+          exits: ['Тракт', 'Переправа']
+        },
+        mill: {
+          title: 'Переправа у мельницы',
+          note: 'Старый мост держится на честном слове. Ночью слышно, как под ним переговариваются камни.',
+          exits: ['Чаща', 'Лагерь']
+        },
+        wood: {
+          title: 'Тихая чаща',
+          note: 'Деревья стоят слишком ровно. Тропа петляет, но всегда возвращает к одному и тому же дубу.',
+          exits: ['Переправа', 'Руины']
+        },
+        ruins: {
+          title: 'Руины Северных ворот',
+          note: 'Арка из чёрного камня и лестница вниз. На ступенях осталась золотая пыль.',
+          exits: ['Чаща', 'Пещера']
+        },
+        cave: {
+          title: 'Пещера под холмом',
+          note: 'Узкий лаз зарос мхом. Внутри тепло, а эхо приходит с опозданием на пару шагов.',
+          exits: ['Переправа']
+        }
+      },
+      fighters: [
+        { name: 'Ария', kind: 'герой', hero: true, hp: 24, maxHp: 31, initiative: 18 },
+        { name: 'Скелет-стражник', kind: 'нежить', hero: false, hp: 13, maxHp: 13, initiative: 14 },
+        { name: 'Тэм', kind: 'герой', hero: true, hp: 19, maxHp: 22, initiative: 11 },
+        { name: 'Гоблин-лучник', kind: 'гуманоид', hero: false, hp: 7, maxHp: 7, initiative: 7 }
+      ]
     },
-    mill: {
-      title: 'Переправа у мельницы',
-      note: 'Старый мост держится на честном слове. Ночью слышно, как под ним переговариваются камни.',
-      exits: ['Чаща', 'Лагерь']
-    },
-    wood: {
-      title: 'Тихая чаща',
-      note: 'Деревья стоят слишком ровно. Тропа петляет, но всегда возвращает к одному и тому же дубу.',
-      exits: ['Переправа', 'Руины']
-    },
-    ruins: {
-      title: 'Руины Северных ворот',
-      note: 'Арка из чёрного камня и лестница вниз. На ступенях осталась золотая пыль.',
-      exits: ['Чаща', 'Пещера']
-    },
-    cave: {
-      title: 'Пещера под холмом',
-      note: 'Узкий лаз зарос мхом. Внутри тепло, а эхо приходит с опозданием на пару шагов.',
-      exits: ['Переправа']
+    en: {
+      places: {
+        camp: {
+          title: 'Camp by the road',
+          note: 'Tents, a campfire and a supply cart. In the morning the trail leads to the crossing.',
+          exits: ['Road', 'Crossing']
+        },
+        mill: {
+          title: 'The Mill Crossing',
+          note: 'The old bridge holds on by sheer luck. At night you can hear the stones talking beneath it.',
+          exits: ['Thicket', 'Camp']
+        },
+        wood: {
+          title: 'The Quiet Thicket',
+          note: 'The trees stand too evenly. The path winds, but always brings you back to the same oak.',
+          exits: ['Crossing', 'Ruins']
+        },
+        ruins: {
+          title: 'The North Gate Ruins',
+          note: 'An arch of black stone and a stair leading down. Gold dust remains on the steps.',
+          exits: ['Thicket', 'Cave']
+        },
+        cave: {
+          title: 'The Cave Under the Hill',
+          note: 'A narrow passage overgrown with moss. It is warm inside, and the echo arrives a couple of steps late.',
+          exits: ['Crossing']
+        }
+      },
+      fighters: [
+        { name: 'Aria', kind: 'hero', hero: true, hp: 24, maxHp: 31, initiative: 18 },
+        { name: 'Skeleton Guard', kind: 'undead', hero: false, hp: 13, maxHp: 13, initiative: 14 },
+        { name: 'Tam', kind: 'hero', hero: true, hp: 19, maxHp: 22, initiative: 11 },
+        { name: 'Goblin Archer', kind: 'humanoid', hero: false, hp: 7, maxHp: 7, initiative: 7 }
+      ]
     }
   }
+
+  const text = copy[english ? 'en' : 'ru']
+  const places = text.places
 
   const mapNodes = Array.from(document.querySelectorAll('.map-place'))
   const mapTitle = document.getElementById('mapPlaceTitle')
@@ -362,12 +411,7 @@
   const combatRound = document.getElementById('combatRound')
   const rollButton = document.getElementById('rollInitiative')
 
-  const fighters = [
-    { name: 'Ария', kind: 'герой', hp: 24, maxHp: 31, initiative: 18 },
-    { name: 'Скелет-стражник', kind: 'нежить', hp: 13, maxHp: 13, initiative: 14 },
-    { name: 'Тэм', kind: 'герой', hp: 19, maxHp: 22, initiative: 11 },
-    { name: 'Гоблин-лучник', kind: 'гуманоид', hp: 7, maxHp: 7, initiative: 7 }
-  ]
+  const fighters = text.fighters
 
   let activeFighter = 0
 
@@ -381,7 +425,7 @@
       const ratio = Math.round((fighter.hp / fighter.maxHp) * 100)
       combatHpBar.style.width = `${ratio}%`
       combatHpBar.style.background =
-        fighter.kind === 'герой'
+        fighter.hero
           ? 'linear-gradient(90deg, #b98f3f, #f2cd7a)'
           : 'linear-gradient(90deg, #8d3e39, #d1584f)'
     }
@@ -399,7 +443,7 @@
       row.innerHTML = `
         <span class="combat-row__num">${fighter.initiative}</span>
         <span class="combat-row__name">${fighter.name}<small>${fighter.kind}</small></span>
-        <span class="combat-row__bar${fighter.kind === 'герой' ? '' : ' is-foe'}">
+        <span class="combat-row__bar${fighter.hero ? '' : ' is-foe'}">
           <i style="width: ${Math.round((fighter.hp / fighter.maxHp) * 100)}%"></i>
         </span>
         <span class="combat-row__hp">${fighter.hp} / ${fighter.maxHp}</span>

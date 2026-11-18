@@ -10,7 +10,7 @@ Game Master — офлайн-приложение для мастера D&D: с�
 бестиарий, уникальные существа и карты. Работает без сервера и интернета, данные лежат
 обычными JSON-файлами на диске пользователя.
 
-Сайт: https://gorechi.github.io/game-master/
+Сайт: https://gorechi.github.io/game-master/ · [English](https://gorechi.github.io/game-master/en/)
 
 ## Возможности
 

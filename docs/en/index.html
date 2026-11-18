@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Game Master — a dungeon master's companion</title>
+    <meta
+      name="description"
+      content="Game Master is a tabletop app for the dungeon master: games and realms, maps, combat, bestiary and notes. Runs locally; data stays on your computer."
+    />
+    <meta name="theme-color" content="#121016" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content="Game Master — a dungeon master's companion" />
+    <meta
+      property="og:description"
+      content="Games, maps, combat and a bestiary in one app. Local data, English and Russian interface."
+    />
+    <meta property="og:image" content="https://gorechi.github.io/game-master/assets/icon.png" />
+    <link rel="canonical" href="https://gorechi.github.io/game-master/en/" />
+    <link rel="alternate" hreflang="ru" href="https://gorechi.github.io/game-master/" />
+    <link rel="alternate" hreflang="en" href="https://gorechi.github.io/game-master/en/" />
+    <link rel="alternate" hreflang="x-default" href="https://gorechi.github.io/game-master/" />
+    <link rel="icon" href="../assets/icon.png" />
+    <link rel="preload" href="../assets/fonts/underdog-400-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="../assets/fonts/manrope-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <div class="ambient" aria-hidden="true">
+      <canvas id="embers"></canvas>
+      <div class="ambient__grid"></div>
+      <div class="ambient__glow" id="cursorGlow"></div>
+      <div class="ambient__vignette"></div>
+    </div>
+
+    <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+
+    <header class="site-head" id="siteHead">
+      <div class="site-head__inner">
+        <a class="brand" href="#top" aria-label="Game Master — back to top">
+          <img class="brand__mark" src="../assets/icon.png" alt="" width="38" height="38" />
+          <span class="brand__name">Game Master</span>
+        </a>
+
+        <div class="site-head__tools">
+          <nav class="site-nav" aria-label="Page sections">
+            <a href="#features">Features</a>
+            <a href="#screens">Screens</a>
+            <a href="#data">Data</a>
+            <a class="site-nav__accent" href="https://github.com/gorechi/game-master/releases">Releases</a>
+          </nav>
+
+          <div class="lang-switch" role="group" aria-label="Page language">
+            <a href="../" hreflang="ru" lang="ru" title="Russian version">RU</a>
+            <span class="lang-switch__current" aria-current="true">EN</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero" id="top" aria-labelledby="hero-title">
+        <div class="hero__copy">
+          <p class="eyebrow hero__eyebrow">
+            <span class="eyebrow__mark" aria-hidden="true"></span>
+            Dungeon master's companion
+          </p>
+          <h1 id="hero-title">
+            Run the game,<br />
+            <span class="gold-text">not the spreadsheets</span>
+          </h1>
+          <p class="hero__lead">
+            Maps, a bestiary, encounters and notes in one tabletop app.
+            No server: your data stays on your computer.
+          </p>
+
+          <ul class="hero__facts" aria-label="A quick look at the app">
+            <li><b>Windows</b><span>x64 · ARM64</span></li>
+            <li><b>EN / RU</b><span>interface</span></li>
+            <li><b id="versionLabel">1.4.0</b><span>version</span></li>
+          </ul>
+
+          <p class="hero__link">
+            <a href="https://github.com/gorechi/game-master/releases">
+              Installers <span class="link-arrow" aria-hidden="true">→</span>
+            </a>
+          </p>
+        </div>
+
+        <div class="hero__stage" id="heroStage" aria-label="Fragments of the Game Master interface">
+          <div class="stage-ring stage-ring--one" aria-hidden="true"></div>
+          <div class="stage-ring stage-ring--two" aria-hidden="true"></div>
+
+          <article class="hero-float hero-card hero-card--map" data-depth="12" aria-hidden="true">
+            <div class="pane-head">
+              <span class="pane-head__dot"></span>
+              <span class="pane-head__title">Map · North Gate Road</span>
+              <span class="pane-head__meta">3 places</span>
+            </div>
+            <svg class="hero-map" viewBox="0 0 420 250" role="presentation">
+              <defs>
+                <pattern id="heroGrid" width="34" height="34" patternUnits="userSpaceOnUse">
+                  <path d="M34 0H0V34" fill="none" stroke="rgba(216,178,92,0.08)" />
+                </pattern>
+                <radialGradient id="heroMapGlow" cx="50%" cy="45%" r="70%">
+                  <stop offset="0%" stop-color="rgba(143,109,214,0.22)" />
+                  <stop offset="100%" stop-color="rgba(143,109,214,0)" />
+                </radialGradient>
+                <filter id="nodeGlow" x="-300%" y="-300%" width="700%" height="700%">
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              <rect width="420" height="250" fill="url(#heroGrid)" />
+              <rect width="420" height="250" fill="url(#heroMapGlow)" />
+              <path d="M-20 214 C 60 190, 92 206, 148 176 S 250 140, 322 150 S 404 120, 450 96" fill="none" stroke="rgba(216,178,92,0.12)" stroke-width="1.2" />
+              <path d="M-10 72 C 74 88, 108 54, 176 66 S 288 96, 368 58 S 424 42, 448 50" fill="none" stroke="rgba(162,151,179,0.12)" stroke-width="1" />
+              <path class="hero-map__route" d="M62 198 C 118 176, 142 142, 208 126 S 300 96, 356 64" fill="none" stroke="rgba(216,178,92,0.6)" stroke-width="1.6" stroke-dasharray="5 7" />
+              <path class="hero-map__route hero-map__route--slow" d="M208 126 C 236 152, 274 168, 314 186" fill="none" stroke="rgba(143,109,214,0.5)" stroke-width="1.4" stroke-dasharray="4 8" />
+              <g class="hero-node" transform="translate(62 198)">
+                <circle r="9" fill="rgba(216,178,92,0.1)" />
+                <circle r="4.5" fill="#d8b25c" filter="url(#nodeGlow)" />
+                <text x="0" y="20">Camp</text>
+              </g>
+              <g class="hero-node" transform="translate(208 126)">
+                <circle r="12" fill="rgba(242,205,122,0.14)" />
+                <circle r="5.5" fill="#f2cd7a" filter="url(#nodeGlow)" />
+                <text x="0" y="22">Crossing</text>
+              </g>
+              <g class="hero-node" transform="translate(356 64)">
+                <circle r="9" fill="rgba(216,178,92,0.1)" />
+                <circle r="4.5" fill="#d8b25c" filter="url(#nodeGlow)" />
+                <text x="0" y="20">Ruins</text>
+              </g>
+              <g class="hero-node hero-node--quiet" transform="translate(314 186)">
+                <circle r="3.5" fill="#a297b3" />
+                <text x="0" y="18">Tavern</text>
+              </g>
+            </svg>
+          </article>
+
+          <article class="hero-float hero-card hero-card--beast" data-depth="24" aria-hidden="true">
+            <div class="beast-chrome">
+              <span>Bestiary</span>
+              <span class="beast-chrome__badge">CR ½</span>
+            </div>
+            <h3>Skeleton Guard</h3>
+            <p class="beast-sub">Undead · neutral</p>
+            <div class="beast-vitals">
+              <span><b>15</b>AC</span>
+              <span><b>13</b>HP</span>
+              <span><b>30</b>ft</span>
+            </div>
+            <div class="beast-scores">
+              <span>STR <b>10</b></span>
+              <span>DEX <b>14</b></span>
+              <span>CON <b>12</b></span>
+            </div>
+            <p class="beast-ability">
+              <b>Bone armor.</b> The bones knit together while the skull is intact.
+            </p>
+          </article>
+
+          <article class="hero-float hero-card hero-card--init" data-depth="18" aria-hidden="true">
+            <div class="pane-head">
+              <span class="pane-head__title">Initiative</span>
+              <span class="pane-head__meta">Round 2</span>
+            </div>
+            <ol class="init-list">
+              <li class="is-active">
+                <span class="init-list__num">18</span>
+                <span class="init-list__name">Aria</span>
+                <span class="init-list__hp">24</span>
+              </li>
+              <li>
+                <span class="init-list__num">14</span>
+                <span class="init-list__name">Skeleton</span>
+                <span class="init-list__hp">13</span>
+              </li>
+              <li>
+                <span class="init-list__num">11</span>
+                <span class="init-list__name">Tam</span>
+                <span class="init-list__hp">19</span>
+              </li>
+              <li>
+                <span class="init-list__num">7</span>
+                <span class="init-list__name">Goblin</span>
+                <span class="init-list__hp">7</span>
+              </li>
+            </ol>
+          </article>
+
+          <button
+            class="d20 hero-float"
+            id="heroD20"
+            data-depth="32"
+            type="button"
+            aria-label="Roll a twenty-sided die"
+            title="Roll d20"
+          >
+            <svg viewBox="0 0 120 120" aria-hidden="true">
+              <polygon class="d20__outer" points="60,4 112,34 112,86 60,116 8,86 8,34" />
+              <polygon class="d20__face" points="60,20 98,42 98,78 60,100 22,78 22,42" />
+              <path class="d20__edge" d="M60 20 L60 100 M22 42 L60 60 L98 42 M22 78 L60 60 L98 78" />
+            </svg>
+            <span class="d20__result" id="d20Result">20</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="section" id="features" aria-labelledby="features-title">
+        <header class="section__head reveal">
+          <p class="eyebrow"><span class="eyebrow__mark" aria-hidden="true"></span>Features</p>
+          <h2 id="features-title">Everything within reach</h2>
+          <p class="section__lead">Six sections for preparing and running a game.</p>
+        </header>
+
+        <div class="feature-grid">
+          <article class="feature-card reveal" style="--delay: 0ms">
+            <span class="feature-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 2.6 20.5 7v10L12 21.4 3.5 17V7L12 2.6Z" /><path d="M12 2.6V12l8.5-5M12 12 3.5 7M12 12v9.4" /></svg>
+            </span>
+            <h3>Games and realms</h3>
+            <p>Parties, players, monsters and notes. Each world keeps its own material.</p>
+          </article>
+
+          <article class="feature-card reveal" style="--delay: 70ms">
+            <span class="feature-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M3.5 6.5 9 4l6 2.5L20.5 4v13.5L15 20l-6-2.5-5.5 2.5V6.5Z" /><path d="M9 4v13.5M15 6.5V20" /></svg>
+            </span>
+            <h3>Maps</h3>
+            <p>Places with descriptions, links between locations, zoom and free movement around the board.</p>
+          </article>
+
+          <article class="feature-card reveal" style="--delay: 140ms">
+            <span class="feature-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="m5 4 14.5 15.5M19 4 4.5 19.5" /><path d="m8.5 4-4 4M15.5 4l4 4M8.5 20l-4-4M15.5 20l4-4" /></svg>
+            </span>
+            <h3>Combat</h3>
+            <p>Initiative, turn order, health, conditions and monsters returning to the fight.</p>
+          </article>
+
+          <article class="feature-card reveal" style="--delay: 0ms">
+            <span class="feature-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 4.5h7v8H4zM13 4.5h7V9h-7zM4 14.5h7v5H4zM13 11h7v8.5h-7z" /><path d="M6.5 7h2M6.5 16.5h2M15.5 6.5h2M15.5 14h2" /></svg>
+            </span>
+            <h3>Bestiary</h3>
+            <p>Ability scores, challenge rating and abilities. Unique creatures live apart from the bestiary.</p>
+          </article>
+
+          <article class="feature-card reveal" style="--delay: 70ms">
+            <span class="feature-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><circle cx="8" cy="8.5" r="3" /><circle cx="16.5" cy="7" r="2.3" /><path d="M2.8 19.5c.6-3.4 2.6-5.2 5.2-5.2s4.6 1.8 5.2 5.2M13 19.5c.3-2.3 1.4-3.8 3.3-3.8 1.8 0 3.1 1.2 3.7 3.3" /></svg>
+            </span>
+            <h3>Players and characters</h3>
+            <p>The people at the table and hero sheets: classes, levels, ancestries and portraits.</p>
+          </article>
+
+          <article class="feature-card reveal" style="--delay: 140ms">
+            <span class="feature-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 7.5h16v11H4zM7 7.5V5h10v2.5M4 11.5h16M10.5 11.5v3h3v-3" /></svg>
+            </span>
+            <h3>Data and backups</h3>
+            <p>Export games to <code>.gmpack</code>, import them back, and keep backups on launch and exit.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section showcase" id="screens" aria-labelledby="screens-title">
+        <header class="section__head reveal">
+          <p class="eyebrow"><span class="eyebrow__mark" aria-hidden="true"></span>Screens</p>
+          <h2 id="screens-title">Working screens</h2>
+          <p class="section__lead">Map, combat and bestiary. Switch between them right here.</p>
+        </header>
+
+        <div class="showcase__shell reveal">
+          <div class="demo-tabs" role="tablist" aria-label="App screens">
+            <button class="demo-tab is-active" id="tab-map" role="tab" aria-selected="true" aria-controls="panel-map" tabindex="0">Maps</button>
+            <button class="demo-tab" id="tab-combat" role="tab" aria-selected="false" aria-controls="panel-combat" tabindex="-1">Combat</button>
+            <button class="demo-tab" id="tab-bestiary" role="tab" aria-selected="false" aria-controls="panel-bestiary" tabindex="-1">Bestiary</button>
+          </div>
+
+          <div class="demo-panels">
+            <div class="demo-panel is-active" id="panel-map" role="tabpanel" aria-labelledby="tab-map">
+              <div class="map-demo">
+                <svg class="map-demo__svg" viewBox="0 0 760 460" aria-label="Map with five locations">
+                  <defs>
+                    <pattern id="demoGrid" width="38" height="38" patternUnits="userSpaceOnUse">
+                      <path d="M38 0H0V38" fill="none" stroke="rgba(216,178,92,0.06)" />
+                    </pattern>
+                    <radialGradient id="demoHalo" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stop-color="rgba(143,109,214,0.16)" />
+                      <stop offset="100%" stop-color="rgba(143,109,214,0)" />
+                    </radialGradient>
+                    <filter id="demoGlow" x="-200%" y="-200%" width="500%" height="500%">
+                      <feGaussianBlur stdDeviation="5" result="b" />
+                      <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+                    </filter>
+                  </defs>
+                  <rect width="760" height="460" fill="url(#demoGrid)" />
+                  <ellipse cx="380" cy="230" rx="330" ry="200" fill="url(#demoHalo)" />
+                  <path d="M-40 262 C 86 238, 154 292, 248 282 S 424 306, 516 334 S 660 354, 800 320" fill="none" stroke="rgba(94,120,172,0.16)" stroke-width="30" stroke-linecap="round" />
+                  <path d="M-40 262 C 86 238, 154 292, 248 282 S 424 306, 516 334 S 660 354, 800 320" fill="none" stroke="rgba(146,166,210,0.26)" stroke-width="1.3" />
+                  <path d="M60 182 C 140 150, 196 176, 258 136 S 384 92, 462 108 S 580 84, 660 44" fill="none" stroke="rgba(216,178,92,0.08)" stroke-width="1" />
+                  <path d="M28 70 C 110 40, 174 76, 246 52 S 372 22, 448 46" fill="none" stroke="rgba(216,178,92,0.05)" stroke-width="1" />
+                  <ellipse cx="196" cy="330" rx="120" ry="56" fill="none" stroke="rgba(216,178,92,0.06)" stroke-width="1" />
+                  <ellipse cx="590" cy="270" rx="140" ry="64" fill="none" stroke="rgba(216,178,92,0.05)" stroke-width="1" />
+                  <g class="map-compass" transform="translate(694 62)" aria-hidden="true">
+                    <circle r="25" fill="none" stroke="rgba(216,178,92,0.16)" />
+                    <path d="M0 -30 5.5 -6 0 0 -5.5 -6Z" fill="rgba(216,178,92,0.7)" />
+                    <path d="M0 30 5.5 6 0 0 -5.5 6Z" fill="rgba(236,231,223,0.16)" />
+                    <path d="M30 0 6 5.5 0 0 6 -5.5Z" fill="rgba(236,231,223,0.16)" />
+                    <path d="M-30 0 -6 5.5 0 0 -6 -5.5Z" fill="rgba(236,231,223,0.16)" />
+                    <text x="0" y="-34" text-anchor="middle" fill="rgba(216,178,92,0.65)" font-family="Manrope, sans-serif" font-size="9">N</text>
+                  </g>
+                  <path d="M40 388 C 150 350, 205 372, 286 314 S 402 244, 486 252 S 624 196, 716 138" fill="none" stroke="rgba(162,151,179,0.1)" stroke-width="1.2" />
+                  <path d="M20 120 C 120 142, 168 96, 252 110 S 396 154, 478 108 S 620 58, 742 84" fill="none" stroke="rgba(162,151,179,0.08)" stroke-width="1" />
+                  <path class="demo-route" d="M118 356 C 178 316, 208 286, 288 262 S 384 222, 452 238 S 566 220, 646 156" fill="none" stroke="rgba(216,178,92,0.55)" stroke-width="2" stroke-dasharray="6 9" />
+                  <path class="demo-route demo-route--alt" d="M288 262 C 300 322, 268 360, 226 400" fill="none" stroke="rgba(143,109,214,0.45)" stroke-width="1.6" stroke-dasharray="5 9" />
+
+                  <g class="map-place" data-place="camp" tabindex="0" role="button" aria-label="Camp by the road" transform="translate(118 356)">
+                    <circle class="map-place__halo" r="24" />
+                    <circle class="map-place__dot" r="6" />
+                    <text x="0" y="28">Camp</text>
+                  </g>
+                  <g class="map-place" data-place="mill" tabindex="0" role="button" aria-label="The Mill Crossing" transform="translate(288 262)">
+                    <circle class="map-place__halo" r="24" />
+                    <circle class="map-place__dot" r="7" />
+                    <text x="0" y="29">Crossing</text>
+                  </g>
+                  <g class="map-place" data-place="wood" tabindex="0" role="button" aria-label="The Quiet Thicket" transform="translate(452 238)">
+                    <circle class="map-place__halo" r="24" />
+                    <circle class="map-place__dot" r="6" />
+                    <text x="0" y="28">Thicket</text>
+                  </g>
+                  <g class="map-place" data-place="ruins" tabindex="0" role="button" aria-label="The North Gate Ruins" transform="translate(646 156)">
+                    <circle class="map-place__halo" r="24" />
+                    <circle class="map-place__dot" r="7" />
+                    <text x="0" y="29">Ruins</text>
+                  </g>
+                  <g class="map-place" data-place="cave" tabindex="0" role="button" aria-label="The Cave Under the Hill" transform="translate(226 400)">
+                    <circle class="map-place__halo" r="24" />
+                    <circle class="map-place__dot" r="6" />
+                    <text x="0" y="28">Cave</text>
+                  </g>
+                </svg>
+
+                <svg class="map-demo__svg map-demo__svg--compact" viewBox="0 0 360 300" aria-label="Map with five locations">
+                  <defs>
+                    <pattern id="compactGrid" width="30" height="30" patternUnits="userSpaceOnUse">
+                      <path d="M30 0H0V30" fill="none" stroke="rgba(216,178,92,0.07)" />
+                    </pattern>
+                    <radialGradient id="compactHalo" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stop-color="rgba(143,109,214,0.18)" />
+                      <stop offset="100%" stop-color="rgba(143,109,214,0)" />
+                    </radialGradient>
+                    <filter id="compactGlow" x="-200%" y="-200%" width="500%" height="500%">
+                      <feGaussianBlur stdDeviation="3.5" result="b" />
+                      <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+                    </filter>
+                  </defs>
+                  <rect width="360" height="300" fill="url(#compactGrid)" />
+                  <ellipse cx="180" cy="160" rx="170" ry="130" fill="url(#compactHalo)" />
+                  <path d="M-20 218 C 58 206, 96 244, 156 236 S 254 254, 380 224" fill="none" stroke="rgba(94,120,172,0.16)" stroke-width="22" stroke-linecap="round" />
+                  <path d="M-20 218 C 58 206, 96 244, 156 236 S 254 254, 380 224" fill="none" stroke="rgba(146,166,210,0.26)" stroke-width="1.1" />
+                  <path d="M28 120 C 90 100, 128 118, 176 96 S 262 72, 320 54" fill="none" stroke="rgba(216,178,92,0.07)" stroke-width="1" />
+                  <path class="demo-route" d="M58 232 C 96 206, 116 184, 152 168 S 214 176, 250 190 S 284 130, 300 88" fill="none" stroke="rgba(216,178,92,0.55)" stroke-width="1.7" stroke-dasharray="5 8" />
+                  <path class="demo-route demo-route--alt" d="M152 168 C 140 208, 122 240, 105 272" fill="none" stroke="rgba(143,109,214,0.45)" stroke-width="1.4" stroke-dasharray="4 8" />
+
+                  <g class="map-place" data-place="camp" tabindex="0" role="button" aria-label="Camp by the road" transform="translate(58 232)">
+                    <circle class="map-place__halo" r="18" />
+                    <circle class="map-place__dot" r="5" />
+                    <text x="0" y="21">Camp</text>
+                  </g>
+                  <g class="map-place" data-place="mill" tabindex="0" role="button" aria-label="The Mill Crossing" transform="translate(152 168)">
+                    <circle class="map-place__halo" r="19" />
+                    <circle class="map-place__dot" r="6" />
+                    <text x="0" y="22">Crossing</text>
+                  </g>
+                  <g class="map-place" data-place="wood" tabindex="0" role="button" aria-label="The Quiet Thicket" transform="translate(250 190)">
+                    <circle class="map-place__halo" r="18" />
+                    <circle class="map-place__dot" r="5" />
+                    <text x="0" y="21">Thicket</text>
+                  </g>
+                  <g class="map-place" data-place="ruins" tabindex="0" role="button" aria-label="The North Gate Ruins" transform="translate(300 88)">
+                    <circle class="map-place__halo" r="18" />
+                    <circle class="map-place__dot" r="6" />
+                    <text x="0" y="22">Ruins</text>
+                  </g>
+                  <g class="map-place" data-place="cave" tabindex="0" role="button" aria-label="The Cave Under the Hill" transform="translate(105 272)">
+                    <circle class="map-place__halo" r="18" />
+                    <circle class="map-place__dot" r="5" />
+                    <text x="0" y="21">Cave</text>
+                  </g>
+                </svg>
+
+                <aside class="map-side" aria-live="polite">
+                  <p class="mini-label">Location</p>
+                  <h3 id="mapPlaceTitle">The Mill Crossing</h3>
+                  <p id="mapPlaceNote">
+                    The old bridge holds on by sheer luck. At night you can hear the stones
+                    talking beneath it.
+                  </p>
+                  <div class="map-exits" id="mapPlaceExits">
+                    <span>Thicket</span>
+                    <span>Camp</span>
+                  </div>
+                  <p class="map-hint">Click a marker to open a place.</p>
+                </aside>
+              </div>
+            </div>
+
+            <div class="demo-panel" id="panel-combat" role="tabpanel" aria-labelledby="tab-combat" hidden>
+              <div class="combat-demo">
+                <div class="combat-list" id="combatList" aria-label="Initiative order"></div>
+                <aside class="combat-side" aria-live="polite">
+                  <p class="mini-label">Now acting</p>
+                  <h3 id="combatActive">Aria</h3>
+                  <p class="combat-side__round">Round <b id="combatRound">2</b></p>
+
+                  <div class="hp-line">
+                    <span>Health</span>
+                    <b id="combatHp">24 / 31</b>
+                  </div>
+                  <div class="hp-bar"><i id="combatHpBar" style="width: 77%"></i></div>
+
+                  <div class="condition-row">
+                    <span class="condition">Blessed</span>
+                    <span class="condition condition--calm">In the fight</span>
+                  </div>
+
+                  <button class="button button--gold" id="rollInitiative" type="button">Roll initiative</button>
+                  <p class="combat-note">A row in the order also selects whose turn it is.</p>
+                </aside>
+              </div>
+            </div>
+
+            <div class="demo-panel" id="panel-bestiary" role="tabpanel" aria-labelledby="tab-bestiary" hidden>
+              <div class="beast-grid">
+                <article class="beast" tabindex="0">
+                  <header>
+                    <span class="beast__cr">CR ½</span>
+                    <h3>Skeleton Guard</h3>
+                    <p>Undead · neutral</p>
+                  </header>
+                  <div class="beast__vitals"><span>AC <b>15</b></span><span>HP <b>13</b></span><span>30 ft</span></div>
+                  <div class="beast__scores"><span>STR 10</span><span>DEX 14</span><span>CON 12</span><span>INT 6</span></div>
+                  <p class="beast__ability"><b>Bone armor.</b> While the skull is intact, the bones knit together and cannot be knocked prone.</p>
+                </article>
+
+                <article class="beast" tabindex="0">
+                  <header>
+                    <span class="beast__cr">CR ¼</span>
+                    <h3>Goblin Archer</h3>
+                    <p>Humanoid · neutral evil</p>
+                  </header>
+                  <div class="beast__vitals"><span>AC <b>13</b></span><span>HP <b>7</b></span><span>30 ft</span></div>
+                  <div class="beast__scores"><span>STR 8</span><span>DEX 16</span><span>CON 10</span><span>INT 10</span></div>
+                  <p class="beast__ability"><b>Stealthy.</b> Hides in shadow and changes position after a shot.</p>
+                </article>
+
+                <article class="beast" tabindex="0">
+                  <header>
+                    <span class="beast__cr">CR 1</span>
+                    <h3>Ash Wolf</h3>
+                    <p>Beast · neutral</p>
+                  </header>
+                  <div class="beast__vitals"><span>AC <b>14</b></span><span>HP <b>26</b></span><span>50 ft</span></div>
+                  <div class="beast__scores"><span>STR 15</span><span>DEX 15</span><span>CON 14</span><span>INT 4</span></div>
+                  <p class="beast__ability"><b>Ashen howl.</b> Once a day it calls the pack and snuffs out torches nearby.</p>
+                </article>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section data-section" id="data" aria-labelledby="data-title">
+        <div class="data-copy reveal">
+          <p class="eyebrow"><span class="eyebrow__mark" aria-hidden="true"></span>Data</p>
+          <h2 id="data-title">Your records stay with you</h2>
+          <p class="section__lead">
+            No cloud and no account: games, maps and bestiary are plain JSON files on disk.
+            For moving between computers there is <code>.gmpack</code> export; for safety, backups.
+          </p>
+          <ul class="data-list">
+            <li><span aria-hidden="true">◆</span> Local storage, no server</li>
+            <li><span aria-hidden="true">◆</span> Backups on demand or on launch and exit</li>
+            <li><span aria-hidden="true">◆</span> Move games between computers</li>
+          </ul>
+        </div>
+
+        <div class="data-visual reveal" aria-hidden="true">
+          <div class="data-sheet data-sheet--back"></div>
+          <div class="data-sheet data-sheet--mid"></div>
+          <div class="data-sheet data-sheet--front">
+            <div class="data-sheet__head">
+              <span class="pane-head__dot"></span>
+              <span>game-master</span>
+              <span class="data-sheet__meta">local</span>
+            </div>
+            <pre class="data-sheet__code">{
+  "games": 4,
+  "maps": 12,
+  "monsters": 86,
+  "backups": "enabled"
+}</pre>
+            <div class="data-sheet__foot">
+              <span>JSON</span>
+              <span>no cloud</span>
+            </div>
+          </div>
+          <div class="data-orbit">
+            <span>.gmpack</span>
+            <span>backups</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="about reveal" aria-labelledby="about-title">
+        <div class="about__rule" aria-hidden="true"></div>
+        <p class="eyebrow"><span class="eyebrow__mark" aria-hidden="true"></span>About</p>
+        <h2 id="about-title">A quiet tool for the game master</h2>
+        <p>
+          Game Master needs no internet and stays out of the way at the table. Two themes,
+          English and Russian interface, its own windows and lists — no system dialogs.
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-foot">
+      <div class="site-foot__inner">
+        <div class="site-foot__brand">
+          <img src="../assets/icon.png" alt="" width="30" height="30" />
+          <span>Game Master · <span id="footVersion">1.4.0</span></span>
+        </div>
+        <p class="site-foot__note">A tabletop app for Windows · x64 and ARM64</p>
+        <nav class="site-foot__links" aria-label="Links">
+          <a href="https://github.com/gorechi/game-master">GitHub</a>
+          <a href="https://github.com/gorechi/game-master/releases">Releases</a>
+          <a href="https://github.com/gorechi/game-master/blob/main/LICENSE">MIT</a>
+        </nav>
+      </div>
+    </footer>
+
+    <script src="../app.js"></script>
+  </body>
+</html>
