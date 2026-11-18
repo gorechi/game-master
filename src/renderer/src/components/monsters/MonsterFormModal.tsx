@@ -312,13 +312,16 @@ export function MonsterFormModal({
                   placeholder={m.bestiary.form.baseMonsterPlaceholder}
                   disabled={!realmId || baseOptions.length === 0}
                   searchable
-                  options={baseOptions.map((monster) => ({
-                    value: monster.id,
-                    label: fill(m.bestiary.form.baseMonsterOption, {
-                      name: monster.name,
-                      cr: formatChallengeRating(monster.challengeRating)
-                    })
-                  }))}
+                  options={[
+                    { value: '', label: m.bestiary.form.baseMonsterPlaceholder },
+                    ...baseOptions.map((monster) => ({
+                      value: monster.id,
+                      label: fill(m.bestiary.form.baseMonsterOption, {
+                        name: monster.name,
+                        cr: formatChallengeRating(monster.challengeRating)
+                      })
+                    }))
+                  ]}
                   onChange={applyBaseMonster}
                 />
                 <span className="game-editor__hint">{baseHint}</span>
