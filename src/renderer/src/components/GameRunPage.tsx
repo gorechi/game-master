@@ -15,11 +15,44 @@ import { CombatScreen } from './games/CombatScreen'
 import { RunMap } from './maps/RunMap'
 import { PlaceDescriptionModal } from './maps/PlaceDescriptionModal'
 import { PlaceMonstersModal } from './maps/PlaceMonstersModal'
+import { Select } from './ui/Select'
 import { IconArrowLeft, IconCollapse, IconExpand, IconFlag, IconSwords } from './ui/icons'
 
 interface GameRunPageProps {
   gameId: string
   onBack: () => void
+}
+
+/**
+ * Карта игры и все карты, до которых можно добраться по выходам.
+ * Порядок — по мере удаления от стартовой карты.
+ */
+function reachableMaps(maps: readonly GameMap[], rootId: string | null): GameMap[] {
+  if (!rootId) return []
+
+  const mapsById = new Map(maps.map((map) => [map.id, map]))
+  const queue = [rootId]
+  const visited = new Set<string>()
+  const result: GameMap[] = []
+
+  while (queue.length > 0) {
+    const mapId = queue.shift()!
+    if (visited.has(mapId)) continue
+
+    visited.add(mapId)
+    const map = mapsById.get(mapId)
+    if (!map) continue
+
+    result.push(map)
+
+    for (const place of map.places) {
+      if (place.linkedMapId && !visited.has(place.linkedMapId)) {
+        queue.push(place.linkedMapId)
+      }
+    }
+  }
+
+  return result
 }
 
 /** Режим проведения: карта, заметки и кнопка схватки. */
@@ -211,6 +244,9 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
   const map = activeMapId
     ? (maps.find((item) => item.id === activeMapId) ?? null)
     : null
+  const availableMaps = reachableMaps(maps, game?.mapId ?? null)
+  const currentMapId =
+    availableMaps.find((item) => item.id === activeMapId)?.id ?? game?.mapId ?? ''
   const linkedMapNames = Object.fromEntries(maps.map((item) => [item.id, item.name]))
   const livingMonstersByPlace: Record<string, GameMonster[]> = {}
 
@@ -270,6 +306,12 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
     setDescriptionPlaceId(null)
   }
 
+  function selectMap(mapId: string): void {
+    setActiveMapId(mapId)
+    setMonstersPlaceId(null)
+    setDescriptionPlaceId(null)
+  }
+
   if (combat) {
     return (
       <CombatScreen
@@ -297,16 +339,33 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
         <>
           <section className="run-screen__map">
             <div className="run-map-tools">
-              <button
-                type="button"
-                className="run-map-tool run-map-tool--back"
-                title={m.games.run.backToGames}
-                aria-label={m.games.run.backToGames}
-                onClick={handleBack}
-              >
-                <IconArrowLeft width={16} height={16} />
-                <span>{m.games.run.toGames}</span>
-              </button>
+              <div className="run-map-tools__left">
+                <button
+                  type="button"
+                  className="run-map-tool run-map-tool--compact"
+                  title={m.games.run.backToGames}
+                  aria-label={m.games.run.backToGames}
+                  onClick={handleBack}
+                >
+                  <IconArrowLeft width={16} height={16} />
+                </button>
+
+                {availableMaps.length > 0 ? (
+                  <div className="run-map-select">
+                    <Select
+                      value={currentMapId}
+                      options={availableMaps.map((item) => ({
+                        value: item.id,
+                        label: item.name
+                      }))}
+                      ariaLabel={m.games.run.mapSelectorLabel}
+                      placeholder={m.games.run.mapSelectorPlaceholder}
+                      variant="chip"
+                      onChange={selectMap}
+                    />
+                  </div>
+                ) : null}
+              </div>
 
               {game.status === 'running' || game.status === 'paused' ? (
                 <button
@@ -331,11 +390,7 @@ export function GameRunPage({ gameId, onBack }: GameRunPageProps): JSX.Element {
                 onOpenPlaceMonsters={setMonstersPlaceId}
                 descriptionPlaceIds={descriptionPlaceIds}
                 onOpenPlaceDescription={setDescriptionPlaceId}
-                onOpenMap={(mapId) => {
-                  setActiveMapId(mapId)
-                  setMonstersPlaceId(null)
-                  setDescriptionPlaceId(null)
-                }}
+                onOpenMap={selectMap}
               />
             ) : (
               <div className="run-map-empty">

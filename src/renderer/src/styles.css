@@ -2109,6 +2109,46 @@ input[type='number'] {
   filter: brightness(1.07);
 }
 
+.run-map-tools__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  pointer-events: none;
+}
+
+.run-map-tool--compact {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 10px;
+}
+
+.run-map-select {
+  max-width: min(300px, 42vw);
+  pointer-events: auto;
+}
+
+.run-map-select .picker {
+  max-width: 100%;
+}
+
+.run-map-select .picker--chip .picker__trigger {
+  max-width: 100%;
+  padding: 7px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.run-map-select .picker--chip .picker__trigger:hover {
+  border-color: var(--gold);
+  color: var(--ink);
+}
+
 .run-map-viewport {
   display: flex;
   align-items: flex-start;
