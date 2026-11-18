@@ -74,6 +74,9 @@ export const enBestiaryMessages = {
     description:
       'Unique instances for future games. This is a separate library — it does not change the bestiary.',
     create: 'Create monster',
+    createFromBestiary: 'From bestiary',
+    createManualDescription:
+      'A brand-new unique monster. Choose a realm and fill in the stats.',
     loading: 'Loading saved monsters…',
     empty:
       'No saved monsters yet. Create a unique one or save monsters when you finish a game.',
@@ -94,12 +97,12 @@ export const enBestiaryMessages = {
   },
   base: {
     cancel: 'Cancel',
-    title: 'New unique monster',
+    title: 'Base from bestiary',
     description:
-      'Select a base monster from the bestiary, then configure the instance.',
+      'Choose a monster to start from its stats. This is optional.',
     next: 'Next',
     emptyBestiary:
-      'The bestiary has no monsters yet. Add at least one in the “Monsters” section first.',
+      'The bestiary has no monsters yet. Close this window and create a unique monster from scratch.',
     monsterLabel: 'Base monster',
     monsterAria: 'Base monster from the bestiary',
     searchPlaceholder: 'Search for a monster…',

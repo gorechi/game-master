@@ -317,6 +317,13 @@ input[type='number'] {
   flex-wrap: wrap;
 }
 
+.page-head__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .page-head h1 {
   position: relative;
   display: inline-block;
