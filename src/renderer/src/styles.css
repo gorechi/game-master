@@ -317,13 +317,6 @@ input[type='number'] {
   flex-wrap: wrap;
 }
 
-.page-head__actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
 .page-head h1 {
   position: relative;
   display: inline-block;
@@ -1346,6 +1339,16 @@ input[type='number'] {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.monster-form__realm {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.monster-form__realm--with-base {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 
 .monster-form__scores {
@@ -5428,6 +5431,10 @@ input[type='number'] {
   }
 
   .monster-form__vitals {
+    grid-template-columns: 1fr;
+  }
+
+  .monster-form__realm--with-base {
     grid-template-columns: 1fr;
   }
 

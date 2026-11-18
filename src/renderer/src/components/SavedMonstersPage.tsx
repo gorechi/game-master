@@ -12,7 +12,6 @@ import {
   MonsterFormModal,
   type MonsterFormSubmission
 } from './monsters/MonsterFormModal'
-import { BaseMonsterModal } from './savedMonsters/BaseMonsterModal'
 
 /** Сохранённые игровые монстры: уникальные экземпляры вне бестиария. */
 export function SavedMonstersPage({ realms }: { realms: readonly Realm[] }): JSX.Element {
@@ -20,9 +19,7 @@ export function SavedMonstersPage({ realms }: { realms: readonly Realm[] }): JSX
   const [monsters, setMonsters] = useState<GameMonsterEntry[] | null>(null)
   const [bestiary, setBestiary] = useState<Monster[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [choosingBase, setChoosingBase] = useState(false)
   const [manualCreate, setManualCreate] = useState(false)
-  const [baseMonster, setBaseMonster] = useState<Monster | null>(null)
   const [editing, setEditing] = useState<GameMonsterEntry | null>(null)
   const [deleting, setDeleting] = useState<GameMonsterEntry | null>(null)
 
@@ -46,15 +43,7 @@ export function SavedMonstersPage({ realms }: { realms: readonly Realm[] }): JSX
     void refresh()
   }, [refresh])
 
-  function chooseBase(monster: Monster): void {
-    setManualCreate(false)
-    setChoosingBase(false)
-    setBaseMonster(monster)
-  }
-
   function startManualCreate(): void {
-    setChoosingBase(false)
-    setBaseMonster(null)
     setEditing(null)
     setManualCreate(true)
   }
@@ -63,14 +52,12 @@ export function SavedMonstersPage({ realms }: { realms: readonly Realm[] }): JSX
     input: MonsterFormSubmission,
     realmId: string | null
   ): Promise<void> {
-    const targetRealmId = baseMonster?.realmId ?? realmId
-    if (!targetRealmId) return
+    if (!realmId) return
 
     await api.gameMonsters.create(
-      { ...input, sourceMonsterId: baseMonster?.id ?? null },
-      targetRealmId
+      { ...input, sourceMonsterId: input.sourceMonsterId ?? null },
+      realmId
     )
-    setBaseMonster(null)
     setManualCreate(false)
     await refresh()
   }
@@ -96,14 +83,12 @@ export function SavedMonstersPage({ realms }: { realms: readonly Realm[] }): JSX
     }
   }
 
-  const formOpen = manualCreate || baseMonster !== null || editing !== null
-  const formInitial = baseMonster ?? editing
+  const formOpen = manualCreate || editing !== null
+  const formInitial = editing
   const formTitle = editing ? m.bestiary.saved.editTitle : m.bestiary.saved.createTitle
   const formDescription = editing
     ? m.bestiary.saved.editDescription
-    : baseMonster
-      ? fill(m.bestiary.saved.createDescription, { name: baseMonster.name })
-      : m.bestiary.saved.createManualDescription
+    : m.bestiary.saved.createManualDescription
 
   return (
     <main className="page">
@@ -113,17 +98,10 @@ export function SavedMonstersPage({ realms }: { realms: readonly Realm[] }): JSX
             <h1>{m.bestiary.saved.title}</h1>
             <p className="muted">{m.bestiary.saved.description}</p>
           </div>
-          <div className="page-head__actions">
-            {bestiary.length > 0 ? (
-              <button className="button" onClick={() => setChoosingBase(true)}>
-                {m.bestiary.saved.createFromBestiary}
-              </button>
-            ) : null}
-            <button className="button button--primary" onClick={startManualCreate}>
-              <IconPlus width={16} height={16} />
-              {m.bestiary.saved.create}
-            </button>
-          </div>
+          <button className="button button--primary" onClick={startManualCreate}>
+            <IconPlus width={16} height={16} />
+            {m.bestiary.saved.create}
+          </button>
         </header>
 
         {error ? <p className="notice notice--error">{error}</p> : null}
@@ -160,26 +138,18 @@ export function SavedMonstersPage({ realms }: { realms: readonly Realm[] }): JSX
         )}
       </div>
 
-      <BaseMonsterModal
-        open={choosingBase}
-        monsters={bestiary}
-        realms={realms}
-        onClose={() => setChoosingBase(false)}
-        onChoose={chooseBase}
-      />
-
       <MonsterFormModal
         open={formOpen}
         title={formTitle}
         description={formDescription}
         initial={formInitial}
         realms={realms}
-        lockRealm={editing !== null || baseMonster !== null}
+        baseMonsters={editing ? undefined : bestiary}
+        lockRealm={editing !== null}
         allowZeroHitPoints
         showStatuses
         onClose={() => {
           setManualCreate(false)
-          setBaseMonster(null)
           setEditing(null)
         }}
         onSubmit={(input, realmId) =>

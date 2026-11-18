@@ -1,10 +1,10 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { FormEvent, JSX } from 'react'
-import type { MonsterAbility, MonsterInput } from '@shared/monster'
+import type { Monster, MonsterAbility, MonsterInput } from '@shared/monster'
 import type { Realm } from '@shared/realm'
-import { createMonsterAbility } from '@shared/domain'
+import { createMonsterAbility, formatChallengeRating } from '@shared/domain'
 import { errorMessage } from '@renderer/lib/api'
-import { useMessages } from '@renderer/i18n/LocaleProvider'
+import { useI18n } from '@renderer/i18n/LocaleProvider'
 import { MONSTER_STAT_FIELDS } from '@renderer/lib/monsterStats'
 import { Modal } from '../ui/Modal'
 import { Select } from '../ui/Select'
@@ -56,7 +56,10 @@ export interface MonsterFormValues {
   statuses?: string[]
 }
 
-export type MonsterFormSubmission = MonsterInput & { statuses?: string[] }
+export type MonsterFormSubmission = MonsterInput & {
+  statuses?: string[]
+  sourceMonsterId?: string | null
+}
 
 interface MonsterFormModalProps {
   open: boolean
@@ -67,6 +70,8 @@ interface MonsterFormModalProps {
   realms?: readonly Realm[]
   /** Сеттинг уже известен (редактирование или наследство) — выбор заблокирован. */
   lockRealm?: boolean
+  /** Монстры бестиария для необязательного заполнения формы по основе. */
+  baseMonsters?: readonly Monster[]
   /** Для игровых экземпляров: HP может опуститься до нуля. */
   allowZeroHitPoints?: boolean
   /** Показывать редактор статусов (уникальные существа и экземпляры в игре). */
@@ -82,15 +87,17 @@ export function MonsterFormModal({
   initial,
   realms,
   lockRealm = false,
+  baseMonsters,
   allowZeroHitPoints = false,
   showStatuses = false,
   onClose,
   onSubmit
 }: MonsterFormModalProps): JSX.Element {
-  const m = useMessages()
+  const { messages: m, fill } = useI18n()
   const minHitPoints = allowZeroHitPoints ? 0 : 1
   const [name, setName] = useState('')
   const [realmId, setRealmId] = useState('')
+  const [baseMonsterId, setBaseMonsterId] = useState('')
   const [scores, setScores] = useState<ScoreDraft>(EMPTY_SCORES)
   const [challengeRating, setChallengeRating] = useState('1')
   const [armorClass, setArmorClass] = useState('10')
@@ -109,6 +116,7 @@ export function MonsterFormModal({
 
     setName(initial?.name ?? '')
     setRealmId(initial?.realmId ?? '')
+    setBaseMonsterId('')
     setScores(
       initial
         ? (Object.fromEntries(
@@ -134,6 +142,31 @@ export function MonsterFormModal({
     setScores((current) => ({ ...current, [key]: value }))
   }
 
+  function changeRealm(value: string): void {
+    setRealmId(value)
+    setBaseMonsterId('')
+  }
+
+  function applyBaseMonster(id: string): void {
+    const monster = baseMonsters?.find((item) => item.id === id)
+    setBaseMonsterId(monster?.id ?? '')
+
+    if (!monster) return
+
+    setName(monster.name)
+    setScores(
+      Object.fromEntries(
+        MONSTER_STAT_FIELDS.map((field) => [field.key, String(monster[field.key])])
+      ) as ScoreDraft
+    )
+    setChallengeRating(String(monster.challengeRating))
+    setArmorClass(String(monster.armorClass))
+    setHitPoints(String(monster.hitPoints))
+    setAbilities(monster.abilities.map((ability) => ({ ...ability })))
+    setJustAddedId(null)
+    setError(null)
+  }
+
   function addAbility(): void {
     const ability = createMonsterAbility()
     setAbilities((current) => [...current, ability])
@@ -150,6 +183,15 @@ export function MonsterFormModal({
     setAbilities((current) => current.filter((ability) => ability.id !== id))
     setJustAddedId((current) => (current === id ? null : current))
   }
+
+  const showBasePicker = Boolean(baseMonsters && baseMonsters.length > 0)
+  const baseOptions = realmId
+    ? (baseMonsters ?? []).filter((monster) => monster.realmId === realmId)
+    : []
+  const baseHint =
+    realmId && baseOptions.length === 0
+      ? m.bestiary.form.baseMonsterEmpty
+      : m.bestiary.form.baseMonsterHint
 
   async function submit(event: FormEvent): Promise<void> {
     event.preventDefault()
@@ -194,7 +236,8 @@ export function MonsterFormModal({
         name: ability.name.trim(),
         description: ability.description.trim()
       })),
-      ...(showStatuses ? { statuses } : {})
+      ...(showStatuses ? { statuses } : {}),
+      ...(baseMonsters ? { sourceMonsterId: baseMonsterId || null } : {})
     }
 
     setSaving(true)
@@ -240,19 +283,47 @@ export function MonsterFormModal({
         onSubmit={(event) => void submit(event)}
       >
         {realms && realms.length > 0 ? (
-          <div className="field">
-            <span className="field__label">{m.bestiary.form.realmLabel}</span>
-            <Select
-              ariaLabel={m.bestiary.form.realmAria}
-              value={realmId}
-              placeholder={m.bestiary.form.realmPlaceholder}
-              disabled={lockRealm}
-              options={realms.map((realm) => ({ value: realm.id, label: realm.name }))}
-              onChange={setRealmId}
-            />
-            <span className="game-editor__hint">
-              {lockRealm ? m.bestiary.form.realmHintLocked : m.bestiary.form.realmHint}
-            </span>
+          <div
+            className={`monster-form__realm${
+              showBasePicker ? ' monster-form__realm--with-base' : ''
+            }`}
+          >
+            <div className="field">
+              <span className="field__label">{m.bestiary.form.realmLabel}</span>
+              <Select
+                ariaLabel={m.bestiary.form.realmAria}
+                value={realmId}
+                placeholder={m.bestiary.form.realmPlaceholder}
+                disabled={lockRealm}
+                options={realms.map((realm) => ({ value: realm.id, label: realm.name }))}
+                onChange={changeRealm}
+              />
+              <span className="game-editor__hint">
+                {lockRealm ? m.bestiary.form.realmHintLocked : m.bestiary.form.realmHint}
+              </span>
+            </div>
+
+            {showBasePicker ? (
+              <div className="field">
+                <span className="field__label">{m.bestiary.form.baseMonsterLabel}</span>
+                <Select
+                  ariaLabel={m.bestiary.form.baseMonsterAria}
+                  value={baseMonsterId}
+                  placeholder={m.bestiary.form.baseMonsterPlaceholder}
+                  disabled={!realmId || baseOptions.length === 0}
+                  searchable
+                  options={baseOptions.map((monster) => ({
+                    value: monster.id,
+                    label: fill(m.bestiary.form.baseMonsterOption, {
+                      name: monster.name,
+                      cr: formatChallengeRating(monster.challengeRating)
+                    })
+                  }))}
+                  onChange={applyBaseMonster}
+                />
+                <span className="game-editor__hint">{baseHint}</span>
+              </div>
+            ) : null}
           </div>
         ) : null}
 

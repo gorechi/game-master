@@ -34,6 +34,12 @@ export const enBestiaryMessages = {
     realmPlaceholder: 'Select a realm',
     realmHintLocked: 'The realm is set when the monster is created and does not change.',
     realmHint: 'The monster will be available in games and in the bestiary of this realm.',
+    baseMonsterLabel: 'Base monster',
+    baseMonsterAria: 'Base monster from this realm bestiary',
+    baseMonsterPlaceholder: 'No base',
+    baseMonsterHint: 'Optional: prefill the stats from the bestiary.',
+    baseMonsterEmpty: 'No monsters in this realm yet.',
+    baseMonsterOption: '{name} · CR {cr}',
     nameLabel: 'Name',
     namePlaceholder: 'Skeleton Guard',
     scoresHint:
@@ -73,10 +79,9 @@ export const enBestiaryMessages = {
     title: 'Unique creatures',
     description:
       'Unique instances for future games. This is a separate library — it does not change the bestiary.',
-    create: 'Create monster',
-    createFromBestiary: 'From bestiary',
+    create: 'Create creature',
     createManualDescription:
-      'A brand-new unique monster. Choose a realm and fill in the stats.',
+      'A new unique creature. Choose a realm and fill in the stats.',
     loading: 'Loading saved monsters…',
     empty:
       'No saved monsters yet. Create a unique one or save monsters when you finish a game.',
@@ -88,25 +93,9 @@ export const enBestiaryMessages = {
     editTitle: 'Edit unique monster',
     createTitle: 'Set up unique monster',
     editDescription: 'Only this instance changes. The bestiary stays untouched.',
-    createDescription:
-      'An instance based on “{name}”. Changes do not affect the bestiary.',
     uniqueBadge: 'Unique',
     deleteTitle: 'Delete saved monster?',
     deleteDescription:
       '“{name}” will be deleted from the unique monster library. This action cannot be undone.'
-  },
-  base: {
-    cancel: 'Cancel',
-    title: 'Base from bestiary',
-    description:
-      'Choose a monster to start from its stats. This is optional.',
-    next: 'Next',
-    emptyBestiary:
-      'The bestiary has no monsters yet. Close this window and create a unique monster from scratch.',
-    monsterLabel: 'Base monster',
-    monsterAria: 'Base monster from the bestiary',
-    searchPlaceholder: 'Search for a monster…',
-    option: '{name} · CR {cr} · {realm}',
-    hint: 'A separate instance based on “{name}” will be created. Changes will not affect the bestiary.'
   }
 }
