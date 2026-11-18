@@ -70,7 +70,9 @@ export const enMapsMessages = {
     openMapHint: 'Open map "{name}"',
     linkedNodeLabel: '{name}: go to map "{linked}"',
     descriptionTooltip: 'Place description',
+    descriptionAddTooltip: 'Add description',
     descriptionLabel: 'Description of place "{name}"',
+    descriptionAddLabel: 'Add description for place "{name}"',
     monstersTooltip: 'Monsters here: {names}',
     monstersLabel: 'Monsters in place "{name}"',
     connectHint: 'Drag to draw a path'

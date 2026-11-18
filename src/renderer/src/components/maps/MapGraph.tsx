@@ -479,12 +479,22 @@ export function MapGraph({
               {node.isExit ? <MapExitFrame className="map-node__exit-frame" /> : null}
             </span>
 
-            {hasDescription && onOpenPlaceDescription ? (
+            {onOpenPlaceDescription ? (
               <button
                 type="button"
-                className="map-node__description"
-                title={m.maps.graph.descriptionTooltip}
-                aria-label={fill(m.maps.graph.descriptionLabel, { name: node.name })}
+                className={`map-node__description${
+                  hasDescription ? ' map-node__description--filled' : ''
+                }`}
+                title={
+                  hasDescription
+                    ? m.maps.graph.descriptionTooltip
+                    : m.maps.graph.descriptionAddTooltip
+                }
+                aria-label={
+                  hasDescription
+                    ? fill(m.maps.graph.descriptionLabel, { name: node.name })
+                    : fill(m.maps.graph.descriptionAddLabel, { name: node.name })
+                }
                 onPointerDown={(event) => event.stopPropagation()}
                 onPointerUp={(event) => event.stopPropagation()}
                 onKeyDown={(event) => event.stopPropagation()}

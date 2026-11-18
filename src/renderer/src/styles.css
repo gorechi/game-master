@@ -3986,6 +3986,22 @@ input[type='number'] {
   box-shadow: 0 5px 12px rgba(0, 0, 0, 0.45);
 }
 
+.map-node__description--filled {
+  border-color: #ffe3a1;
+  background: linear-gradient(180deg, #f5d98f, #d8a84a);
+  color: #2c2212;
+  box-shadow:
+    0 0 0 3px rgba(216, 178, 92, 0.22),
+    0 4px 12px rgba(216, 178, 92, 0.35);
+}
+
+.map-node__description--filled:hover {
+  background: linear-gradient(180deg, #ffe9ae, #e3b75a);
+  box-shadow:
+    0 0 0 3px rgba(216, 178, 92, 0.3),
+    0 6px 16px rgba(216, 178, 92, 0.42);
+}
+
 .map-node__description:focus-visible {
   outline: 2px solid var(--gold);
   outline-offset: 2px;

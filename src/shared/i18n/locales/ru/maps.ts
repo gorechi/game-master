@@ -80,7 +80,9 @@ export const mapsMessages = {
     openMapHint: 'Открыть карту «{name}»',
     linkedNodeLabel: '{name}: перейти на карту «{linked}»',
     descriptionTooltip: 'Описание места',
+    descriptionAddTooltip: 'Добавить описание',
     descriptionLabel: 'Описание локации «{name}»',
+    descriptionAddLabel: 'Добавить описание локации «{name}»',
     monstersTooltip: 'Монстры здесь: {names}',
     monstersLabel: 'Монстры в локации «{name}»',
     connectHint: 'Потяните, чтобы провести путь'
