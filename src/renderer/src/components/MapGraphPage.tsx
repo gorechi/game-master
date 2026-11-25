@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { JSX, PointerEvent as ReactPointerEvent } from 'react'
 import type { GameMap, MapPath } from '@shared/map'
 import type { Realm } from '@shared/realm'
@@ -197,6 +197,27 @@ export function MapGraphPage({
   const layout = map ? editorLayout(map, positions ?? undefined) : null
   const displayPaths = draftPaths ?? map?.paths ?? []
   const dirty = positions !== null || draftPaths !== null
+
+  // Форма редактирования должна видеть несохранённые перемещения и пути,
+  // которые мастер уже сделал на рабочем поле.
+  const editingMap = useMemo<GameMap | null>(() => {
+    if (!map) return null
+
+    return {
+      ...map,
+      places: map.places.map((place) => {
+        const position = positions?.[place.id]
+        if (!position) return place
+
+        return {
+          ...place,
+          x: Math.max(0, Math.round(position.x)),
+          y: Math.max(0, Math.round(position.y))
+        }
+      }),
+      paths: draftPaths ?? map.paths
+    }
+  }, [map, positions, draftPaths])
 
   // Один раз при открытии карты показываем её содержимое, а не пустой угол поля.
   useLayoutEffect(() => {
@@ -511,7 +532,7 @@ export function MapGraphPage({
 
       <MapFormModal
         open={editing}
-        map={map ?? null}
+        map={editingMap}
         realms={realms}
         defaultRealmId={map?.realmId ?? ''}
         onClose={() => setEditing(false)}
